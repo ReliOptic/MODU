@@ -12,6 +12,7 @@ import { PresetOptions } from '../components/formation/PresetOptions';
 import { FreeTextInput } from '../components/formation/FreeTextInput';
 import { VoiceInputButton } from '../components/formation/VoiceInputButton';
 import { FormationConfirmation } from '../components/formation/FormationConfirmation';
+import { PhotoPicker } from '../components/ui/PhotoPicker';
 import { getPalette, typography } from '../theme';
 
 export interface FormationFlowProps {
@@ -36,22 +37,27 @@ export function FormationFlow({ onDone }: FormationFlowProps) {
   }, [responses.length, currentStepId]);
 
   const handleResponse = useCallback(
-    (value: string, type: FormationResponse['type'], shortLabel?: string, leadsTo?: string) => {
+    (
+      value: string,
+      type: FormationResponse['type'],
+      shortLabel?: string,
+      leadsTo?: string,
+      photoUri?: string
+    ) => {
       if (!step) return;
       const next = leadsTo ?? resolveNext(step.nextStep, value);
-      // step_01 응답이면 inferredType 설정
       if (step.id === 'step_01') {
         const t = value as AssetType;
         setInferred(t);
       }
-      advance({ stepId: step.id, value, type, shortLabel }, next);
+      const newResponse: FormationResponse = { stepId: step.id, value, type, shortLabel, photoUri };
+      advance(newResponse, next);
 
       if (next === 'CONFIRM' && inferredType) {
-        // 에셋 생성 후 onDone
-        const formationData = {
-          responses: collectResponses([...responses, { stepId: step.id, value, type, shortLabel }]),
-        };
-        createAsset(inferredType, formationData);
+        const allResponses = [...responses, newResponse];
+        const formationData = { responses: collectResponses(allResponses) };
+        const photo = extractPhotoUri(allResponses);
+        createAsset(inferredType, formationData, photo ? { photoUri: photo } : undefined);
         reset();
         onDone();
       }
@@ -63,6 +69,7 @@ export function FormationFlow({ onDone }: FormationFlowProps) {
     handleResponse(o.id, 'preset', o.shortLabel ?? o.label, o.leadsTo);
   const handleFree = (t: string) => handleResponse(t, 'text');
   const handleVoice = (t: string) => handleResponse(t, 'voice');
+  const handlePhoto = (uri: string) => handleResponse(uri, 'photo', '📷 사진 첨부됨', undefined, uri);
   const handleSkip = () => {
     if (!step) return;
     const next = resolveNext(step.nextStep, '__skip__');
@@ -98,6 +105,17 @@ export function FormationFlow({ onDone }: FormationFlowProps) {
               onSend={handleFree}
               palette={inferredType ? getPaletteFor(inferredType) : 'dusk'}
             />
+          )}
+          {step.responseType === 'photo' && (
+            <View style={styles.photoSlot}>
+              <PhotoPicker
+                palette={inferredType ? getPaletteFor(inferredType) : 'dusk'}
+                shape="square"
+                size={140}
+                placeholder="사진 선택"
+                onChange={(img) => img && handlePhoto(img.uri)}
+              />
+            </View>
           )}
           {step.allowVoice && (
             <VoiceInputButton
@@ -150,6 +168,14 @@ function collectResponses(rs: FormationResponse[]): Record<string, string> {
   return out;
 }
 
+/** 응답들에서 마지막 photo URI 추출 (없으면 undefined) */
+function extractPhotoUri(rs: FormationResponse[]): string | undefined {
+  for (let i = rs.length - 1; i >= 0; i--) {
+    if (rs[i].type === 'photo' && rs[i].photoUri) return rs[i].photoUri;
+  }
+  return undefined;
+}
+
 function renderHistory(rs: FormationResponse[], palette: ReturnType<typeof getPalette>) {
   const out: React.ReactNode[] = [];
   for (const r of rs) {
@@ -193,5 +219,10 @@ const styles = StyleSheet.create({
   skipLabel: {
     ...typography.footnote,
     color: 'rgba(60,60,67,0.6)',
+  },
+  photoSlot: {
+    alignItems: 'center',
+    paddingVertical: 8,
+    marginBottom: 8,
   },
 });

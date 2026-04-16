@@ -1,7 +1,7 @@
 // §3.2 Formation 대화 구조
 import type { AssetType } from './asset';
 
-export type ResponseType = 'preset' | 'free' | 'both';
+export type ResponseType = 'preset' | 'free' | 'both' | 'photo';
 
 export interface PresetOption {
   id: string;
@@ -24,10 +24,12 @@ export interface FormationStep {
 
 export interface FormationResponse {
   stepId: string;
-  /** 자유 텍스트 또는 preset.id */
+  /** 자유 텍스트 / preset.id / photo URI */
   value: string;
-  type: 'preset' | 'voice' | 'text' | 'skip';
+  type: 'preset' | 'voice' | 'text' | 'skip' | 'photo';
   shortLabel?: string;
+  /** 사진 응답일 때 URI (value 와 동일하지만 명시 보존) */
+  photoUri?: string;
 }
 
 export interface FormationContext {

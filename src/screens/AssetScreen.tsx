@@ -1,25 +1,26 @@
 // §6 + §8 에셋별 라우팅 컨테이너
-// 현재 에셋의 palette 배경 + 헤더(AssetSwitcher) + 탭 컨텐츠.
-// expo-router/App entry는 별도 — AssetScreen은 logical container.
-import React, { useState, useMemo } from 'react';
+// 그라데이션 배경 + 헤더(AssetSwitcher) + 동적 탭바 + 활성 탭 컨텐츠
+import React, { useState, useMemo, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated from 'react-native-reanimated';
-import { useShallow } from 'zustand/react/shallow';
 import { useAssetStore } from '../store/assetStore';
 import { useAssetTransition } from '../hooks/useAssetTransition';
 import { AssetSwitcher } from '../components/AssetSwitcher';
+import { TabBar } from '../components/TabBar';
 import { getPalette, widgetTokens } from '../theme';
 import { HomeTab } from './HomeTab';
+import { PlaceholderTab } from './PlaceholderTab';
 
 export interface AssetScreenProps {
-  /** Formation 진입 콜백 */
   onCreateNew: () => void;
 }
 
 export function AssetScreen({ onCreateNew }: AssetScreenProps) {
   const allAssets = useAssetStore((s) => s.assets);
   const currentAssetId = useAssetStore((s) => s.currentAssetId);
+  const archive = useAssetStore((s) => s.archiveAsset);
+
   const current = useMemo(
     () => allAssets.find((a) => a.id === currentAssetId) ?? null,
     [allAssets, currentAssetId]
@@ -28,13 +29,25 @@ export function AssetScreen({ onCreateNew }: AssetScreenProps) {
     () => allAssets.filter((a) => a.status !== 'archived'),
     [allAssets]
   );
-  // useShallow 진입점 보장 (zustand v5)
-  void useShallow;
-  const archive = useAssetStore((s) => s.archiveAsset);
+
   const { switchTo, outgoingStyle } = useAssetTransition();
   const [activeTabId, setActiveTabId] = useState<string>('home');
 
-  const palette = useMemo(() => (current ? getPalette(current.palette) : getPalette('dawn')), [current]);
+  // 에셋 전환 시 home 으로 리셋
+  useEffect(() => {
+    setActiveTabId('home');
+  }, [currentAssetId]);
+
+  const palette = useMemo(
+    () => (current ? getPalette(current.palette) : getPalette('dawn')),
+    [current]
+  );
+
+  // 현재 활성 탭 라벨
+  const activeTab = useMemo(
+    () => current?.tabs.find((t) => t.id === activeTabId) ?? null,
+    [current, activeTabId]
+  );
 
   return (
     <View style={styles.root}>
@@ -54,8 +67,18 @@ export function AssetScreen({ onCreateNew }: AssetScreenProps) {
       </View>
       <Animated.View style={[styles.body, outgoingStyle]}>
         {current && activeTabId === 'home' && <HomeTab asset={current} />}
-        {/* TODO: 다른 탭 (calendar/mood/...) — phase 5/6 위젯 완성 후 라우팅 확장 */}
+        {current && activeTabId !== 'home' && activeTab && (
+          <PlaceholderTab tabLabel={activeTab.label} palette={current.palette} />
+        )}
       </Animated.View>
+      {current && (
+        <TabBar
+          tabs={current.tabs}
+          activeTabId={activeTabId}
+          onSelect={setActiveTabId}
+          palette={current.palette}
+        />
+      )}
     </View>
   );
 }
@@ -66,7 +89,7 @@ const styles = StyleSheet.create({
     backgroundColor: widgetTokens.baseBackground,
   },
   header: {
-    paddingTop: 60, // safe area + status bar
+    paddingTop: 60,
     paddingHorizontal: 20,
     paddingBottom: 12,
   },

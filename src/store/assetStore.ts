@@ -11,7 +11,11 @@ export interface AssetStore {
   /** 에셋 ID로 전환. 존재하지 않으면 no-op. */
   switchAsset: (id: string) => void;
   /** Formation 완료 시 호출. 새 에셋 추가 + currentAssetId 설정. */
-  createAsset: (type: AssetType, formationData: FormationData, displayName?: string) => Asset;
+  createAsset: (
+    type: AssetType,
+    formationData: FormationData,
+    options?: { displayName?: string; photoUri?: string }
+  ) => Asset;
   /** status 'archived'로 변경. 데이터 보존. */
   archiveAsset: (id: string) => void;
   /** 현재 active 에셋만 반환 (archived 제외) */
@@ -37,13 +41,13 @@ export const useAssetStore = create<AssetStore>((set, get) => ({
     }));
   },
 
-  createAsset: (type, formationData, displayName) => {
+  createAsset: (type, formationData, options) => {
     const t = assetTemplates[type];
     const now = new Date().toISOString();
     const asset: Asset = {
       id: `a-${type}-${Date.now()}`,
       type,
-      displayName: displayName ?? t.defaultDisplayName,
+      displayName: options?.displayName ?? t.defaultDisplayName,
       palette: t.palette,
       tabs: t.tabs,
       widgets: t.widgets,
@@ -52,6 +56,7 @@ export const useAssetStore = create<AssetStore>((set, get) => ({
       status: 'active',
       createdAt: now,
       lastActiveAt: now,
+      photoUri: options?.photoUri,
     };
     set((s) => ({
       assets: [...s.assets, asset],

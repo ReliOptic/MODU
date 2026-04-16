@@ -16,6 +16,14 @@ export const petCareSteps: FormationStep[] = [
     responseType: 'free',
     allowVoice: true,
     allowSkip: false,
+    nextStep: 'pet_care:step_03_photo',
+  },
+  {
+    id: 'pet_care:step_03_photo',
+    aiMessage: '아이 사진을 한 장 보여주실래요? 에셋 첫 화면에 자리잡을 거예요. (건너뛰셔도 돼요)',
+    responseType: 'photo',
+    allowVoice: false,
+    allowSkip: true,
     nextStep: 'pet_care:step_04',
   },
   {
