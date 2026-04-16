@@ -1,0 +1,3425 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MODU — Listen to your life.</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,200..900,0..100;1,9..144,200..900,0..100&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+
+<style>
+:root {
+  --paper:     #FAF6F1;
+  --paper-50:  #FDFBF7;
+  --ink-900:   #1A1614;
+  --ink-700:   #3D362F;
+  --ink-500:   #6B5F54;
+  --ink-300:   #A89E90;
+  --ink-100:   #DED5C7;
+  --accent:    #D4634F;
+  --accent-soft: #EEB3A0;
+  --sage:      #6D8F68;
+  --blossom:   #E06F92;
+  --mist:      #819DB8;
+  
+  --display: 'Fraunces', 'Pretendard Variable', serif;
+  --editorial: 'Instrument Serif', 'Pretendard Variable', serif;
+  --korean: 'Pretendard Variable', -apple-system, sans-serif;
+  
+  --mesh-warm: 
+    radial-gradient(at 15% 20%, #FDE7D9 0%, transparent 55%),
+    radial-gradient(at 85% 15%, #FAC9B8 0%, transparent 50%),
+    radial-gradient(at 70% 85%, #FDD3DF 0%, transparent 55%),
+    radial-gradient(at 10% 85%, #EAF0E6 0%, transparent 55%),
+    #FDF7F4;
+    
+  --mesh-quiet:
+    radial-gradient(at 25% 30%, #FDF7F4 0%, transparent 55%),
+    radial-gradient(at 75% 70%, #FAE8E0 0%, transparent 55%),
+    #FDFBF7;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--paper);
+  color: var(--ink-900);
+  font-family: var(--korean);
+  font-size: 17px;
+  line-height: 1.7;
+  letter-spacing: -0.015em;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "ss01";
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 200;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ─────────── NAV ─────────── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 20px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(250, 246, 241, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(222, 213, 199, 0.3);
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-brand svg {
+  width: 32px;
+  height: 32px;
+}
+
+.nav-brand-text {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  color: var(--ink-900);
+}
+
+.nav-brand-text .dot {
+  color: var(--accent);
+}
+
+.nav-cta {
+  font-family: var(--korean);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  padding: 9px 18px;
+  background: var(--ink-900);
+  color: var(--paper);
+  border-radius: 100px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.nav-cta:hover {
+  background: var(--accent);
+}
+
+/* ─────────── CONTAINER ─────────── */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+.narrow {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+section {
+  padding: 120px 0;
+  position: relative;
+}
+
+/* ─────────── HERO ─────────── */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  padding: 120px 0 80px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--mesh-warm);
+  opacity: 0.85;
+  z-index: -1;
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 80px;
+  align-items: center;
+}
+
+.hero-label {
+  font-family: var(--editorial);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+  margin-bottom: 28px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hero-label::before {
+  content: "";
+  width: 28px;
+  height: 1px;
+  background: var(--accent);
+  display: inline-block;
+}
+
+.hero h1 {
+  font-family: var(--korean);
+  font-size: clamp(40px, 5.2vw, 64px);
+  font-weight: 300;
+  line-height: 1.25;
+  letter-spacing: -0.04em;
+  color: var(--ink-900);
+  margin-bottom: 24px;
+  word-break: keep-all;
+}
+
+.hero h1 strong {
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.hero-tagline {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: clamp(28px, 3.5vw, 40px);
+  font-weight: 300;
+  color: var(--accent);
+  letter-spacing: -0.02em;
+  margin-bottom: 32px;
+  line-height: 1.1;
+  font-variation-settings: 'opsz' 144, 'SOFT' 100;
+}
+
+.hero-desc {
+  font-family: var(--korean);
+  font-size: 19px;
+  line-height: 1.7;
+  color: var(--ink-700);
+  letter-spacing: -0.02em;
+  margin-bottom: 40px;
+  max-width: 520px;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.btn {
+  font-family: var(--korean);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  padding: 16px 28px;
+  border-radius: 100px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-primary {
+  background: var(--ink-900);
+  color: var(--paper);
+}
+
+.btn-primary:hover {
+  background: var(--accent);
+  transform: translateY(-2px);
+}
+
+.btn-ghost {
+  color: var(--ink-900);
+  background: transparent;
+  border: 1px solid var(--ink-300);
+}
+
+.btn-ghost:hover {
+  border-color: var(--ink-900);
+}
+
+.btn .arrow {
+  font-family: var(--editorial);
+  font-style: italic;
+  transition: transform 0.3s ease;
+}
+
+.btn:hover .arrow {
+  transform: translateX(3px);
+}
+
+.hero-phone-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.hero-phone-wrap::before {
+  content: "";
+  position: absolute;
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(circle, #FAC9B8 0%, transparent 70%);
+  opacity: 0.5;
+  filter: blur(40px);
+  z-index: -1;
+}
+
+/* ═════════════════════════════════════════
+   PHONE FRAME — refined iPhone realism
+   ═════════════════════════════════════════ */
+.phone {
+  width: 286px;
+  height: 580px;
+  background: linear-gradient(135deg, #2a2622 0%, #1a1614 50%, #0d0b09 100%);
+  border-radius: 50px;
+  padding: 4px;
+  box-shadow: 
+    0 50px 100px -25px rgba(26, 22, 20, 0.3),
+    0 20px 40px -10px rgba(212, 99, 79, 0.18),
+    inset 0 0 0 1.5px rgba(255, 255, 255, 0.08),
+    inset 0 0 0 3px rgba(255, 255, 255, 0.03);
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Side buttons */
+.phone::before,
+.phone::after {
+  content: "";
+  position: absolute;
+  background: linear-gradient(180deg, #1a1614 0%, #0d0b09 100%);
+  border-radius: 1.5px;
+  z-index: -1;
+}
+
+.phone::before {
+  /* Volume up + down + silent on left */
+  left: -3px;
+  top: 110px;
+  width: 4px;
+  height: 28px;
+  box-shadow: 
+    0 40px 0 0 #1a1614,
+    0 78px 0 0 #1a1614;
+}
+
+.phone::after {
+  /* Power button on right */
+  right: -3px;
+  top: 152px;
+  width: 4px;
+  height: 64px;
+}
+
+.phone-inner-frame {
+  width: 100%;
+  height: 100%;
+  background: #000;
+  border-radius: 46px;
+  padding: 3px;
+  position: relative;
+}
+
+.phone-screen {
+  width: 100%;
+  height: 100%;
+  border-radius: 43px;
+  overflow: hidden;
+  background: #FDF7F4;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Dynamic Island — accurate dimensions & position */
+.phone-notch {
+  position: absolute;
+  top: 11px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 95px;
+  height: 30px;
+  background: #000;
+  border-radius: 100px;
+  z-index: 20;
+}
+
+.phone-notch::after {
+  /* Camera dot */
+  content: "";
+  position: absolute;
+  right: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  background: radial-gradient(circle at 35% 35%, #1a1f2e 0%, #050810 100%);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+}
+
+.phone-status {
+  padding: 18px 26px 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--korean);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-900);
+  position: relative;
+  z-index: 10;
+  letter-spacing: -0.01em;
+}
+
+.phone-status .time-display {
+  margin-left: 6px;
+}
+
+.phone-status-icons {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  margin-right: 4px;
+}
+
+.phone-status-icons svg {
+  width: 14px;
+  height: 14px;
+}
+
+.phone-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 12px 18px 22px;
+  background: 
+    radial-gradient(at 20% 0%, #FDE7D9 0%, transparent 55%),
+    radial-gradient(at 80% 20%, #FAC9B8 0%, transparent 50%),
+    radial-gradient(at 70% 90%, #FDD3DF 0%, transparent 50%),
+    #FDF7F4;
+}
+
+.phone-header {
+  padding: 8px 4px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.phone-greeting {
+  font-family: var(--korean);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.3;
+  letter-spacing: -0.03em;
+  color: var(--ink-900);
+  word-break: keep-all;
+}
+
+.phone-greeting .em {
+  font-family: var(--display);
+  font-style: italic;
+  color: var(--accent);
+  font-weight: 300;
+}
+
+.phone-date {
+  font-family: var(--editorial);
+  font-style: italic;
+  font-size: 11px;
+  color: var(--ink-500);
+  text-align: right;
+  line-height: 1.4;
+}
+
+.phone-date strong {
+  color: var(--accent);
+  display: block;
+  font-size: 12px;
+}
+
+.phone-msgs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+  min-height: 60px;
+}
+
+.phone-msg {
+  padding: 11px 14px;
+  border-radius: 18px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  max-width: 88%;
+  letter-spacing: -0.015em;
+  word-break: keep-all;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.phone-msg.ai {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(8px);
+  color: var(--ink-900);
+  align-self: flex-start;
+  border-bottom-left-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
+
+.phone-msg.user {
+  background: var(--ink-900);
+  color: var(--paper);
+  align-self: flex-end;
+  border-bottom-right-radius: 6px;
+  font-family: var(--editorial);
+  font-style: italic;
+  font-size: 13px;
+}
+
+.phone-msg.fade-in {
+  animation: msgFadeIn 0.4s ease;
+}
+
+@keyframes msgFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Preset chips */
+.phone-presets {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 4px;
+  margin-bottom: 12px;
+}
+
+.phone-preset {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(26, 22, 20, 0.08);
+  border-radius: 100px;
+  padding: 10px 15px;
+  font-family: var(--korean);
+  font-size: 12.5px;
+  color: var(--ink-700);
+  letter-spacing: -0.015em;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.phone-preset:hover {
+  background: rgba(255, 255, 255, 1);
+  border-color: var(--accent-soft);
+  transform: translateX(2px);
+}
+
+.phone-preset .num {
+  font-family: var(--editorial);
+  font-style: italic;
+  color: var(--ink-300);
+  font-size: 11px;
+  margin-right: 8px;
+  transition: color 0.25s ease;
+}
+
+.phone-preset:hover .num {
+  color: var(--accent);
+}
+
+.phone-preset .arr {
+  opacity: 0;
+  font-family: var(--editorial);
+  font-style: italic;
+  color: var(--accent);
+  transition: opacity 0.25s ease;
+}
+
+.phone-preset:hover .arr,
+.phone-preset.active .arr {
+  opacity: 1;
+}
+
+.phone-preset.active {
+  background: var(--ink-900);
+  color: var(--paper);
+  border-color: var(--ink-900);
+}
+
+.phone-preset.active .num {
+  color: rgba(250, 246, 241, 0.5);
+}
+
+.phone-preset.active .arr {
+  color: var(--paper);
+  opacity: 1;
+}
+
+.phone-preset.active:hover {
+  background: var(--ink-900);
+  transform: translateX(2px);
+}
+
+.phone-input {
+  margin-top: auto;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  border-radius: 100px;
+  padding: 8px 6px 8px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--editorial);
+  font-style: italic;
+  font-size: 11px;
+  color: var(--ink-300);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+}
+
+.phone-input-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.phone-input-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.phone-input-btn.mic {
+  background: rgba(212, 99, 79, 0.12);
+}
+
+.phone-input-btn.mic svg {
+  width: 13px;
+  height: 13px;
+  stroke: var(--accent);
+}
+
+.phone-input-btn.send {
+  background: var(--ink-900);
+}
+
+.phone-input-btn.send svg {
+  width: 13px;
+  height: 13px;
+  stroke: var(--paper);
+}
+
+/* ─────────── SECTION HEAD ─────────── */
+.section-label {
+  font-family: var(--editorial);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  justify-content: center;
+}
+
+.section-label::before,
+.section-label::after {
+  content: "";
+  width: 24px;
+  height: 1px;
+  background: var(--accent);
+  transform: translateY(-4px);
+}
+
+.section-head {
+  font-family: var(--korean);
+  font-size: clamp(30px, 4vw, 44px);
+  font-weight: 300;
+  line-height: 1.3;
+  letter-spacing: -0.035em;
+  color: var(--ink-900);
+  margin-bottom: 24px;
+  text-align: center;
+  word-break: keep-all;
+}
+
+.section-head strong {
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.section-head .em {
+  font-family: var(--display);
+  font-style: italic;
+  font-weight: 300;
+  color: var(--accent);
+}
+
+.section-sub {
+  font-family: var(--korean);
+  font-size: 18px;
+  line-height: 1.65;
+  color: var(--ink-500);
+  letter-spacing: -0.02em;
+  text-align: center;
+  margin-bottom: 80px;
+  word-break: keep-all;
+  max-width: 620px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ─────────── FOR WHOM (4 personas) ─────────── */
+.whom {
+  padding: 100px 0 120px;
+}
+
+.personas {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin-top: 48px;
+}
+
+.persona {
+  background: #fff;
+  border-radius: 24px;
+  padding: 36px 32px;
+  border: 1px solid var(--ink-100);
+  transition: all 0.3s ease;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.persona:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px -12px rgba(26, 22, 20, 0.08);
+  border-color: var(--accent-soft);
+}
+
+.persona-icon {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--paper);
+  border-radius: 12px;
+}
+
+.persona-icon svg {
+  width: 24px;
+  height: 24px;
+  stroke: var(--accent);
+}
+
+.persona-body { flex: 1; }
+
+.persona-tag {
+  font-family: var(--editorial);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+
+.persona h3 {
+  font-family: var(--korean);
+  font-size: 19px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: -0.03em;
+  color: var(--ink-900);
+  margin-bottom: 10px;
+  word-break: keep-all;
+}
+
+.persona p {
+  font-family: var(--korean);
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--ink-500);
+  letter-spacing: -0.015em;
+  word-break: keep-all;
+}
+
+/* ─────────── HOW IT WORKS ─────────── */
+.how {
+  padding: 120px 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(253, 231, 217, 0.3) 50%, transparent 100%);
+}
+
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+  margin-top: 72px;
+  align-items: start;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+
+.step-phone-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.step-phone-wrap::before {
+  content: "";
+  position: absolute;
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, rgba(212, 99, 79, 0.15) 0%, transparent 70%);
+  filter: blur(30px);
+  z-index: -1;
+}
+
+.phone.small {
+  width: 224px;
+  height: 460px;
+  border-radius: 40px;
+  padding: 3px;
+}
+
+.phone.small .phone-inner-frame {
+  border-radius: 37px;
+  padding: 2px;
+}
+
+.phone.small .phone-screen {
+  border-radius: 35px;
+}
+
+.phone.small .phone-notch {
+  width: 76px;
+  height: 24px;
+  top: 9px;
+}
+
+.phone.small .phone-notch::after {
+  width: 6px;
+  height: 6px;
+  right: 7px;
+}
+
+.phone.small::before {
+  left: -2.5px;
+  top: 88px;
+  width: 3px;
+  height: 22px;
+  box-shadow: 
+    0 32px 0 0 #1a1614,
+    0 62px 0 0 #1a1614;
+}
+
+.phone.small::after {
+  right: -2.5px;
+  top: 122px;
+  width: 3px;
+  height: 50px;
+}
+
+.phone.small .phone-status {
+  padding: 14px 22px 4px;
+  font-size: 12px;
+}
+
+.phone.small .phone-status-icons svg {
+  width: 12px;
+  height: 12px;
+}
+
+.phone.small .phone-content {
+  padding: 8px 14px 16px;
+}
+
+.phone.small .phone-greeting { font-size: 15px; }
+.phone.small .phone-date { font-size: 9px; }
+.phone.small .phone-date strong { font-size: 10px; }
+.phone.small .phone-msg { font-size: 11px; padding: 9px 12px; }
+.phone.small .phone-msg.user { font-size: 11.5px; }
+.phone.small .phone-preset { font-size: 10.5px; padding: 7px 12px; }
+.phone.small .phone-preset .num { font-size: 10px; }
+.phone.small .phone-input { padding: 6px 4px 6px 14px; font-size: 10px; }
+.phone.small .phone-input-btn { width: 26px; height: 26px; }
+.phone.small .phone-input-btn svg { width: 11px; height: 11px; }
+
+.step-copy {
+  text-align: center;
+  max-width: 280px;
+}
+
+.step-num {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 32px;
+  font-weight: 200;
+  color: var(--accent);
+  margin-bottom: 8px;
+  line-height: 1;
+  font-variation-settings: 'opsz' 144, 'SOFT' 100;
+}
+
+.step h3 {
+  font-family: var(--korean);
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.4;
+  color: var(--ink-900);
+  margin-bottom: 10px;
+  word-break: keep-all;
+}
+
+.step p {
+  font-family: var(--korean);
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--ink-500);
+  letter-spacing: -0.015em;
+  word-break: keep-all;
+}
+
+/* Home widgets */
+.widget {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 16px;
+  padding: 12px 14px;
+  margin-bottom: 7px;
+  font-size: 10.5px;
+}
+
+.widget.primary {
+  background: linear-gradient(135deg, #D4634F 0%, #E89580 60%, #EEB3A0 100%);
+  border: none;
+  color: #fff;
+  padding: 14px;
+}
+
+.widget.primary .widget-label { color: rgba(255,255,255,0.7); }
+.widget.primary .widget-main { color: #fff; }
+.widget.primary .widget-big { color: #fff; }
+
+.widget.sage {
+  background: linear-gradient(135deg, rgba(109, 143, 104, 0.15) 0%, rgba(184, 203, 178, 0.25) 100%);
+  border: 1px solid rgba(109, 143, 104, 0.2);
+}
+
+.widget.mist {
+  background: linear-gradient(135deg, rgba(129, 157, 184, 0.12) 0%, rgba(214, 224, 234, 0.25) 100%);
+  border: 1px solid rgba(129, 157, 184, 0.2);
+}
+
+.widget.blossom {
+  background: linear-gradient(135deg, rgba(224, 111, 146, 0.12) 0%, rgba(250, 196, 209, 0.22) 100%);
+  border: 1px solid rgba(224, 111, 146, 0.2);
+}
+
+.widget-label {
+  font-family: var(--editorial);
+  font-style: italic;
+  font-size: 9px;
+  color: var(--ink-500);
+  margin-bottom: 4px;
+  display: flex;
+  justify-content: space-between;
+  letter-spacing: 0;
+}
+
+.widget-label .time {
+  color: var(--accent);
+}
+
+.widget.primary .widget-label .time { color: #fff; }
+
+.widget-main {
+  font-family: var(--korean);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--ink-900);
+  letter-spacing: -0.02em;
+  word-break: keep-all;
+}
+
+.widget-big {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 18px;
+  font-weight: 300;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: 3px;
+  display: block;
+  font-variation-settings: 'opsz' 144, 'SOFT' 100;
+}
+
+.widget.collapsed { padding: 8px 14px; }
+.widget.collapsed .widget-label { margin-bottom: 0; }
+
+/* Partner card */
+.partner-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 18px;
+  padding: 14px;
+  margin-bottom: 8px;
+}
+
+.partner-top {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.partner-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #E06F92, #F29CB5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 12px;
+  color: #fff;
+}
+
+.partner-name {
+  font-family: var(--korean);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-900);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.partner-role {
+  font-family: var(--editorial);
+  font-style: italic;
+  font-size: 9px;
+  color: var(--ink-500);
+}
+
+.partner-msg {
+  font-family: var(--korean);
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--ink-700);
+  padding: 9px 11px;
+  background: rgba(250, 228, 224, 0.5);
+  border-radius: 12px;
+  margin-bottom: 9px;
+  letter-spacing: -0.02em;
+  word-break: keep-all;
+}
+
+.partner-actions {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.partner-action {
+  font-family: var(--korean);
+  font-size: 10px;
+  padding: 5px 10px;
+  border-radius: 100px;
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--ink-700);
+  border: 1px solid rgba(26, 22, 20, 0.06);
+  letter-spacing: -0.015em;
+}
+
+.partner-action.primary {
+  background: var(--ink-900);
+  color: var(--paper);
+  border-color: var(--ink-900);
+}
+
+/* ─────────── WHY ─────────── */
+.why {
+  padding: 120px 0;
+}
+
+.pains {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 64px;
+  max-width: 920px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.pain {
+  padding: 32px;
+  background: var(--paper-50);
+  border: 1px solid var(--ink-100);
+  border-radius: 20px;
+}
+
+.pain-q {
+  font-family: var(--editorial);
+  font-style: italic;
+  font-size: 20px;
+  line-height: 1.5;
+  color: var(--ink-700);
+  margin-bottom: 16px;
+  letter-spacing: 0;
+}
+
+.pain-a {
+  font-family: var(--korean);
+  font-size: 15.5px;
+  line-height: 1.75;
+  color: var(--ink-500);
+  letter-spacing: -0.015em;
+  word-break: keep-all;
+}
+
+.pain-a strong {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+/* ═════════════════════════════════════════
+   WHAT SHIFTS — merged with 4 lives showcase
+   ═════════════════════════════════════════ */
+.shifts {
+  padding: 140px 0;
+  background: var(--mesh-warm);
+}
+
+.shifts-quote {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: clamp(20px, 2.2vw, 26px);
+  color: var(--ink-500);
+  font-variation-settings: 'opsz' 144, 'SOFT' 100;
+  text-align: center;
+  margin-top: 16px;
+  margin-bottom: 80px;
+  letter-spacing: -0.015em;
+}
+
+/* Horizontal pivots — 2x2 grid of before/after */
+.pivots-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  max-width: 920px;
+  margin: 0 auto 100px;
+}
+
+.pivot {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 24px 28px;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(16px);
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.pivot-side { padding: 0 14px; }
+
+.pivot-side.before { border-right: 1px dashed var(--ink-300); }
+
+.pivot-side-label {
+  font-family: var(--editorial);
+  font-style: italic;
+  font-size: 12px;
+  color: var(--ink-500);
+  margin-bottom: 8px;
+  letter-spacing: 0;
+}
+
+.pivot-side.after .pivot-side-label { color: var(--accent); }
+
+.pivot-side-text {
+  font-family: var(--korean);
+  font-size: 14.5px;
+  font-weight: 400;
+  line-height: 1.45;
+  letter-spacing: -0.02em;
+  color: var(--ink-700);
+  word-break: keep-all;
+}
+
+.pivot-side.after .pivot-side-text {
+  color: var(--ink-900);
+  font-weight: 500;
+}
+
+/* Concrete cases — 4 actual phone screens */
+.cases-intro {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.cases-eyebrow {
+  font-family: var(--editorial);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+  margin-bottom: 16px;
+}
+
+.cases-title {
+  font-family: var(--korean);
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 300;
+  letter-spacing: -0.035em;
+  color: var(--ink-900);
+  line-height: 1.35;
+  word-break: keep-all;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.cases-title strong {
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.cases-sub {
+  font-family: var(--editorial);
+  font-style: italic;
+  font-size: 16px;
+  color: var(--ink-500);
+  margin-top: 12px;
+  letter-spacing: -0.01em;
+}
+
+.cases-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  max-width: 1100px;
+  margin: 64px auto 0;
+}
+
+.case-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.case-phone-wrap {
+  position: relative;
+}
+
+.case-phone-wrap::before {
+  content: "";
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(212, 99, 79, 0.12) 0%, transparent 70%);
+  filter: blur(24px);
+  z-index: -1;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.phone.tiny {
+  width: 198px;
+  height: 408px;
+  border-radius: 36px;
+  padding: 3px;
+}
+
+.phone.tiny .phone-inner-frame {
+  border-radius: 33px;
+  padding: 2px;
+}
+
+.phone.tiny .phone-screen {
+  border-radius: 31px;
+}
+
+.phone.tiny .phone-notch {
+  width: 64px;
+  height: 20px;
+  top: 8px;
+}
+
+.phone.tiny .phone-notch::after {
+  width: 5px;
+  height: 5px;
+  right: 6px;
+}
+
+.phone.tiny::before {
+  left: -2px;
+  top: 78px;
+  width: 3px;
+  height: 18px;
+  box-shadow: 
+    0 28px 0 0 #1a1614,
+    0 54px 0 0 #1a1614;
+}
+
+.phone.tiny::after {
+  right: -2px;
+  top: 108px;
+  width: 3px;
+  height: 44px;
+}
+
+.phone.tiny .phone-status {
+  padding: 12px 18px 4px;
+  font-size: 10.5px;
+}
+
+.phone.tiny .phone-status-icons svg {
+  width: 10px;
+  height: 10px;
+}
+
+.phone.tiny .phone-content {
+  padding: 6px 12px 12px;
+}
+
+.phone.tiny .phone-greeting { 
+  font-size: 13px; 
+  line-height: 1.25;
+}
+
+.phone.tiny .phone-date {
+  font-size: 8.5px;
+}
+
+.phone.tiny .phone-date strong { font-size: 9px; }
+
+.phone.tiny .widget {
+  padding: 8px 10px;
+  margin-bottom: 5px;
+  font-size: 9.5px;
+  border-radius: 12px;
+}
+
+.phone.tiny .widget.primary {
+  padding: 10px;
+}
+
+.phone.tiny .widget.collapsed {
+  padding: 6px 10px;
+}
+
+.phone.tiny .widget-label { 
+  font-size: 7.5px; 
+  margin-bottom: 3px;
+}
+
+.phone.tiny .widget-main { 
+  font-size: 10px; 
+  line-height: 1.3;
+}
+
+.phone.tiny .widget-big {
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.phone.tiny .partner-card {
+  padding: 10px;
+  border-radius: 14px;
+}
+
+.phone.tiny .partner-avatar {
+  width: 22px;
+  height: 22px;
+  font-size: 10px;
+}
+
+.phone.tiny .partner-name {
+  font-size: 10px;
+}
+
+.phone.tiny .partner-role {
+  font-size: 8px;
+}
+
+.phone.tiny .partner-msg {
+  font-size: 10px;
+  padding: 7px 9px;
+  border-radius: 10px;
+  margin-bottom: 7px;
+}
+
+.phone.tiny .partner-action {
+  font-size: 8.5px;
+  padding: 4px 8px;
+}
+
+.phone.tiny .phone-header {
+  padding: 6px 2px 10px;
+}
+
+.case-caption {
+  text-align: center;
+  max-width: 240px;
+}
+
+.case-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--editorial);
+  font-style: italic;
+  font-size: 12px;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+  margin-bottom: 10px;
+}
+
+.case-tag::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.case-tag.sage { color: var(--sage); }
+.case-tag.sage::before { background: var(--sage); }
+.case-tag.blossom { color: var(--blossom); }
+.case-tag.blossom::before { background: var(--blossom); }
+.case-tag.mist { color: var(--mist); }
+.case-tag.mist::before { background: var(--mist); }
+
+.case-caption h4 {
+  font-family: var(--korean);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  color: var(--ink-900);
+  line-height: 1.35;
+  margin-bottom: 6px;
+  word-break: keep-all;
+}
+
+.case-caption .case-state {
+  font-family: var(--editorial);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink-500);
+  margin-bottom: 12px;
+  letter-spacing: -0.01em;
+}
+
+.case-caption p {
+  font-family: var(--korean);
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--ink-500);
+  letter-spacing: -0.015em;
+  word-break: keep-all;
+}
+
+.case-caption p strong {
+  color: var(--ink-900);
+  font-weight: 500;
+}
+
+/* ─────────── CLOSING ─────────── */
+.closing {
+  padding: 160px 0 140px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.closing::before {
+  content: "";
+  position: absolute;
+  top: -30%;
+  left: -10%;
+  width: 120%;
+  height: 160%;
+  background: var(--mesh-warm);
+  filter: blur(60px);
+  opacity: 0.6;
+  z-index: -1;
+}
+
+.closing h2 {
+  font-family: var(--display);
+  font-size: clamp(48px, 7vw, 88px);
+  line-height: 1.0;
+  font-weight: 200;
+  letter-spacing: -0.035em;
+  font-variation-settings: 'opsz' 144, 'SOFT' 60;
+  margin-bottom: 20px;
+  font-style: italic;
+}
+
+.closing h2 .em {
+  color: var(--accent);
+  font-variation-settings: 'opsz' 144, 'SOFT' 100;
+}
+
+.closing-ko {
+  font-family: var(--korean);
+  font-size: clamp(19px, 2.3vw, 24px);
+  font-weight: 300;
+  color: var(--ink-700);
+  letter-spacing: -0.03em;
+  line-height: 1.5;
+  margin-bottom: 56px;
+  word-break: keep-all;
+}
+
+.waitlist {
+  max-width: 440px;
+  margin: 0 auto;
+  display: flex;
+  gap: 8px;
+  background: #fff;
+  padding: 6px;
+  border-radius: 100px;
+  box-shadow: 0 12px 32px -8px rgba(26, 22, 20, 0.1);
+  border: 1px solid var(--ink-100);
+}
+
+.waitlist input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 12px 20px;
+  font-family: var(--korean);
+  font-size: 15px;
+  color: var(--ink-900);
+  outline: none;
+  letter-spacing: -0.015em;
+}
+
+.waitlist input::placeholder {
+  color: var(--ink-300);
+  font-family: var(--editorial);
+  font-style: italic;
+}
+
+.waitlist button {
+  background: var(--ink-900);
+  color: var(--paper);
+  border: none;
+  padding: 12px 22px;
+  border-radius: 100px;
+  font-family: var(--korean);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.waitlist button:hover { background: var(--accent); }
+
+.closing-note {
+  font-family: var(--editorial);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--ink-500);
+  margin-top: 24px;
+}
+
+/* ─────────── FOOTER ─────────── */
+footer {
+  padding: 48px 40px;
+  border-top: 1px solid var(--ink-100);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  font-family: var(--editorial);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink-500);
+}
+
+footer .left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+footer svg { width: 24px; height: 24px; }
+
+footer .right { display: flex; gap: 24px; }
+
+footer a {
+  color: var(--ink-500);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+footer a:hover { color: var(--ink-900); }
+
+/* ─────────── PRINT / PDF ─────────── */
+@media print {
+  @page { size: A4; margin: 0; }
+  
+  html, body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  body::before { display: none; }
+  nav { display: none !important; }
+  
+  section {
+    page-break-inside: avoid;
+    padding: 60px 0 !important;
+  }
+  
+  .hero { min-height: auto !important; padding: 80px 0 60px !important; page-break-after: always; }
+  .hero::before { background: var(--mesh-warm) !important; }
+  
+  .whom, .how, .why, .shifts { page-break-after: always; }
+  
+  .closing { padding: 60px 0 !important; }
+  footer { display: none; }
+  
+  .case-item, .persona, .step, .pivot, .pain { page-break-inside: avoid; }
+}
+
+@media (max-width: 900px) {
+  nav { padding: 16px 24px; }
+  .container, footer { padding-left: 24px; padding-right: 24px; }
+  .narrow { padding: 0 24px; }
+  
+  .hero { padding-top: 100px; min-height: auto; }
+  .hero-grid { grid-template-columns: 1fr; gap: 56px; }
+  
+  .personas, .steps-grid, .pains, .pivots-row {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .cases-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px;
+  }
+  
+  .phone { width: 270px; height: 548px; }
+  .phone.small { width: 240px; height: 492px; }
+  .phone.tiny { width: 200px; height: 412px; }
+  
+  section { padding: 80px 0; }
+  
+  footer { flex-direction: column; gap: 16px; text-align: center; }
+}
+
+.pdf-hint {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 99;
+  background: var(--ink-900);
+  color: var(--paper);
+  padding: 10px 16px;
+  border-radius: 100px;
+  font-family: var(--editorial);
+  font-style: italic;
+  font-size: 12px;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 8px 24px -8px rgba(26, 22, 20, 0.3);
+  letter-spacing: 0.02em;
+  transition: all 0.3s ease;
+}
+
+.pdf-hint:hover { background: var(--accent); }
+
+@media print { .pdf-hint { display: none !important; } }
+
+/* ═══ 4-CASES iOS STYLES (merged) ═══ */
+
+:root {
+  --ios-bg: #F2F2F7;
+  --ios-card: rgba(255,255,255,0.78);
+  --ios-sep: rgba(60,60,67,0.12);
+  --ios-lbl: rgba(60,60,67,0.6);
+  --ios-lbl2: rgba(60,60,67,0.3);
+  --ios-pri: #1C1C1E;
+  --dawn: #D4634F;
+  --dawn-s: #EEB3A0;
+  --blossom: #E06F92;
+  --blossom-s: #FAC4D1;
+  --sage: #6D8F68;
+  --sage-s: #B8CBB2;
+  --mist: #819DB8;
+  --mist-s: #D6E0EA;
+  --sf: 'Pretendard Variable', -apple-system, sans-serif;
+  --display: 'Fraunces', serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background:
+    radial-gradient(at 15% 20%, #FDE7D9 0%, transparent 50%),
+    radial-gradient(at 85% 15%, #FAC9B8 0%, transparent 45%),
+    radial-gradient(at 60% 85%, #FDD3DF 0%, transparent 50%),
+    radial-gradient(at 10% 80%, #EAF0E6 0%, transparent 50%),
+    #EFE3D9;
+  min-height: 100vh;
+  padding: 48px 24px 100px;
+  font-family: var(--sf);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── HEADER ─── */
+.page-header {
+  text-align: center;
+  margin-bottom: 56px;
+}
+
+.page-header .eyebrow {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 14px;
+  color: var(--dawn);
+  margin-bottom: 16px;
+}
+
+.page-header h1 {
+  font-family: var(--sf);
+  font-size: clamp(28px, 4vw, 42px);
+  font-weight: 300;
+  letter-spacing: -0.04em;
+  line-height: 1.3;
+  color: var(--ios-pri);
+  word-break: keep-all;
+}
+
+.page-header h1 strong { font-weight: 700; color: var(--dawn); }
+
+.page-header .sub {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 15px;
+  color: var(--ios-lbl);
+  margin-top: 8px;
+}
+
+/* ─── GRID ─── */
+.cases-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 28px;
+  max-width: 1360px;
+  margin: 0 auto;
+  align-items: start;
+}
+
+.case-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+/* ─── DEVICE ─── */
+.device {
+  width: 280px;
+  height: 606px;
+  background: linear-gradient(160deg, #3a3632 0%, #1a1614 40%, #0a0908 100%);
+  border-radius: 50px;
+  padding: 3px;
+  position: relative;
+  box-shadow:
+    0 50px 100px -28px rgba(26,22,20,0.35),
+    0 20px 40px -12px rgba(0,0,0,0.18),
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    inset 0 0 0 1px rgba(255,255,255,0.05);
+}
+
+.device::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50px;
+  border: 1px solid transparent;
+  background: linear-gradient(160deg, rgba(255,255,255,0.1), rgba(255,255,255,0) 40%) border-box;
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Side buttons */
+.device .sb { position: absolute; background: #1a1614; border-radius: 1px; z-index: -1; }
+.device .sb.silent { left: -2.5px; top: 100px; width: 3px; height: 14px; }
+.device .sb.vol-u { left: -2.5px; top: 130px; width: 3px; height: 26px; }
+.device .sb.vol-d { left: -2.5px; top: 164px; width: 3px; height: 26px; }
+.device .sb.pwr { right: -2.5px; top: 142px; width: 3px; height: 50px; }
+
+.d-inner {
+  width: 100%;
+  height: 100%;
+  background: #000;
+  border-radius: 47px;
+  padding: 2.5px;
+  overflow: hidden;
+}
+
+.scr {
+  width: 100%;
+  height: 100%;
+  border-radius: 45px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--ios-bg);
+}
+
+/* Island */
+.isl {
+  position: absolute;
+  top: 11px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 92px;
+  height: 28px;
+  background: #000;
+  border-radius: 100px;
+  z-index: 30;
+}
+
+.isl::after {
+  content: "";
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 7px;
+  height: 7px;
+  background: radial-gradient(circle at 35% 35%, #1a1f2e, #050810);
+  border-radius: 50%;
+}
+
+/* Status */
+.sbar {
+  padding: 16px 24px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 50px;
+  position: relative;
+  z-index: 20;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ios-pri);
+}
+
+.sbar-r { display: flex; gap: 4px; align-items: center; }
+.sbar-r svg { width: 15px; height: 11px; }
+
+/* Content */
+.app {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 14px 96px;
+  scrollbar-width: none;
+}
+
+.app::-webkit-scrollbar { display: none; }
+
+/* Tab views — only active visible */
+.tab-view { display: none; }
+.tab-view.active { display: block; }
+
+/* ─── iOS Tab Bar ─── */
+.tbar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: rgba(249,249,249,0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 0.5px solid var(--ios-sep);
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-start;
+  padding-top: 7px;
+  z-index: 25;
+}
+
+.tb {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  cursor: pointer;
+  width: 50px;
+}
+
+.tb svg { width: 20px; height: 20px; stroke-width: 1.6; color: var(--ios-lbl); transition: color 0.2s; }
+.tb .tl { font-size: 10px; font-weight: 500; color: var(--ios-lbl); transition: color 0.2s; letter-spacing: -0.01em; }
+.tb.on svg { color: var(--dawn); }
+.tb.on .tl { color: var(--dawn); }
+
+/* accent overrides per case */
+.case-mist .tb.on svg { color: var(--mist); }
+.case-mist .tb.on .tl { color: var(--mist); }
+.case-blossom .tb.on svg { color: var(--blossom); }
+.case-blossom .tb.on .tl { color: var(--blossom); }
+.case-sage .tb.on svg { color: var(--sage); }
+.case-sage .tb.on .tl { color: var(--sage); }
+
+/* Home indicator */
+.hind {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 110px;
+  height: 4px;
+  background: rgba(0,0,0,0.12);
+  border-radius: 100px;
+  z-index: 30;
+}
+
+/* ─── APP BACKGROUNDS ─── */
+.bg-dawn {
+  background:
+    radial-gradient(at 20% 0%, rgba(253,231,217,0.6) 0%, transparent 50%),
+    radial-gradient(at 80% 15%, rgba(250,201,184,0.4) 0%, transparent 50%),
+    var(--ios-bg);
+}
+
+.bg-mist {
+  background:
+    radial-gradient(at 20% 10%, rgba(230,238,246,0.6) 0%, transparent 50%),
+    radial-gradient(at 80% 30%, rgba(214,224,234,0.4) 0%, transparent 50%),
+    #F4F6F8;
+}
+
+.bg-blossom {
+  background:
+    radial-gradient(at 30% 10%, rgba(255,245,247,0.6) 0%, transparent 50%),
+    radial-gradient(at 70% 30%, rgba(253,226,232,0.4) 0%, transparent 50%),
+    var(--ios-bg);
+}
+
+.bg-sage {
+  background:
+    radial-gradient(at 30% 10%, rgba(243,246,242,0.6) 0%, transparent 50%),
+    radial-gradient(at 70% 40%, rgba(220,230,216,0.4) 0%, transparent 50%),
+    #F5F6F3;
+}
+
+/* ─── SHARED ATOMS ─── */
+.hdr {
+  padding: 8px 2px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.hdr-sub { font-size: 12px; color: var(--ios-lbl); letter-spacing: -0.01em; margin-bottom: 2px; }
+
+.hdr-title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  color: var(--ios-pri);
+  line-height: 1.15;
+}
+
+.hdr-title .a { color: var(--dawn); }
+.hdr-title .am { color: var(--mist); }
+.hdr-title .ab { color: var(--blossom); }
+.hdr-title .as { color: var(--sage); }
+
+.hdr-right { text-align: right; }
+
+.hdr-badge {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.hdr-badge-sub { font-size: 10px; color: var(--ios-lbl); margin-top: 2px; }
+
+/* Card */
+.c {
+  background: var(--ios-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 14px;
+  margin-bottom: 8px;
+  overflow: hidden;
+  transition: transform 0.25s ease;
+}
+
+.c:hover { transform: scale(1.01); }
+.c-in { padding: 12px 14px; }
+
+.c.pri { background: linear-gradient(135deg, #D4634F 0%, #E89580 55%, #EEB3A0 100%); color: #fff; }
+.c.pri-mist { background: linear-gradient(135deg, #56789A 0%, #819DB8 55%, #B1C4D6 100%); color: #fff; }
+.c.pri-blossom { background: linear-gradient(135deg, #C14B73 0%, #E06F92 55%, #F29CB5 100%); color: #fff; }
+.c.pri-sage { background: linear-gradient(135deg, #4E7049 0%, #6D8F68 55%, #91AE8B 100%); color: #fff; }
+
+.c-ey {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ios-lbl);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-bottom: 5px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.c.pri .c-ey, .c.pri-mist .c-ey, .c.pri-blossom .c-ey, .c.pri-sage .c-ey { color: rgba(255,255,255,0.7); }
+
+.c-bdg {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 5px;
+  font-weight: 600;
+}
+
+.c-val {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--ios-pri);
+  line-height: 1.15;
+  margin-bottom: 2px;
+}
+
+.c.pri .c-val, .c.pri-mist .c-val, .c.pri-blossom .c-val, .c.pri-sage .c-val { color: #fff; }
+
+.c-det {
+  font-size: 12px;
+  color: var(--ios-lbl);
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+}
+
+.c.pri .c-det, .c.pri-mist .c-det, .c.pri-blossom .c-det, .c.pri-sage .c-det { color: rgba(255,255,255,0.85); }
+
+/* ─── CALENDAR ─── */
+.cal { padding: 12px 10px 8px; }
+
+.cal-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.cal-h span { font-size: 14px; font-weight: 600; letter-spacing: -0.02em; }
+.cal-arrows { display: flex; gap: 10px; }
+
+.cal-ab {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(60,60,67,0.06);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; color: var(--ios-lbl); border: none; cursor: pointer;
+}
+
+.cal-wk {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--ios-lbl2);
+  margin-bottom: 3px;
+}
+
+.cal-g {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+}
+
+.cd {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 11px;
+  color: var(--ios-pri);
+  position: relative;
+  cursor: default;
+}
+
+.cd.p { color: var(--ios-lbl2); }
+.cd.t { background: var(--dawn); color: #fff; font-weight: 700; }
+.cd.hl { background: rgba(212,99,79,0.12); color: var(--dawn); font-weight: 600; }
+
+.cd .dots { position: absolute; bottom: 1px; display: flex; gap: 1.5px; }
+.cd .dots .d { width: 3px; height: 3px; border-radius: 50%; }
+.d.sh { background: var(--blossom); }
+.d.vi { background: var(--mist); }
+.d.ck { background: var(--sage); }
+
+/* ─── TIMELINE ─── */
+.tl-card { padding: 12px 14px; }
+.tl-t { font-size: 12px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 10px; }
+
+.tl-r { display: flex; gap: 8px; align-items: flex-start; padding-bottom: 10px; }
+.tl-r:last-child { padding-bottom: 0; }
+
+.tl-tc { width: 34px; flex-shrink: 0; text-align: right; padding-top: 1px; }
+.tl-tv { font-size: 11px; font-weight: 600; }
+.tl-ta { font-size: 8px; color: var(--ios-lbl); }
+
+.tl-ind { display: flex; flex-direction: column; align-items: center; padding-top: 2px; }
+
+.tl-d {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--dawn);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px var(--dawn);
+  flex-shrink: 0;
+}
+
+.tl-d.done { background: var(--sage); box-shadow: 0 0 0 1px var(--sage); }
+.tl-d.bl { background: var(--blossom); box-shadow: 0 0 0 1px var(--blossom); }
+.tl-d.mi { background: var(--mist); box-shadow: 0 0 0 1px var(--mist); }
+
+.tl-ln { width: 1.5px; flex: 1; min-height: 16px; background: var(--ios-sep); margin-top: 2px; }
+.tl-r:last-child .tl-ln { display: none; }
+
+.tl-info { flex: 1; }
+.tl-nm { font-size: 13px; font-weight: 500; letter-spacing: -0.01em; line-height: 1.2; }
+.tl-sb { font-size: 11px; color: var(--ios-lbl); margin-top: 1px; }
+
+.tl-st {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 5px;
+  margin-top: 3px;
+}
+
+.tl-st.dn { background: rgba(109,143,104,0.12); color: var(--sage); }
+.tl-st.up { background: rgba(224,111,146,0.1); color: var(--blossom); }
+.tl-st.mi { background: rgba(129,157,184,0.1); color: var(--mist); }
+
+/* ─── MOOD ─── */
+.mood { padding: 12px 14px; }
+.mood-t { font-size: 12px; font-weight: 600; margin-bottom: 8px; }
+
+.mood-opts { display: flex; gap: 5px; }
+
+.mood-c {
+  flex: 1; padding: 7px 0; text-align: center;
+  background: rgba(60,60,67,0.04); border-radius: 8px;
+  font-size: 10px; color: var(--ios-lbl);
+  cursor: pointer; transition: all 0.2s; border: 1.5px solid transparent;
+}
+
+.mood-c:hover { background: rgba(212,99,79,0.06); border-color: rgba(212,99,79,0.15); }
+.mood-c.sel { background: rgba(212,99,79,0.1); color: var(--dawn); font-weight: 600; border-color: var(--dawn); }
+
+.mood-c .em { font-size: 16px; display: block; margin-bottom: 2px; }
+
+/* ─── PARTNER BAR ─── */
+.pbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.pbar:hover { background: rgba(60,60,67,0.02); }
+
+.pav {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--blossom), #F29CB5);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 600; color: #fff; flex-shrink: 0;
+}
+
+.ptx { flex: 1; }
+.ptx-n { font-size: 13px; font-weight: 500; }
+.ptx-s { font-size: 10px; color: var(--ios-lbl); }
+
+.psync { font-size: 9px; font-weight: 600; color: var(--sage); background: rgba(109,143,104,0.1); padding: 2px 6px; border-radius: 5px; }
+
+.pchv { color: var(--ios-lbl2); font-size: 14px; }
+
+/* ─── CHECKLIST ─── */
+.chk { padding: 12px 14px; }
+.chk-t { font-size: 12px; font-weight: 600; margin-bottom: 8px; }
+
+.chk-i {
+  display: flex; gap: 8px; align-items: center;
+  padding: 6px 0; border-bottom: 1px solid rgba(60,60,67,0.08);
+  font-size: 12px; color: var(--ios-pri); letter-spacing: -0.01em;
+}
+
+.chk-i:last-child { border-bottom: none; }
+
+.chk-b {
+  width: 18px; height: 18px; border-radius: 5px;
+  border: 1.5px solid var(--ios-lbl2); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.2s;
+}
+
+.chk-b.ck { background: var(--mist); border-color: var(--mist); }
+.chk-b.ck::after { content: "✓"; color: #fff; font-size: 10px; font-weight: 700; }
+
+.chk-b:hover { border-color: var(--mist); }
+
+/* ─── PET PROFILE ─── */
+.pet-p {
+  display: flex; gap: 10px; align-items: center;
+  padding: 12px 14px;
+}
+
+.pet-av {
+  width: 42px; height: 42px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--blossom-s), var(--blossom));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
+}
+
+.pet-info { flex: 1; }
+.pet-nm { font-size: 14px; font-weight: 600; }
+.pet-dt { font-size: 10px; color: var(--ios-lbl); }
+
+.pet-st {
+  font-size: 9px; padding: 3px 7px; border-radius: 5px;
+  background: rgba(224,111,146,0.1); color: var(--blossom); font-weight: 600;
+}
+
+/* ─── LOG BARS ─── */
+.logb { padding: 12px 14px; }
+.logb-t { font-size: 11px; font-weight: 600; margin-bottom: 8px; color: var(--ios-pri); }
+
+.logr { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+.logr:last-child { margin-bottom: 0; }
+
+.log-l { font-size: 10px; color: var(--ios-lbl); width: 28px; flex-shrink: 0; }
+.log-trk { flex: 1; height: 5px; background: rgba(60,60,67,0.06); border-radius: 3px; overflow: hidden; }
+.log-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+.log-fill.bl { background: var(--blossom); }
+.log-fill.sg { background: var(--sage); }
+.log-v { font-size: 9px; color: var(--ios-lbl); width: 24px; text-align: right; }
+
+/* ─── GRAPH ─── */
+.grph { padding: 12px 14px; }
+.grph-t { font-size: 11px; font-weight: 600; margin-bottom: 8px; display: flex; justify-content: space-between; }
+
+.grph-bars { height: 44px; display: flex; align-items: flex-end; gap: 3px; padding-bottom: 3px; border-bottom: 1px solid rgba(60,60,67,0.08); }
+.gb { flex: 1; border-radius: 2px 2px 0 0; }
+.gb.l { height: 10px; background: var(--sage-s); }
+.gb.m { height: 24px; background: var(--dawn-s); }
+.gb.h { height: 40px; background: var(--dawn); }
+.gb.n { height: 3px; background: rgba(60,60,67,0.1); }
+.gb.td { height: 16px; background: var(--sage); }
+
+.grph-lbl { display: flex; justify-content: space-between; font-size: 7px; color: var(--ios-lbl2); padding-top: 2px; }
+
+/* ─── HEATMAP ─── */
+.hmap { padding: 12px 14px; }
+.hmap-t { font-size: 11px; font-weight: 600; margin-bottom: 6px; }
+
+.hmap-g { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.hc { aspect-ratio: 1; border-radius: 3px; }
+.hc.h0 { background: rgba(109,143,104,0.08); }
+.hc.h1 { background: rgba(212,99,79,0.15); }
+.hc.h2 { background: rgba(212,99,79,0.35); }
+.hc.h3 { background: rgba(212,99,79,0.6); }
+.hc.ht { border: 1.5px solid var(--sage); background: rgba(109,143,104,0.08); }
+.hc.hf { background: rgba(60,60,67,0.03); }
+
+.hmap-leg { display: flex; gap: 3px; align-items: center; margin-top: 4px; font-size: 7px; color: var(--ios-lbl2); }
+.hmap-leg .sq { width: 7px; height: 7px; border-radius: 1.5px; }
+
+/* ─── CAPTION ─── */
+.cap { text-align: center; max-width: 260px; }
+
+.cap-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: 'Instrument Serif', serif; font-style: italic;
+  font-size: 12px; color: var(--dawn); margin-bottom: 6px;
+}
+
+.cap-tag::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--dawn); }
+.cap-tag.mi { color: var(--mist); }
+.cap-tag.mi::before { background: var(--mist); }
+.cap-tag.bl { color: var(--blossom); }
+.cap-tag.bl::before { background: var(--blossom); }
+.cap-tag.sg { color: var(--sage); }
+.cap-tag.sg::before { background: var(--sage); }
+
+.cap h4 { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.3; margin-bottom: 4px; word-break: keep-all; }
+.cap .st { font-family: 'Instrument Serif', serif; font-style: italic; font-size: 12px; color: var(--ios-lbl); margin-bottom: 8px; }
+.cap p { font-size: 12.5px; line-height: 1.6; color: var(--ios-lbl); letter-spacing: -0.01em; word-break: keep-all; }
+.cap p strong { color: var(--ios-pri); font-weight: 600; }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 1200px) { .cases-grid { grid-template-columns: repeat(2, 1fr); gap: 48px; } }
+@media (max-width: 640px) {
+  .cases-grid { grid-template-columns: 1fr; gap: 56px; }
+  .device { width: 300px; height: 650px; }
+}
+
+@media print {
+  html, body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- ORBIT logo gradient definitions -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="orbit-grad-1" x1="0" y1="0" x2="200" y2="200">
+      <stop stop-color="#E06F92"/>
+      <stop offset="1" stop-color="#D4634F"/>
+    </linearGradient>
+    <linearGradient id="orbit-grad-2" x1="0" y1="0" x2="200" y2="200">
+      <stop stop-color="#D4634F"/>
+      <stop offset="1" stop-color="#6D8F68"/>
+    </linearGradient>
+    <linearGradient id="orbit-grad-3" x1="0" y1="0" x2="200" y2="200">
+      <stop stop-color="#6D8F68"/>
+      <stop offset="1" stop-color="#819DB8"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<!-- ═══════════════ NAV ═══════════════ -->
+<nav>
+  <div class="nav-brand">
+    <svg viewBox="0 0 200 200" fill="none">
+      <circle cx="100" cy="100" r="82" stroke="url(#orbit-grad-1)" stroke-width="6" fill="none" 
+              stroke-dasharray="490 25" stroke-linecap="round" transform="rotate(-30 100 100)"/>
+      <circle cx="100" cy="100" r="56" stroke="url(#orbit-grad-2)" stroke-width="6" fill="none" 
+              stroke-dasharray="330 20" stroke-linecap="round" transform="rotate(60 100 100)"/>
+      <circle cx="100" cy="100" r="30" stroke="url(#orbit-grad-3)" stroke-width="6" fill="none" 
+              stroke-dasharray="170 15" stroke-linecap="round" transform="rotate(-15 100 100)"/>
+      <circle cx="100" cy="100" r="9" fill="#1A1614"/>
+    </svg>
+    <span class="nav-brand-text">MODU<span class="dot">.</span></span>
+  </div>
+  <a href="#waitlist" class="nav-cta">프리뷰 신청</a>
+</nav>
+
+<!-- ═══════════════ HERO ═══════════════ -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-grid">
+      
+      <div>
+        <div class="hero-label">Health & care companion · 2026 private preview</div>
+        
+        <h1>
+          건강의 시간을,<br>
+          <strong>혼자 보내지 않도록.</strong>
+        </h1>
+        
+        <p class="hero-tagline">Listen to your life.</p>
+        
+        <p class="hero-desc">
+          MODU는 대화로 당신의 상황을 이해하고, 당신만을 위한 건강·돌봄 동반자가 됩니다. 시험관, 항암, 만성질환, 가족 돌봄, 반려동물까지 — 어떤 시간이든, 당신의 모양에 맞게 함께 지나갑니다.
+        </p>
+        
+        <div class="hero-actions">
+          <a href="#waitlist" class="btn btn-primary">
+            프리뷰에 참여하기
+            <span class="arrow">→</span>
+          </a>
+          <a href="#how" class="btn btn-ghost">
+            어떻게 작동하나요
+          </a>
+        </div>
+      </div>
+      
+      <!-- Hero phone with INTERACTIVE presets -->
+      <div class="hero-phone-wrap">
+        <div class="phone">
+          <div class="phone-inner-frame">
+            <div class="phone-screen">
+              <div class="phone-notch"></div>
+              <div class="phone-status">
+                <span class="time-display">9:41</span>
+                <div class="phone-status-icons">
+                  <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 11h2v3H1zm3-2h2v5H4zm3-3h2v8H7zm3 3h2v5h-2zm3-2h2v7h-2z"/></svg>
+                  <svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="5"/></svg>
+                  <svg viewBox="0 0 20 12" fill="currentColor"><rect x="1" y="2" width="16" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1"/><rect x="3" y="4" width="12" height="4" rx="1"/></svg>
+                </div>
+              </div>
+              <div class="phone-content">
+                <div class="phone-header">
+                  <div class="phone-greeting">
+                    처음 뵙겠습니다,<br>
+                    <span class="em">반가워요.</span>
+                  </div>
+                  <div class="phone-date">
+                    <strong>Day 1</strong>
+                    FORMATION
+                  </div>
+                </div>
+                
+                <div class="phone-msgs" id="hero-msgs">
+                  <div class="phone-msg ai" id="hero-ai-msg">
+                    어떤 일로 MODU를 찾아주셨어요?
+                  </div>
+                </div>
+                
+                <div class="phone-presets" id="hero-presets">
+                  <div class="phone-preset active" data-preset="1" data-response="시험관 치료를 함께 해드릴게요. 첫 회차이신가요?">
+                    <span><span class="num">1.</span>시험관을 하고 있어요</span>
+                    <span class="arr">→</span>
+                  </div>
+                  <div class="phone-preset" data-preset="2" data-response="치료 과정을 함께 정리해드릴게요. 어떤 항암 중이세요?">
+                    <span><span class="num">2.</span>항암 치료 중이에요</span>
+                    <span class="arr">→</span>
+                  </div>
+                  <div class="phone-preset" data-preset="3" data-response="돌봄도 누군가의 시간이에요. 누구를 돌보고 계세요?">
+                    <span><span class="num">3.</span>가족·반려동물을 돌보고 있어요</span>
+                    <span class="arr">→</span>
+                  </div>
+                  <div class="phone-preset" data-preset="4" data-response="천천히 말씀해주세요. 어떤 시간을 지나고 계세요?">
+                    <span><span class="num">4.</span>다른 상황이에요</span>
+                    <span class="arr">→</span>
+                  </div>
+                </div>
+                
+                <div class="phone-input">
+                  <span>직접 말씀하셔도 돼요…</span>
+                  <div class="phone-input-actions">
+                    <div class="phone-input-btn mic">
+                      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><path d="M12 2a3 3 0 00-3 3v7a3 3 0 006 0V5a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/></svg>
+                    </div>
+                    <div class="phone-input-btn send">
+                      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ FOR WHOM ═══════════════ -->
+<section class="whom">
+  <div class="container">
+    <div class="section-label">Who it's for · 누구를 위한 것인가</div>
+    <h2 class="section-head">
+      건강의 시간을 <strong>지나고 있는</strong><br>
+      모든 존재를 위해.
+    </h2>
+    <p class="section-sub">
+      특정 질병을 위한 앱이 아닙니다.<br>
+      당신과 당신이 사랑하는 모두 — 사람이든, 반려동물이든.
+    </p>
+    
+    <div class="personas">
+      <div class="persona">
+        <div class="persona-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+        </div>
+        <div class="persona-body">
+          <div class="persona-tag">— 당사자</div>
+          <h3>시험관, 항암, 만성질환을<br>지나고 있는 분</h3>
+          <p>일정이 자주 바뀌고, 챙겨야 할 약이 많고, 감정이 흔들리는 시간. 병원이 준 종이 한 장이 아니라, 당신의 시간을 함께 기억하는 동반자가 필요할 때.</p>
+        </div>
+      </div>
+      
+      <div class="persona">
+        <div class="persona-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        </div>
+        <div class="persona-body">
+          <div class="persona-tag">— 보호자 · 가족</div>
+          <h3>가족의 건강을<br>함께 챙기는 분</h3>
+          <p>배우자의 시술을, 부모님의 병원을, 아이의 치료를 함께 따라가야 하지만 무엇을 물어야 할지 모를 때. MODU는 당신에게 필요한 만큼만 전합니다.</p>
+        </div>
+      </div>
+      
+      <div class="persona">
+        <div class="persona-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5c1.5 0 2.5 1.5 2.5 3s-1 3-2.5 3-2.5-1.5-2.5-3 1-3 2.5-3z"/><path d="M5 9c1 0 1.8 1 1.8 2.2s-.8 2.2-1.8 2.2-1.8-1-1.8-2.2.8-2.2 1.8-2.2z"/><path d="M17 9c1 0 1.8 1 1.8 2.2s-.8 2.2-1.8 2.2-1.8-1-1.8-2.2.8-2.2 1.8-2.2z"/><path d="M11 13c-3 0-5 2.5-5 5 0 1.5 1 2.5 2.5 2.5h5c1.5 0 2.5-1 2.5-2.5 0-2.5-2-5-5-5z"/></svg>
+        </div>
+        <div class="persona-body">
+          <div class="persona-tag">— 반려인</div>
+          <h3>반려동물의 건강을<br>지키고 싶은 분</h3>
+          <p>강아지의 약 시간, 고양이의 정기 검진, 노령견의 컨디션 변화. 사람의 의료 앱이 담지 못하는 우리 가족의 시간. 수의사와의 소통도 함께 정리됩니다.</p>
+        </div>
+      </div>
+      
+      <div class="persona">
+        <div class="persona-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+        </div>
+        <div class="persona-body">
+          <div class="persona-tag">— 기록하는 사람</div>
+          <h3>건강의 흐름을<br>놓치고 싶지 않은 분</h3>
+          <p>병원을 바꿔도, 챕터가 바뀌어도, 처음부터 다시 설명하고 싶지 않을 때. 내 건강의 서사가 한 곳에 차곡차곡 쌓이기를 바랄 때.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ HOW IT WORKS ═══════════════ -->
+<section class="how" id="how">
+  <div class="container">
+    <div class="section-label">How it works · 어떻게 작동하나요</div>
+    <h2 class="section-head">
+      세 단계로,<br>
+      <span class="em">당신만의 MODU</span>가 만들어집니다.
+    </h2>
+    <p class="section-sub">
+      복잡한 설정은 없습니다.<br>
+      대화 한 번으로, 앱은 당신을 알아갑니다.
+    </p>
+    
+    <div class="steps-grid">
+      
+      <!-- STEP 1 — Formation -->
+      <div class="step">
+        <div class="step-phone-wrap">
+          <div class="phone small">
+            <div class="phone-inner-frame">
+              <div class="phone-screen">
+                <div class="phone-notch"></div>
+                <div class="phone-status">
+                  <span class="time-display">9:41</span>
+                  <div class="phone-status-icons">
+                    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 11h2v3H1zm3-2h2v5H4zm3-3h2v8H7zm3 3h2v5h-2zm3-2h2v7h-2z"/></svg>
+                    <svg viewBox="0 0 20 12" fill="currentColor"><rect x="1" y="2" width="16" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1"/><rect x="3" y="4" width="12" height="4" rx="1"/></svg>
+                  </div>
+                </div>
+                <div class="phone-content">
+                  <div class="phone-msgs">
+                    <div class="phone-msg ai">세 번째시면 많이 지치셨을 것 같아요.</div>
+                    <div class="phone-msg ai">지난번에 가장 힘드셨던 부분은 어떤 거였어요?</div>
+                  </div>
+                  <div class="phone-presets">
+                    <div class="phone-preset"><span><span class="num">1.</span>신체적으로</span></div>
+                    <div class="phone-preset active"><span><span class="num">2.</span>감정적으로</span><span class="arr">→</span></div>
+                    <div class="phone-preset"><span><span class="num">3.</span>혼자라는 느낌</span></div>
+                    <div class="phone-preset"><span><span class="num">4.</span>경제적으로</span></div>
+                  </div>
+                  <div class="phone-input">
+                    <span>직접 말씀하셔도 돼요…</span>
+                    <div class="phone-input-actions">
+                      <div class="phone-input-btn mic">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><path d="M12 2a3 3 0 00-3 3v7a3 3 0 006 0V5a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/></svg>
+                      </div>
+                      <div class="phone-input-btn send">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="step-copy">
+          <div class="step-num">i</div>
+          <h3>대화로 시작합니다</h3>
+          <p>긴 양식을 채우지 않습니다. 질문은 간결하고, 답은 선택지로 충분합니다. 말로 답해도, 글로 답해도 됩니다. 5분이면 당신을 위한 MODU가 형성됩니다.</p>
+        </div>
+      </div>
+      
+      <!-- STEP 2 — Dynamic home -->
+      <div class="step">
+        <div class="step-phone-wrap">
+          <div class="phone small">
+            <div class="phone-inner-frame">
+              <div class="phone-screen">
+                <div class="phone-notch"></div>
+                <div class="phone-status">
+                  <span class="time-display">7:28</span>
+                  <div class="phone-status-icons">
+                    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 11h2v3H1zm3-2h2v5H4zm3-3h2v8H7zm3 3h2v5h-2zm3-2h2v7h-2z"/></svg>
+                    <svg viewBox="0 0 20 12" fill="currentColor"><rect x="1" y="2" width="16" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1"/><rect x="3" y="4" width="12" height="4" rx="1"/></svg>
+                  </div>
+                </div>
+                <div class="phone-content">
+                  <div class="phone-header">
+                    <div class="phone-greeting" style="font-size: 14px;">
+                      긴장되는<br>
+                      <span class="em">아침이에요.</span>
+                    </div>
+                    <div class="phone-date">
+                      <strong>D-1</strong>
+                      MAY 6
+                    </div>
+                  </div>
+                  
+                  <div class="widget primary">
+                    <div class="widget-label"><span>내일</span><span class="time">09:00</span></div>
+                    <div class="widget-main">
+                      <span class="widget-big">배아 이식</span>
+                      아침 식사는 7시까지
+                    </div>
+                  </div>
+                  
+                  <div class="widget">
+                    <div class="widget-label"><span>잠들기 전에</span><span>3가지</span></div>
+                    <div class="widget-main">따뜻한 물 · 편한 옷 ·<br>준님께 한마디</div>
+                  </div>
+                  
+                  <div class="widget sage">
+                    <div class="widget-label"><span>지금 기분</span></div>
+                    <div class="widget-main">담담 · 조금 떨림</div>
+                  </div>
+                  
+                  <div class="widget collapsed">
+                    <div class="widget-label"><span>복약 알림</span><span>22:00</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="step-copy">
+          <div class="step-num">ii</div>
+          <h3>하루에 맞춰 변합니다</h3>
+          <p>시술 전날의 홈 화면과 평온한 수요일의 홈 화면은 다릅니다. MODU는 오늘 당신에게 가장 중요한 것을 맨 위에 조용히 올려둡니다.</p>
+        </div>
+      </div>
+      
+      <!-- STEP 3 — Partner share -->
+      <div class="step">
+        <div class="step-phone-wrap">
+          <div class="phone small">
+            <div class="phone-inner-frame">
+              <div class="phone-screen">
+                <div class="phone-notch"></div>
+                <div class="phone-status">
+                  <span class="time-display">22:14</span>
+                  <div class="phone-status-icons">
+                    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 11h2v3H1zm3-2h2v5H4zm3-3h2v8H7zm3 3h2v5h-2zm3-2h2v7h-2z"/></svg>
+                    <svg viewBox="0 0 20 12" fill="currentColor"><rect x="1" y="2" width="16" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1"/><rect x="3" y="4" width="12" height="4" rx="1"/></svg>
+                  </div>
+                </div>
+                <div class="phone-content">
+                  <div class="phone-header">
+                    <div class="phone-greeting" style="font-size: 14px;">
+                      준님께<br>
+                      <span class="em">전해드려요.</span>
+                    </div>
+                    <div class="phone-date">
+                      <strong>PARTNER</strong>
+                      EVENING
+                    </div>
+                  </div>
+                  
+                  <div class="partner-card">
+                    <div class="partner-top">
+                      <div class="partner-avatar">J</div>
+                      <div>
+                        <div class="partner-name">준 · 남편</div>
+                        <div class="partner-role">Primary caregiver</div>
+                      </div>
+                    </div>
+                    <div class="partner-msg">"오늘 힘든 아침이 있었대요. 말로 꺼내기 어려우면, 그냥 옆에 있어주면 돼요."</div>
+                    <div class="partner-actions">
+                      <div class="partner-action primary">지금 전달</div>
+                      <div class="partner-action">편집</div>
+                      <div class="partner-action">나중에</div>
+                    </div>
+                  </div>
+                  
+                  <div class="widget sage">
+                    <div class="widget-label"><span>오늘 요약</span><span>MODU</span></div>
+                    <div class="widget-main">감정 체크 2번 ·<br>주사 완료 · 물 1.2L</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="step-copy">
+          <div class="step-num">iii</div>
+          <h3>옆 사람과 이어집니다</h3>
+          <p>오늘 하루를 보호자에게 전할 때, 처음부터 설명하지 않아도 됩니다. MODU가 문장을 먼저 준비해드립니다. 당신은 보내거나, 수정하거나, 그대로 닫아두면 됩니다.</p>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ WHY ═══════════════ -->
+<section class="why">
+  <div class="container">
+    <div class="section-label">Why now · 왜 지금 필요한가</div>
+    <h2 class="section-head">
+      건강 앱은 많습니다.<br>
+      그런데 왜 <strong>여전히 답답할까요?</strong>
+    </h2>
+    <p class="section-sub">
+      지금까지의 앱들이 놓치고 있는 것들.
+    </p>
+    
+    <div class="pains">
+      <div class="pain">
+        <div class="pain-q">"왜 모두에게 같은 질문을 할까?"</div>
+        <div class="pain-a">세 번째 시험관과 처음 시험관은 같은 사람이 아닙니다. <strong>같은 템플릿을 주는 것은 개인화가 아닙니다.</strong></div>
+      </div>
+      
+      <div class="pain">
+        <div class="pain-q">"왜 끝나면 앱을 지워야 할까?"</div>
+        <div class="pain-a">한 챕터가 끝난다고 건강의 시간이 끝나지 않습니다. <strong>당신의 서사는 이어져야 합니다.</strong></div>
+      </div>
+      
+      <div class="pain">
+        <div class="pain-q">"왜 옆 사람은 늘 뒷전일까?"</div>
+        <div class="pain-a">거의 모든 건강의 시간에는 누군가가 옆에 있습니다. 사람이든, 반려동물이든. <strong>돌봄 관계가 기본값이어야 합니다.</strong></div>
+      </div>
+      
+      <div class="pain">
+        <div class="pain-q">"왜 지친 사람에게 양식을 채우라 할까?"</div>
+        <div class="pain-a">힘든 시간일수록 입력의 허들이 낮아야 합니다. <strong>선택지로, 목소리로, 충분히 전해질 수 있어야 합니다.</strong></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ WHAT SHIFTS — with 4 iOS Cases ═══════════════ -->
+<section class="shifts">
+  <div class="container">
+    <div class="section-label">What shifts · 무엇이 달라지는가</div>
+    <h2 class="section-head">
+      MODU는 답을 끼워 맞추지 않습니다.<br>
+      <span class="em">당신의 모양대로 빚어집니다.</span>
+    </h2>
+    <p class="shifts-quote">
+      "Listen to your life — and your screen will follow."
+    </p>
+    
+    <!-- Compact pivots -->
+    <div class="pivots-row">
+      <div class="pivot">
+        <div class="pivot-side before">
+          <div class="pivot-side-label">기존</div>
+          <div class="pivot-side-text">질병 카테고리별로<br>정해진 템플릿</div>
+        </div>
+        <div class="pivot-side after">
+          <div class="pivot-side-label">MODU</div>
+          <div class="pivot-side-text">대화로 형성되는<br>당신만의 동반자</div>
+        </div>
+      </div>
+      
+      <div class="pivot">
+        <div class="pivot-side before">
+          <div class="pivot-side-label">기존</div>
+          <div class="pivot-side-text">모두에게<br>같은 홈 화면</div>
+        </div>
+        <div class="pivot-side after">
+          <div class="pivot-side-label">MODU</div>
+          <div class="pivot-side-text">오늘의 상황에 맞춰<br>재배치되는 홈</div>
+        </div>
+      </div>
+      
+      <div class="pivot">
+        <div class="pivot-side before">
+          <div class="pivot-side-label">기존</div>
+          <div class="pivot-side-text">빈 입력창을<br>채워야 하는 부담</div>
+        </div>
+        <div class="pivot-side after">
+          <div class="pivot-side-label">MODU</div>
+          <div class="pivot-side-text">선택지, 음성, 자유 답변<br>무엇이든 가능</div>
+        </div>
+      </div>
+      
+      <div class="pivot">
+        <div class="pivot-side before">
+          <div class="pivot-side-label">기존</div>
+          <div class="pivot-side-text">치료가 끝나면<br>사라지는 앱</div>
+        </div>
+        <div class="pivot-side after">
+          <div class="pivot-side-label">MODU</div>
+          <div class="pivot-side-text">챕터가 바뀌어도<br>이어지는 서사</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 4 Cases header -->
+    <div style="text-align: center; margin: 100px 0 48px;">
+      <div style="font-family: 'Instrument Serif', serif; font-style: italic; font-size: 14px; color: var(--accent); margin-bottom: 16px;">
+        — Same app, four lives · 같은 앱, 다른 네 사람
+      </div>
+      <h3 style="font-family: var(--korean); font-size: clamp(26px, 3.5vw, 36px); font-weight: 300; letter-spacing: -0.04em; color: var(--ink-900); line-height: 1.3; word-break: keep-all; margin-bottom: 8px;">
+        같은 수요일 아침, <strong style="font-weight: 700; color: var(--accent);">네 사람의 화면</strong>이 이렇게 다릅니다.
+      </h3>
+      <div style="font-family: 'Instrument Serif', serif; font-style: italic; font-size: 15px; color: var(--ink-500);">
+        All Wednesday, 7:28 AM — same app, formed differently. 탭을 눌러보세요.
+      </div>
+    </div>
+    
+    <!-- Actual 4 iOS Cases -->
+    <div class="cases-grid">
+
+<!-- ════════════════ CASE 01: FERTILITY ════════════════ -->
+<div class="case-col">
+  <div class="device" id="dev1">
+    <div class="sb silent"></div><div class="sb vol-u"></div><div class="sb vol-d"></div><div class="sb pwr"></div>
+    <div class="d-inner"><div class="scr">
+      <div class="isl"></div>
+      <div class="sbar"><span>7:28</span><div class="sbar-r">
+        <svg viewBox="0 0 18 12" fill="var(--ios-pri)"><path d="M1 9h1.5v3H1zm3-2h1.5v5H4zm3-3h1.5v8H7zm3 3h1.5v5h-1.5zm3-2h1.5v7h-1.5z"/></svg>
+        <svg viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="2.5" stroke="var(--ios-pri)" fill="none"/><rect x="2" y="2" width="16" height="8" rx="1.5" fill="var(--ios-pri)"/></svg>
+      </div></div>
+
+      <div class="app bg-dawn" id="app1">
+
+        <!-- TAB: HOME -->
+        <div class="tab-view active" data-tab="home" data-device="1">
+          <div class="hdr">
+            <div><div class="hdr-sub">시험관 3회차</div><div class="hdr-title">내일이 <span class="a">이식</span>이에요.</div></div>
+            <div class="hdr-right"><div class="hdr-badge" style="color:var(--dawn)">D-1</div><div class="hdr-badge-sub">5/7 09:00</div></div>
+          </div>
+
+          <div class="c pri"><div class="c-in">
+            <div class="c-ey"><span>내일 시술</span><span class="c-bdg" style="background:rgba(255,255,255,0.25);color:#fff">09:00</span></div>
+            <div class="c-val">배아 이식</div>
+            <div class="c-det">아침 식사 7시까지 · 금식 후 물만 가능</div>
+          </div></div>
+
+          <div class="c"><div class="cal">
+            <div class="cal-h"><span>2026년 5월</span><div class="cal-arrows"><button class="cal-ab">‹</button><button class="cal-ab">›</button></div></div>
+            <div class="cal-wk"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+            <div class="cal-g">
+              <div class="cd p">1</div><div class="cd p">2</div>
+              <div class="cd p">3<div class="dots"><span class="d sh"></span></div></div>
+              <div class="cd p">4<div class="dots"><span class="d sh"></span></div></div>
+              <div class="cd p">5<div class="dots"><span class="d sh"></span><span class="d ck"></span></div></div>
+              <div class="cd t">6</div>
+              <div class="cd hl">7<div class="dots"><span class="d vi"></span></div></div>
+              <div class="cd">8</div><div class="cd">9</div>
+              <div class="cd">10<div class="dots"><span class="d sh"></span></div></div>
+              <div class="cd">11</div>
+              <div class="cd">12<div class="dots"><span class="d vi"></span></div></div>
+              <div class="cd">13</div>
+              <div class="cd">14<div class="dots"><span class="d ck"></span></div></div>
+            </div>
+          </div></div>
+
+          <div class="c"><div class="tl-card">
+            <div class="tl-t">오늘의 주사 스케줄</div>
+            <div class="tl-r">
+              <div class="tl-tc"><div class="tl-tv">7:30</div><div class="tl-ta">AM</div></div>
+              <div class="tl-ind"><div class="tl-d done"></div><div class="tl-ln"></div></div>
+              <div class="tl-info"><div class="tl-nm">프로게스테론</div><div class="tl-sb">오른팔 · 근육주사</div><span class="tl-st dn">완료 ✓</span></div>
+            </div>
+            <div class="tl-r">
+              <div class="tl-tc"><div class="tl-tv">10:00</div><div class="tl-ta">PM</div></div>
+              <div class="tl-ind"><div class="tl-d bl"></div></div>
+              <div class="tl-info"><div class="tl-nm">에스트라디올</div><div class="tl-sb">왼팔 · 남은 2일</div><span class="tl-st up">예정</span></div>
+            </div>
+          </div></div>
+
+          <div class="c"><div class="mood">
+            <div class="mood-t">지금 기분은?</div>
+            <div class="mood-opts">
+              <div class="mood-c" onclick="this.parentElement.querySelectorAll('.mood-c').forEach(c=>c.classList.remove('sel'));this.classList.add('sel')"><span class="em">😌</span>담담</div>
+              <div class="mood-c sel" onclick="this.parentElement.querySelectorAll('.mood-c').forEach(c=>c.classList.remove('sel'));this.classList.add('sel')"><span class="em">🫨</span>떨림</div>
+              <div class="mood-c" onclick="this.parentElement.querySelectorAll('.mood-c').forEach(c=>c.classList.remove('sel'));this.classList.add('sel')"><span class="em">🤞</span>기대</div>
+              <div class="mood-c" onclick="this.parentElement.querySelectorAll('.mood-c').forEach(c=>c.classList.remove('sel'));this.classList.add('sel')"><span class="em">😢</span>불안</div>
+            </div>
+          </div></div>
+
+          <div class="c"><div class="pbar">
+            <div class="pav">준</div>
+            <div class="ptx"><div class="ptx-n">준 · 남편</div><div class="ptx-s">내일 이식 일정 공유됨</div></div>
+            <div class="psync">동기화 ON</div>
+            <div class="pchv">›</div>
+          </div></div>
+        </div>
+
+        <!-- TAB: CALENDAR (expanded) -->
+        <div class="tab-view" data-tab="cal" data-device="1">
+          <div class="hdr">
+            <div><div class="hdr-sub">달력</div><div class="hdr-title">5월 <span class="a">일정</span></div></div>
+          </div>
+
+          <div class="c"><div class="cal">
+            <div class="cal-h"><span>2026년 5월</span><div class="cal-arrows"><button class="cal-ab">‹</button><button class="cal-ab">›</button></div></div>
+            <div class="cal-wk"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+            <div class="cal-g">
+              <div class="cd p">1</div><div class="cd p">2</div>
+              <div class="cd p">3<div class="dots"><span class="d sh"></span></div></div>
+              <div class="cd p">4<div class="dots"><span class="d sh"></span></div></div>
+              <div class="cd p">5<div class="dots"><span class="d sh"></span><span class="d ck"></span></div></div>
+              <div class="cd t">6</div>
+              <div class="cd hl">7<div class="dots"><span class="d vi"></span></div></div>
+              <div class="cd">8</div><div class="cd">9</div>
+              <div class="cd">10<div class="dots"><span class="d sh"></span></div></div>
+              <div class="cd">11</div>
+              <div class="cd">12<div class="dots"><span class="d vi"></span></div></div>
+              <div class="cd">13</div>
+              <div class="cd">14<div class="dots"><span class="d ck"></span></div></div>
+              <div class="cd">15</div><div class="cd">16</div>
+              <div class="cd">17<div class="dots"><span class="d sh"></span></div></div>
+              <div class="cd">18</div><div class="cd">19</div>
+              <div class="cd">20<div class="dots"><span class="d vi"></span></div></div>
+              <div class="cd">21<div class="dots"><span class="d ck"></span></div></div>
+            </div>
+          </div></div>
+
+          <div class="c"><div class="c-in">
+            <div class="c-ey"><span>범례</span></div>
+            <div style="display:flex;gap:12px;font-size:10px;color:var(--ios-lbl);align-items:center">
+              <span style="display:flex;gap:4px;align-items:center"><span class="d sh" style="display:inline-block"></span>주사</span>
+              <span style="display:flex;gap:4px;align-items:center"><span class="d vi" style="display:inline-block"></span>병원</span>
+              <span style="display:flex;gap:4px;align-items:center"><span class="d ck" style="display:inline-block"></span>감정체크</span>
+            </div>
+          </div></div>
+
+          <div class="c"><div class="c-in">
+            <div class="c-ey"><span>5월 7일 (수)</span><span class="c-bdg" style="background:rgba(212,99,79,0.1);color:var(--dawn)">이식</span></div>
+            <div class="c-val" style="font-size:16px">배아 이식 · 09:00</div>
+            <div class="c-det">서울대병원 생식센터 · 금식 필수</div>
+          </div></div>
+
+          <div class="c"><div class="c-in">
+            <div class="c-ey"><span>5월 12일 (월)</span><span class="c-bdg" style="background:rgba(129,157,184,0.1);color:var(--mist)">외래</span></div>
+            <div class="c-val" style="font-size:16px">착상 확인 · 10:30</div>
+            <div class="c-det">혈액검사(hCG) · 결과 당일</div>
+          </div></div>
+        </div>
+
+      </div>
+
+      <!-- TABBAR -->
+      <div class="tbar">
+        <div class="tb on" data-tab="home" data-device="1" onclick="switchTab(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>
+          <span class="tl">홈</span>
+        </div>
+        <div class="tb" data-tab="cal" data-device="1" onclick="switchTab(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z"/></svg>
+          <span class="tl">달력</span>
+        </div>
+        <div class="tb" data-tab="mood" data-device="1" onclick="switchTab(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg>
+          <span class="tl">감정</span>
+        </div>
+        <div class="tb" data-tab="partner" data-device="1" onclick="switchTab(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/></svg>
+          <span class="tl">파트너</span>
+        </div>
+      </div>
+      <div class="hind"></div>
+    </div></div>
+  </div>
+  <div class="cap">
+    <div class="cap-tag">Case 01 · Fertility</div>
+    <h4>지영 — 시험관 3회차</h4>
+    <div class="st">D-1 transfer · Anxious morning</div>
+    <p><strong>달력·주사 타임라인·감정 퀵로그·부부 동기화</strong>가 하나의 화면에. 탭을 눌러보세요.</p>
+  </div>
+</div>
+
+<!-- ════════════════ CASE 02: CAREGIVER ════════════════ -->
+<div class="case-col">
+  <div class="device case-mist" id="dev2">
+    <div class="sb silent"></div><div class="sb vol-u"></div><div class="sb vol-d"></div><div class="sb pwr"></div>
+    <div class="d-inner"><div class="scr">
+      <div class="isl"></div>
+      <div class="sbar"><span>7:28</span><div class="sbar-r">
+        <svg viewBox="0 0 18 12" fill="var(--ios-pri)"><path d="M1 9h1.5v3H1zm3-2h1.5v5H4zm3-3h1.5v8H7zm3 3h1.5v5h-1.5zm3-2h1.5v7h-1.5z"/></svg>
+        <svg viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="2.5" stroke="var(--ios-pri)" fill="none"/><rect x="2" y="2" width="16" height="8" rx="1.5" fill="var(--ios-pri)"/></svg>
+      </div></div>
+
+      <div class="app bg-mist" id="app2">
+        <div class="tab-view active" data-tab="home" data-device="2">
+          <div class="hdr">
+            <div><div class="hdr-sub">어머니 항암 5차</div><div class="hdr-title">오늘 <span class="am">외래</span> 날이에요.</div></div>
+            <div class="hdr-right"><div class="hdr-badge" style="color:var(--mist)">13:30</div><div class="hdr-badge-sub">서울대병원</div></div>
+          </div>
+
+          <div class="c pri-mist"><div class="c-in">
+            <div class="c-ey"><span>오늘 오후</span><span class="c-bdg" style="background:rgba(255,255,255,0.25);color:#fff">5h 후</span></div>
+            <div class="c-val">항암 외래</div>
+            <div class="c-det">서울대병원 본관 3층 · 혈액검사 포함</div>
+          </div></div>
+
+          <div class="c"><div class="chk">
+            <div class="chk-t">꼭 물어볼 것 · 3가지</div>
+            <div class="chk-i" onclick="this.querySelector('.chk-b').classList.toggle('ck')">
+              <div class="chk-b"></div>
+              구토약 변경 가능한지
+            </div>
+            <div class="chk-i" onclick="this.querySelector('.chk-b').classList.toggle('ck')">
+              <div class="chk-b"></div>
+              다음 CT 일정 확정
+            </div>
+            <div class="chk-i">
+              <div class="chk-b ck"></div>
+              식욕 저하 상담
+            </div>
+          </div></div>
+
+          <div class="c"><div class="c-in">
+            <div class="c-ey"><span>지난 회차 메모</span><span class="c-bdg" style="background:rgba(129,157,184,0.1);color:var(--mist)">4/22</span></div>
+            <div class="c-det" style="color:var(--ios-pri);font-size:12px;line-height:1.5">
+              "백혈구 수치 약간 낮음 → 다음에 재검"<br>
+              약 변경: A → B (위장 부담↓)
+            </div>
+          </div></div>
+
+          <div class="c"><div class="tl-card">
+            <div class="tl-t">치료 히스토리</div>
+            <div class="tl-r">
+              <div class="tl-tc"><div class="tl-tv">4/22</div></div>
+              <div class="tl-ind"><div class="tl-d mi"></div><div class="tl-ln"></div></div>
+              <div class="tl-info"><div class="tl-nm">4차 항암</div><div class="tl-sb">약 변경 · 부작용 경미</div><span class="tl-st dn">완료</span></div>
+            </div>
+            <div class="tl-r">
+              <div class="tl-tc"><div class="tl-tv">5/6</div></div>
+              <div class="tl-ind"><div class="tl-d mi"></div></div>
+              <div class="tl-info"><div class="tl-nm">5차 항암 (오늘)</div><div class="tl-sb">외래 후 주사</div><span class="tl-st mi">오늘</span></div>
+            </div>
+          </div></div>
+
+          <div class="c"><div class="c-in">
+            <div class="c-ey"><span>어머니 약 목록</span><span>4종</span></div>
+            <div class="c-det" style="font-size:11px;color:var(--ios-pri)">
+              젤록스정 · 덱사메타손 · 온단세트론 · 란소프라졸
+            </div>
+          </div></div>
+        </div>
+      </div>
+
+      <div class="tbar">
+        <div class="tb on" data-tab="home" data-device="2" onclick="switchTab(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>
+          <span class="tl">홈</span>
+        </div>
+        <div class="tb" data-tab="chk" data-device="2" onclick="switchTab(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          <span class="tl">체크</span>
+        </div>
+        <div class="tb" data-tab="insight" data-device="2" onclick="switchTab(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M12 2a7 7 0 00-7 7c0 3 2 5.5 2 8.5M12 2a7 7 0 017 7c0 3-2 5.5-2 8.5M10 20.5h4"/></svg>
+          <span class="tl">인사이트</span>
+        </div>
+        <div class="tb" data-tab="share" data-device="2" onclick="switchTab(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/></svg>
+          <span class="tl">공유</span>
+        </div>
+      </div>
+      <div class="hind"></div>
+    </div></div>
+  </div>
+  <div class="cap">
+    <div class="cap-tag mi">Case 02 · Caregiver</div>
+    <h4>민호 — 어머니 항암 보호자</h4>
+    <div class="st">Outpatient day · Hospital run</div>
+    <p><strong>체크리스트·진료 메모·치료 타임라인·약 목록</strong>이 보호자 관점에서 구성됩니다.</p>
+  </div>
+</div>
+
+<!-- ════════════════ CASE 03: PET CARE ════════════════ -->
+<div class="case-col">
+  <div class="device case-blossom" id="dev3">
+    <div class="sb silent"></div><div class="sb vol-u"></div><div class="sb vol-d"></div><div class="sb pwr"></div>
+    <div class="d-inner"><div class="scr">
+      <div class="isl"></div>
+      <div class="sbar"><span>7:28</span><div class="sbar-r">
+        <svg viewBox="0 0 18 12" fill="var(--ios-pri)"><path d="M1 9h1.5v3H1zm3-2h1.5v5H4zm3-3h1.5v8H7zm3 3h1.5v5h-1.5zm3-2h1.5v7h-1.5z"/></svg>
+        <svg viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="2.5" stroke="var(--ios-pri)" fill="none"/><rect x="2" y="2" width="16" height="8" rx="1.5" fill="var(--ios-pri)"/></svg>
+      </div></div>
+
+      <div class="app bg-blossom" id="app3">
+        <div class="tab-view active" data-tab="home" data-device="3">
+          <div class="hdr">
+            <div><div class="hdr-sub">보리 · 골든리트리버</div><div class="hdr-title">보리, <span class="ab">14살.</span></div></div>
+            <div class="hdr-right"><div class="hdr-badge" style="color:var(--blossom)">+12</div><div class="hdr-badge-sub">다음 검진</div></div>
+          </div>
+
+          <div class="c"><div class="pet-p">
+            <div class="pet-av">🐕</div>
+            <div class="pet-info"><div class="pet-nm">보리</div><div class="pet-dt">골든리트리버 · 14세 · 32kg</div></div>
+            <div class="pet-st">관절 관리</div>
+          </div></div>
+
+          <div class="c pri-blossom"><div class="c-in">
+            <div class="c-ey"><span>오늘 저녁</span><span class="c-bdg" style="background:rgba(255,255,255,0.25);color:#fff">22:00</span></div>
+            <div class="c-val">관절약</div>
+            <div class="c-det">반 알 · 식후 · 투약 26일째</div>
+          </div></div>
+
+          <div class="c"><div class="logb">
+            <div class="logb-t">오늘의 기록</div>
+            <div class="logr">
+              <div class="log-l">산책</div>
+              <div class="log-trk"><div class="log-fill sg" style="width:65%"></div></div>
+              <div class="log-v">25분</div>
+            </div>
+            <div class="logr">
+              <div class="log-l">식욕</div>
+              <div class="log-trk"><div class="log-fill bl" style="width:80%"></div></div>
+              <div class="log-v">좋음</div>
+            </div>
+            <div class="logr">
+              <div class="log-l">음수</div>
+              <div class="log-trk"><div class="log-fill sg" style="width:45%"></div></div>
+              <div class="log-v">340ml</div>
+            </div>
+          </div></div>
+
+          <div class="c"><div class="c-in">
+            <div class="c-ey"><span>수의사 메모</span><span class="c-bdg" style="background:rgba(224,111,146,0.1);color:var(--blossom)">5/28 검진</span></div>
+            <div class="c-det" style="color:var(--ios-pri);font-size:12px;line-height:1.5">
+              "관절 상태 양호. 산책 30분 이내 권장.<br>체중 변화 시 바로 내원."
+            </div>
+          </div></div>
+
+          <div class="c"><div class="c-in">
+            <div class="c-ey"><span>컨디션 추이 · 7일</span></div>
+            <div style="display:flex;gap:4px;align-items:flex-end;height:28px;padding-top:6px">
+              <div style="flex:1;height:18px;background:var(--sage-s);border-radius:2px 2px 0 0"></div>
+              <div style="flex:1;height:22px;background:var(--sage-s);border-radius:2px 2px 0 0"></div>
+              <div style="flex:1;height:14px;background:var(--dawn-s);border-radius:2px 2px 0 0"></div>
+              <div style="flex:1;height:20px;background:var(--sage-s);border-radius:2px 2px 0 0"></div>
+              <div style="flex:1;height:24px;background:var(--sage-s);border-radius:2px 2px 0 0"></div>
+              <div style="flex:1;height:22px;background:var(--sage);border-radius:2px 2px 0 0"></div>
+              <div style="flex:1;height:4px;background:rgba(60,60,67,0.06);border-radius:2px 2px 0 0"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:7px;color:var(--ios-lbl2);padding-top:2px">
+              <span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span><span>일</span>
+            </div>
+          </div></div>
+        </div>
+      </div>
+
+      <div class="tbar">
+        <div class="tb on" data-tab="home" data-device="3" onclick="switchTab(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>
+          <span class="tl">홈</span>
+        </div>
+        <div class="tb" data-tab="cal" data-device="3" onclick="switchTab(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z"/></svg>
+          <span class="tl">달력</span>
+        </div>
+        <div class="tb" data-tab="log" data-device="3" onclick="switchTab(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M11 5c1.5 0 2.5 1.5 2.5 3s-1 3-2.5 3-2.5-1.5-2.5-3 1-3 2.5-3z"/><path d="M5 9c1 0 1.8 1 1.8 2.2s-.8 2.2-1.8 2.2-1.8-1-1.8-2.2.8-2.2 1.8-2.2z"/><path d="M17 9c1 0 1.8 1 1.8 2.2s-.8 2.2-1.8 2.2-1.8-1-1.8-2.2.8-2.2 1.8-2.2z"/></svg>
+          <span class="tl">보리</span>
+        </div>
+        <div class="tb" data-tab="set" data-device="3" onclick="switchTab(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33"/></svg>
+          <span class="tl">설정</span>
+        </div>
+      </div>
+      <div class="hind"></div>
+    </div></div>
+  </div>
+  <div class="cap">
+    <div class="cap-tag bl">Case 03 · Pet care</div>
+    <h4>서윤 — 노령견 보리의 보호자</h4>
+    <div class="st">Daily care · Senior dog</div>
+    <p><strong>반려견 프로필·산책/식욕 로그·수의사 메모·컨디션 그래프</strong>. 사람 앱과 구조가 다릅니다.</p>
+  </div>
+</div>
+
+<!-- ════════════════ CASE 04: CHRONIC ════════════════ -->
+<div class="case-col">
+  <div class="device case-sage" id="dev4">
+    <div class="sb silent"></div><div class="sb vol-u"></div><div class="sb vol-d"></div><div class="sb pwr"></div>
+    <div class="d-inner"><div class="scr">
+      <div class="isl"></div>
+      <div class="sbar"><span>7:28</span><div class="sbar-r">
+        <svg viewBox="0 0 18 12" fill="var(--ios-pri)"><path d="M1 9h1.5v3H1zm3-2h1.5v5H4zm3-3h1.5v8H7zm3 3h1.5v5h-1.5zm3-2h1.5v7h-1.5z"/></svg>
+        <svg viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="2.5" stroke="var(--ios-pri)" fill="none"/><rect x="2" y="2" width="16" height="8" rx="1.5" fill="var(--ios-pri)"/></svg>
+      </div></div>
+
+      <div class="app bg-sage" id="app4">
+        <div class="tab-view active" data-tab="home" data-device="4">
+          <div class="hdr">
+            <div><div class="hdr-sub">만성 편두통 5년차</div><div class="hdr-title">평온한 <span class="as">수요일.</span></div></div>
+            <div class="hdr-right"><div class="hdr-badge" style="color:var(--sage)">OK</div><div class="hdr-badge-sub">STEADY</div></div>
+          </div>
+
+          <div class="c pri-sage"><div class="c-in">
+            <div class="c-ey"><span>오늘 컨디션</span><span class="c-bdg" style="background:rgba(255,255,255,0.25);color:#fff">기록됨</span></div>
+            <div class="c-val">보통</div>
+            <div class="c-det">편두통 없음 · 수면 7.5h</div>
+          </div></div>
+
+          <div class="c"><div class="grph">
+            <div class="grph-t"><span>이번 주 두통 강도</span><span style="font-size:9px;color:var(--ios-lbl)">2/7일</span></div>
+            <div class="grph-bars">
+              <div class="gb m"></div>
+              <div class="gb n"></div>
+              <div class="gb h"></div>
+              <div class="gb n"></div>
+              <div class="gb l"></div>
+              <div class="gb td"></div>
+              <div class="gb n" style="opacity:0.4"></div>
+            </div>
+            <div class="grph-lbl"><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span><span>일</span></div>
+          </div></div>
+
+          <div class="c"><div class="hmap">
+            <div class="hmap-t">5월 히트맵</div>
+            <div class="hmap-g">
+              <div class="hc h1"></div><div class="hc h0"></div><div class="hc h3"></div><div class="hc h0"></div><div class="hc h2"></div><div class="hc ht"></div><div class="hc hf"></div>
+              <div class="hc hf"></div><div class="hc hf"></div><div class="hc hf"></div><div class="hc hf"></div><div class="hc hf"></div><div class="hc hf"></div><div class="hc hf"></div>
+            </div>
+            <div class="hmap-leg">
+              <div class="sq" style="background:rgba(109,143,104,0.08)"></div>없음
+              <div class="sq" style="background:rgba(212,99,79,0.15)"></div>약
+              <div class="sq" style="background:rgba(212,99,79,0.35)"></div>중
+              <div class="sq" style="background:rgba(212,99,79,0.6)"></div>강
+            </div>
+          </div></div>
+
+          <div class="c"><div class="c-in">
+            <div class="c-ey"><span>트리거 분석</span><span class="c-bdg" style="background:rgba(109,143,104,0.1);color:var(--sage)">AI</span></div>
+            <div class="c-det" style="font-size:12px;color:var(--ios-pri);line-height:1.5">
+              수면 6h 이하 → 발생 확률 3.2배↑<br>
+              기압 급변 시 주의
+            </div>
+          </div></div>
+
+          <div class="c"><div class="c-in">
+            <div class="c-ey"><span>다음 진료</span><span style="color:var(--sage)">5/24</span></div>
+            <div class="c-det">두통일지 자동 요약 준비됨 · 전달하기 →</div>
+          </div></div>
+
+          <div class="c"><div class="c-in">
+            <div class="c-ey"><span>약 재고</span><span>22일분</span></div>
+            <div class="c-det">수마트립탄 50mg · 리필 알림 설정됨</div>
+          </div></div>
+        </div>
+      </div>
+
+      <div class="tbar">
+        <div class="tb on" data-tab="home" data-device="4" onclick="switchTab(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>
+          <span class="tl">홈</span>
+        </div>
+        <div class="tb" data-tab="graph" data-device="4" onclick="switchTab(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          <span class="tl">그래프</span>
+        </div>
+        <div class="tb" data-tab="dash" data-device="4" onclick="switchTab(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <span class="tl">대시보드</span>
+        </div>
+        <div class="tb" data-tab="set" data-device="4" onclick="switchTab(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33"/></svg>
+          <span class="tl">설정</span>
+        </div>
+      </div>
+      <div class="hind"></div>
+    </div></div>
+  </div>
+  <div class="cap">
+    <div class="cap-tag sg">Case 04 · Chronic</div>
+    <h4>현우 — 만성 편두통 5년차</h4>
+    <div class="st">Steady week · Tracking patterns</div>
+    <p><strong>주간 그래프·월간 히트맵·AI 트리거 분석·약 재고</strong>. 평온한 날에는 아무것도 재촉하지 않습니다.</p>
+  </div>
+</div>
+
+</div>
+
+<script>
+function switchTab(el) {
+  const device = el.dataset.device;
+  const tab = el.dataset.tab;
+  
+  // Update tab bar
+  document.querySelectorAll(`.tb[data-device="${device}"]`).forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+  
+  // Update views
+  const app = document.getElementById('app' + device);
+  app.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+  
+  const target = app.querySelector(`.tab-view[data-tab="${tab}"]`);
+  if (target) {
+    target.classList.add('active');
+  } else {
+    // If tab view doesn't exist, show home
+    app.querySelector('.tab-view[data-tab="home"]').classList.add('active');
+  }
+  
+  // Scroll to top
+  app.scrollTop = 0;
+}
+</script>
+    
+  </div>
+</section>
+
+<!-- ═══════════════ CLOSING ═══════════════ -->
+<section class="closing" id="waitlist">
+  <div class="narrow">
+    <h2>
+      <span class="em">Listen</span> to<br>
+      your <span class="em">life.</span>
+    </h2>
+    <p class="closing-ko">
+      당신의 삶에 귀를 기울이는 단 하나의 동반자.<br>
+      2026년 프라이빗 프리뷰에 먼저 초대해드립니다.
+    </p>
+    
+    <form class="waitlist" onsubmit="event.preventDefault(); const b=this.querySelector('button'); const i=this.querySelector('input'); b.textContent='고맙습니다'; b.style.background='var(--accent)'; i.value=''; i.placeholder='초대장을 보내드릴게요';">
+      <input type="email" placeholder="your@email.com" required>
+      <button type="submit">프리뷰 신청</button>
+    </form>
+    
+    <p class="closing-note">
+      Private preview opens Summer 2026 · Seoul first, then global
+    </p>
+  </div>
+</section>
+
+<footer>
+  <div class="left">
+    <svg viewBox="0 0 200 200" fill="none">
+      <circle cx="100" cy="100" r="82" stroke="url(#orbit-grad-1)" stroke-width="6" fill="none" 
+              stroke-dasharray="490 25" stroke-linecap="round" transform="rotate(-30 100 100)"/>
+      <circle cx="100" cy="100" r="56" stroke="url(#orbit-grad-2)" stroke-width="6" fill="none" 
+              stroke-dasharray="330 20" stroke-linecap="round" transform="rotate(60 100 100)"/>
+      <circle cx="100" cy="100" r="30" stroke="url(#orbit-grad-3)" stroke-width="6" fill="none" 
+              stroke-dasharray="170 15" stroke-linecap="round" transform="rotate(-15 100 100)"/>
+      <circle cx="100" cy="100" r="9" fill="#1A1614"/>
+    </svg>
+    <span>© 2026 MODU · Listen to your life.</span>
+  </div>
+  <div class="right">
+    <a href="#">Brand DNA</a>
+    <a href="#">Journal</a>
+    <a href="mailto:hello@modu.app">hello@modu.app</a>
+  </div>
+</footer>
+
+<button class="pdf-hint" onclick="window.print()">📄 Save as PDF</button>
+
+<script>
+// ─────────── Hero phone interactive presets ───────────
+(function() {
+  const presets = document.querySelectorAll('#hero-presets .phone-preset');
+  const aiMsg = document.getElementById('hero-ai-msg');
+  const msgsContainer = document.getElementById('hero-msgs');
+  
+  let currentTimeout = null;
+  
+  presets.forEach(preset => {
+    preset.addEventListener('mouseenter', function() {
+      // Clear any pending timeout
+      if (currentTimeout) clearTimeout(currentTimeout);
+      
+      // Update active state
+      presets.forEach(p => p.classList.remove('active'));
+      this.classList.add('active');
+      
+      const newResponse = this.dataset.response;
+      const userText = this.querySelector('span:first-child').textContent.replace(/^\d+\.\s*/, '');
+      
+      // Animate AI message swap
+      aiMsg.style.opacity = '0';
+      aiMsg.style.transform = 'translateY(-6px)';
+      
+      currentTimeout = setTimeout(() => {
+        // Swap to a "user response + AI follow-up" view briefly
+        msgsContainer.innerHTML = `
+          <div class="phone-msg user fade-in">${userText}</div>
+          <div class="phone-msg ai fade-in" id="hero-ai-msg">${newResponse}</div>
+        `;
+      }, 280);
+    });
+  });
+  
+  // Reset when leaving the presets area
+  const presetsContainer = document.getElementById('hero-presets');
+  presetsContainer.addEventListener('mouseleave', function() {
+    if (currentTimeout) clearTimeout(currentTimeout);
+    currentTimeout = setTimeout(() => {
+      // Reset to default
+      presets.forEach((p, i) => {
+        p.classList.toggle('active', i === 0);
+      });
+      msgsContainer.innerHTML = `<div class="phone-msg ai fade-in" id="hero-ai-msg">어떤 일로 MODU를 찾아주셨어요?</div>`;
+    }, 600);
+  });
+})();
+</script>
+
+</body>
+</html>
