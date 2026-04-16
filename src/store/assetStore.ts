@@ -1,9 +1,14 @@
 // 에셋 상태 관리 — Zustand
 // switchAsset/createAsset/archiveAsset + currentAssetId 트래킹
+//
+// 기본 동작: 빈 배열로 시작. 첫 사용자는 Formation 으로 진입 → 첫 챕터 birth.
+// 데모 시드: process.env.EXPO_PUBLIC_SEED_DEMO === '1' 일 때만 mock 3개 미리 채움.
 import { create } from 'zustand';
 import type { Asset, AssetType, FormationData } from '../types';
 import { assetTemplates } from '../data/assetTemplates';
 import { mockAssets } from '../data/mock/assets';
+
+const SEED_DEMO = process.env.EXPO_PUBLIC_SEED_DEMO === '1';
 
 export interface AssetStore {
   assets: Asset[];
@@ -24,7 +29,7 @@ export interface AssetStore {
   getCurrent: () => Asset | null;
 }
 
-const initialAssets = mockAssets;
+const initialAssets: Asset[] = SEED_DEMO ? mockAssets : [];
 
 export const useAssetStore = create<AssetStore>((set, get) => ({
   assets: initialAssets,

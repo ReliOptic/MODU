@@ -1,7 +1,27 @@
 # MODU — Claude Code Context
 
-> **이 파일을 항상 먼저 읽어라.** PROJECT_SPEC.md (= ../modu-project-spec.md) 가 단일 진실 소스.
+> **이 파일을 항상 먼저 읽어라.** PROJECT_SPEC.md (= ../modu-project-spec.md) 는 비전 / 멀티에셋 풀 그림.
+> ROADMAP.md, docs/adr/, docs/reviews/ 가 실제 출시 기준.
 > 본 문서는 Claude Code 가 한 세션에서 다음 세션으로 넘길 영구 가이드라인이다.
+
+## North Star (절대 잊지 말 것)
+
+> **MODU 는 "삶의 챕터별 의료 기억을 쌓아가는 영구 라이브러리"다.
+> 5년 사용자는 떠날 수 없다 — 떠나는 순간 본인의 5년 인생 사본을 잃기 때문에.**
+
+모든 기능 결정은 다음 5가지 자문에 통과해야 한다:
+
+1. 이 기능이 사용자의 의료 기억을 더 깊게 누적시키는가?
+2. 5년 사용자에게 이 기능이 더 가치 있어지는가?
+3. 이 기능이 가족·파트너를 끌어들이는가?
+4. 이 기능이 사용자가 떠날 비용을 키우는가?
+5. 이 기능이 "잠깐 쓰고 마는" 카테고리(피트니스 챌린지 등) 에 가까운가? → YES면 거절
+
+## v1 출시 스코프 (ADR-0004)
+
+- **카테고리**: Fertility (난임) **단독**. cancer/pet/chronic 코드는 살아있되 product 진입점 차단
+- **타겟**: 한국. US/EU 는 v3
+- **Critical mass goal**: 1K WAU + 14% W4 retention
 
 ## 0. 프로젝트 개요
 
@@ -9,13 +29,14 @@ MODU 는 **AI 대화로 형성되는 초개인화 건강·돌봄 동반자 앱**
 
 **Slogan**: *Listen to your life.*
 
-## 1. 기술 스택
+## 1. 기술 스택 (ADR-0001 / 0002 / 0003)
 
 - React Native (Expo SDK 54) + TypeScript strict
 - expo-router (file-based routing)
 - 상태: Zustand v5 (`useShallow` 권장 — `.filter()` 같은 새 배열 리턴은 무한 렌더 유발)
-- 백엔드 (예정): Supabase (Auth + DB + Edge Functions)
-- AI (예정): Anthropic Claude API (Sonnet) — Edge Function 통해서만 호출, key 클라이언트 노출 금지
+- 백엔드: **Supabase Pro (Seoul region)** + **Cloudflare R2** (사진)
+- AI: **Anthropic Claude API via Supabase Edge Function (Deno)** — key 절대 클라이언트 노출 금지
+- 데이터 모델: **Memory-First** (ChapterMemory append-only timeline 이 1순위 entity)
 - 디자인: blur (expo-blur) + LinearGradient (expo-linear-gradient) + Pretendard/Fraunces
 
 ## 2. 출시 타깃 (출시 시 모든 플랫폼 동시)
@@ -97,6 +118,27 @@ src/
 2. **목소리는 타이핑과 같은 무게** — VoiceInputButton 항상 노출
 3. **가장 좋은 돌봄은 조용한 돌봄** — 알림 최소화, 필요한 것이 이미 거기에
 4. **iOS 네이티브 퀄리티** — SF Pro 느낌, blur 배경, 0.5px separator
+5. **에셋 = 인생의 챕터** — 전환은 ritual, 종료는 archive (영구 보존). 일회성 챌린지 금지
+
+## 7. Privacy as Marketing Moat (ADR-0005)
+
+코드/카피 작성 시 항상 다음 약속을 지킨다:
+
+- 광고 SDK 영구 금지 · 데이터 판매 영구 금지
+- 모든 ChapterMemory 에 `visibility` ('self' | 'partners' | 'doctor') — 작성 시점에 명시
+- One-tap export (.zip JSON+사진) · One-tap delete (즉시 파기)
+- KR 사용자 데이터는 ap-northeast-2 잔류
+- App lock (생체) default ON 권유
+- 외부 분석 도구 (PostHog) 는 opt-in only
+- 마케팅 카피: *"당신의 의료 기록은 당신의 것입니다"*
+
+## 8. v1 카테고리 단속 (ADR-0004)
+
+cancer/pet/chronic 코드는 PR 수준에서 살아있어야 하지만, 사용자가 보는 진입점은 차단:
+
+- Formation step_01 의 preset 4개 중 fertility 만 활성. 나머지는 "곧 만나요. 알림 신청"
+- mock seed (`EXPO_PUBLIC_SEED_DEMO=1`) 로만 다른 카테고리 시연 가능
+- 마케팅·App Store 메타는 fertility 만 언급 ("먼저 IVF 동반자로 시작" 단서)
 
 ## 7. 색상 시스템 (에셋별)
 
@@ -120,14 +162,34 @@ src/
 
 ## 9. Critical rule (§6.1)
 
-> 에셋 전환 시 탭바 · 배경 · 위젯 구조가 모두 바뀐다.
-> 전환 애니메이션은 **400ms** 크로스페이드 (`useAssetTransition`).
+> 에셋 전환 = 챕터 전환. 920ms ritual (fade-out 280 + ritual hold 360 + fade-in 280)
+> + light haptic (네이티브 only). 절대 "단순 fade" 로 후퇴 금지.
 
-## 10. 작업 시 체크리스트
+## 10. 외부 review 강제 항목 (CPO 2026-04-17)
+
+- `accessibilityLabel` / `accessibilityHint` 모든 Pressable 에 필수
+- 빈 탭 placeholder 외부 빌드에서 제거 (또는 "Coming soon · 알림 신청")
+- 다크 모드 토큰 빠짐 → 새 컴포넌트 작성 시 `palette.dark` 변수 분리 가능하게
+- Hero 카드 `완료 ✓` 탭 가능해야 함 (현재 표시만)
+- 푸시 / Lock-screen 위젯 / 생체인증 = v1 출시 필수 (Phase 2)
+
+## 11. 작업 시 체크리스트
 
 - [ ] `npx tsc --noEmit` 0 errors
 - [ ] 모바일 viewport (375~430) 에서 디자인 검증 (web frame 또는 Expo Go)
 - [ ] `npx expo export --platform web` 통과
 - [ ] 새 native 모듈 추가 시 `npx expo install` 사용 (버전 호환)
 - [ ] 권한 추가 시 `app.json` 의 `infoPlist` + `android.permissions` 동시 갱신
+- [ ] 새 ChapterMemory schema/지속 데이터 변경 시 ADR-0003 부합 확인
+- [ ] 새 기능이 §North Star 5가지 자문 통과하는지 commit message 에 한 줄 명시
 - [ ] 변경 commit → push → 사용자 알림
+
+## 12. 참조 문서
+
+- `ROADMAP.md` — Phase 0~5 + 의사결정 블로커 추적
+- `docs/adr/0001-backend-platform.md` — Supabase + R2
+- `docs/adr/0002-ai-edge-function.md` — Claude proxy
+- `docs/adr/0003-memory-first-data-model.md` — ChapterMemory schema
+- `docs/adr/0004-vertical-first-launch.md` — Fertility 단독 v1
+- `docs/adr/0005-privacy-as-moat.md` — 프라이버시 약속
+- `docs/reviews/2026-04-17-cpo-review.md` — CPO 외부 리뷰 원문
