@@ -82,4 +82,6 @@ export interface Asset {
   status: AssetStatus;
   createdAt: string;
   lastActiveAt: string;
+  /** 에셋 대표 사진 URI (반려동물 얼굴, 진료 카드 등). 로컬 fs:// 또는 원격 https://. */
+  photoUri?: string;
 }

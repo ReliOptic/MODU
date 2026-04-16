@@ -6,3 +6,5 @@ export { Separator } from './Separator';
 export type { SeparatorProps } from './Separator';
 export { Badge } from './Badge';
 export type { BadgeProps, BadgeTone } from './Badge';
+export { PhotoPicker } from './PhotoPicker';
+export type { PhotoPickerProps } from './PhotoPicker';
