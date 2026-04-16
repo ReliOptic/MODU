@@ -1,13 +1,19 @@
-// 최상위 컨테이너 — Formation 모달 ↔ AssetScreen 전환
-import React, { useState, useCallback, useEffect } from 'react';
-import { View, StyleSheet, Modal } from 'react-native';
+// 최상위 컨테이너 — Formation 모달 ↔ AssetScreen 전환 + 웹 모바일 viewport
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { View, StyleSheet, Modal, Platform, useWindowDimensions } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useAssetStore } from '../store/assetStore';
 import { useFormationStore } from '../store/formationStore';
-import { useMemo } from 'react';
 import { AssetScreen } from '../screens/AssetScreen';
 import { FormationFlow } from '../screens/FormationFlow';
+
+/**
+ * 모바일 viewport 폭 — 모든 디바이스에서 동일한 모바일 경험 제공.
+ * 데스크톱 웹에서도 이 너비로 가운데 정렬됨.
+ */
+const MOBILE_MAX_WIDTH = 430;
 
 export function MainNavigator() {
   const allAssets = useAssetStore((s) => s.assets);
@@ -21,7 +27,8 @@ export function MainNavigator() {
   // 첫 진입: 에셋 0개면 Formation 자동 시작 (§3.1)
   useEffect(() => {
     if (assets.length === 0) setFormationOpen(true);
-  }, []); // mount 시 1회만
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const startFormation = useCallback(() => {
     reset();
@@ -33,23 +40,71 @@ export function MainNavigator() {
   }, []);
 
   return (
-    <GestureHandlerRootView style={styles.root}>
-      <StatusBar style="dark" />
-      <View style={styles.root}>
-        <AssetScreen onCreateNew={startFormation} />
-      </View>
-      <Modal
-        visible={formationOpen}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={finishFormation}
+    <SafeAreaProvider>
+      <GestureHandlerRootView style={styles.root}>
+        <StatusBar style="dark" />
+        <MobileFrame>
+          <AssetScreen onCreateNew={startFormation} />
+        </MobileFrame>
+        <Modal
+          visible={formationOpen}
+          animationType="slide"
+          presentationStyle={Platform.OS === 'web' ? 'overFullScreen' : 'pageSheet'}
+          transparent={Platform.OS === 'web'}
+          onRequestClose={finishFormation}
+        >
+          <MobileFrame>
+            <FormationFlow onDone={finishFormation} />
+          </MobileFrame>
+        </Modal>
+      </GestureHandlerRootView>
+    </SafeAreaProvider>
+  );
+}
+
+/**
+ * 웹 전용 모바일 frame — 데스크톱에서도 폰 크기로 보이게 가운데 정렬.
+ * 네이티브에서는 그냥 flex:1.
+ */
+function MobileFrame({ children }: { children: React.ReactNode }) {
+  const { width } = useWindowDimensions();
+  if (Platform.OS !== 'web') {
+    return <View style={styles.root}>{children}</View>;
+  }
+  const isWide = width > MOBILE_MAX_WIDTH;
+  return (
+    <View style={styles.webOuter}>
+      <View
+        style={[
+          styles.webInner,
+          isWide && {
+            maxWidth: MOBILE_MAX_WIDTH,
+            shadowColor: '#000',
+            shadowOpacity: 0.18,
+            shadowRadius: 32,
+            shadowOffset: { width: 0, height: 0 },
+            // RN web 은 boxShadow 자동 변환
+          },
+        ]}
       >
-        <FormationFlow onDone={finishFormation} />
-      </Modal>
-    </GestureHandlerRootView>
+        {children}
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  webOuter: {
+    flex: 1,
+    backgroundColor: '#E5E7EB', // 데스크톱 외곽 배경
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  webInner: {
+    flex: 1,
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
+  },
 });

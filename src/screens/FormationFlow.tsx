@@ -100,10 +100,15 @@ export function FormationFlow({ onDone }: FormationFlowProps) {
               palette={inferredType ? getPaletteFor(inferredType) : 'dusk'}
             />
           )}
-          {(step.responseType === 'free' || step.responseType === 'both') && (
+          {/* 모든 step (photo + confirm 제외) 에 직접 입력 영역. preset 만 있는 step 에서는 "기타" 라벨. */}
+          {step.responseType !== 'photo' && !isConfirmStep(step.id) && (
             <FreeTextInput
               onSend={handleFree}
               palette={inferredType ? getPaletteFor(inferredType) : 'dusk'}
+              sectionLabel={
+                step.responseType === 'preset' ? '기타 · 직접 입력' : '직접 입력'
+              }
+              placeholder={step.responseType === 'preset' ? '위 항목과 다르다면…' : '직접 입력'}
             />
           )}
           {step.responseType === 'photo' && (
