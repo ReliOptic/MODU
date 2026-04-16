@@ -5,11 +5,16 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import { useAssetStore } from '../store/assetStore';
 import { useFormationStore } from '../store/formationStore';
+import { useMemo } from 'react';
 import { AssetScreen } from '../screens/AssetScreen';
 import { FormationFlow } from '../screens/FormationFlow';
 
 export function MainNavigator() {
-  const assets = useAssetStore((s) => s.assets.filter((a) => a.status !== 'archived'));
+  const allAssets = useAssetStore((s) => s.assets);
+  const assets = useMemo(
+    () => allAssets.filter((a) => a.status !== 'archived'),
+    [allAssets]
+  );
   const reset = useFormationStore((s) => s.reset);
   const [formationOpen, setFormationOpen] = useState(false);
 

@@ -1,12 +1,16 @@
-// §6.3 에셋 드롭다운 — 헤더 좌측 + bottom sheet
-// "현재에셋이름 ▾" 탭 → 시트 → 에셋 목록 (filled dot for active) + 새 만들기
-import React, { useCallback, useMemo, useRef } from 'react';
+// §6.3 에셋 드롭다운 — 헤더 좌측
+// 네이티브: @gorhom/bottom-sheet 사용
+// 웹: inline dropdown (BottomSheet의 web 제스처 미지원 우회)
+import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import {
   View,
   Text,
   Pressable,
   StyleSheet,
   ScrollView,
+  Platform,
+  Modal,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import BottomSheet, { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import type { Asset } from '../types';
@@ -21,7 +25,14 @@ export interface AssetSwitcherProps {
   onArchive?: (assetId: string) => void;
 }
 
-export function AssetSwitcher({
+export function AssetSwitcher(props: AssetSwitcherProps) {
+  if (Platform.OS === 'web') return <AssetSwitcherWeb {...props} />;
+  return <AssetSwitcherNative {...props} />;
+}
+
+/* ───────────────────────────── Native (iOS/Android) ─────────────────────────── */
+
+function AssetSwitcherNative({
   currentAsset,
   allAssets,
   onSwitch,
@@ -35,8 +46,8 @@ export function AssetSwitcher({
   const close = useCallback(() => sheetRef.current?.close(), []);
 
   const renderBackdrop = useCallback(
-    (props: React.ComponentProps<typeof BottomSheetBackdrop>) => (
-      <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} opacity={0.45} />
+    (p: React.ComponentProps<typeof BottomSheetBackdrop>) => (
+      <BottomSheetBackdrop {...p} appearsOnIndex={0} disappearsOnIndex={-1} opacity={0.45} />
     ),
     []
   );
@@ -44,39 +55,22 @@ export function AssetSwitcher({
   const handleSwitch = useCallback(
     (id: string) => {
       close();
-      // 시트 닫힘 애니와 겹치지 않도록 살짝 지연
       setTimeout(() => onSwitch(id), 180);
     },
     [close, onSwitch]
   );
-
   const handleCreate = useCallback(() => {
     close();
     setTimeout(() => onCreateNew(), 180);
   }, [close, onCreateNew]);
-
   const handleLongPress = useCallback(
-    (id: string) => {
-      if (!onArchive) return;
-      onArchive(id);
-    },
+    (id: string) => onArchive?.(id),
     [onArchive]
   );
 
   return (
     <>
-      <Pressable
-        onPress={open}
-        accessibilityRole="button"
-        accessibilityLabel="에셋 전환"
-        style={styles.trigger}
-      >
-        <Text style={styles.triggerLabel} numberOfLines={1}>
-          {currentAsset?.displayName ?? '에셋 만들기'}
-        </Text>
-        <Text style={styles.chevron}>▾</Text>
-      </Pressable>
-
+      <TriggerButton currentAsset={currentAsset} onPress={open} />
       <BottomSheet
         ref={sheetRef}
         index={-1}
@@ -85,33 +79,166 @@ export function AssetSwitcher({
         backdropComponent={renderBackdrop}
       >
         <ScrollView style={styles.sheetBody}>
-          {allAssets.map((a) => {
-            const isActive = a.id === currentAsset?.id;
-            const p = getPalette(a.palette);
-            return (
-              <Pressable
-                key={a.id}
-                onPress={() => handleSwitch(a.id)}
-                onLongPress={() => handleLongPress(a.id)}
-                style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-              >
-                <View style={[styles.dot, isActive ? { backgroundColor: p.accent } : { borderWidth: 1.5, borderColor: p.accent }]} />
-                <View style={styles.rowText}>
-                  <Text style={styles.rowTitle}>{a.displayName}</Text>
-                  {isActive && <Text style={styles.rowMeta}>현재 활성</Text>}
-                </View>
-              </Pressable>
-            );
-          })}
+          <AssetList
+            allAssets={allAssets}
+            currentAsset={currentAsset}
+            onSwitch={handleSwitch}
+            onLongPress={handleLongPress}
+          />
           <Separator style={{ marginVertical: 8 }} />
-          <Pressable onPress={handleCreate} style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
-            <Text style={styles.plus}>＋</Text>
-            <Text style={[styles.rowTitle, { marginLeft: 12 }]}>새 에셋 만들기</Text>
-          </Pressable>
-          {/* §T-SW-08: 1개일 땐 전환 옵션 없이 새 만들기만 */}
+          <CreateRow onPress={handleCreate} />
         </ScrollView>
       </BottomSheet>
     </>
+  );
+}
+
+/* ────────────────────────────────── Web fallback ────────────────────────────── */
+
+function AssetSwitcherWeb({
+  currentAsset,
+  allAssets,
+  onSwitch,
+  onCreateNew,
+  onArchive,
+}: AssetSwitcherProps) {
+  const [open, setOpen] = useState(false);
+
+  // ESC 로 닫기
+  useEffect(() => {
+    if (!open || Platform.OS !== 'web') return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).addEventListener?.('keydown', handler);
+    return () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (globalThis as any).removeEventListener?.('keydown', handler);
+    };
+  }, [open]);
+
+  const handleSwitch = useCallback((id: string) => {
+    setOpen(false);
+    setTimeout(() => onSwitch(id), 50);
+  }, [onSwitch]);
+  const handleCreate = useCallback(() => {
+    setOpen(false);
+    setTimeout(() => onCreateNew(), 50);
+  }, [onCreateNew]);
+  const handleLongPress = useCallback((id: string) => onArchive?.(id), [onArchive]);
+
+  return (
+    <View style={styles.webRoot}>
+      <TriggerButton currentAsset={currentAsset} onPress={() => setOpen((v) => !v)} />
+      {open && (
+        <Modal
+          transparent
+          visible={open}
+          animationType="fade"
+          onRequestClose={() => setOpen(false)}
+        >
+          <TouchableWithoutFeedback onPress={() => setOpen(false)}>
+            <View style={styles.webBackdrop}>
+              {/* 클릭 차단 영역: 메뉴 자체 */}
+              <TouchableWithoutFeedback>
+                <View style={styles.webMenu}>
+                  <Text style={styles.webMenuTitle}>에셋 전환</Text>
+                  <ScrollView style={{ maxHeight: 360 }}>
+                    <AssetList
+                      allAssets={allAssets}
+                      currentAsset={currentAsset}
+                      onSwitch={handleSwitch}
+                      onLongPress={handleLongPress}
+                    />
+                    <Separator style={{ marginVertical: 6 }} />
+                    <CreateRow onPress={handleCreate} />
+                  </ScrollView>
+                </View>
+              </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+      )}
+    </View>
+  );
+}
+
+/* ─────────────────────────────────── 공통 sub UI ────────────────────────────── */
+
+function TriggerButton({
+  currentAsset,
+  onPress,
+}: {
+  currentAsset: Asset | null;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel="에셋 전환"
+      style={styles.trigger}
+    >
+      <Text style={styles.triggerLabel} numberOfLines={1}>
+        {currentAsset?.displayName ?? '에셋 만들기'}
+      </Text>
+      <Text style={styles.chevron}>▾</Text>
+    </Pressable>
+  );
+}
+
+function AssetList({
+  allAssets,
+  currentAsset,
+  onSwitch,
+  onLongPress,
+}: {
+  allAssets: Asset[];
+  currentAsset: Asset | null;
+  onSwitch: (id: string) => void;
+  onLongPress: (id: string) => void;
+}) {
+  return (
+    <>
+      {allAssets.map((a) => {
+        const isActive = a.id === currentAsset?.id;
+        const p = getPalette(a.palette);
+        return (
+          <Pressable
+            key={a.id}
+            onPress={() => onSwitch(a.id)}
+            onLongPress={() => onLongPress(a.id)}
+            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+          >
+            <View
+              style={[
+                styles.dot,
+                isActive
+                  ? { backgroundColor: p.accent }
+                  : { borderWidth: 1.5, borderColor: p.accent },
+              ]}
+            />
+            <View style={styles.rowText}>
+              <Text style={styles.rowTitle}>{a.displayName}</Text>
+              {isActive && <Text style={styles.rowMeta}>현재 활성</Text>}
+            </View>
+          </Pressable>
+        );
+      })}
+    </>
+  );
+}
+
+function CreateRow({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+    >
+      <Text style={styles.plus}>＋</Text>
+      <Text style={[styles.rowTitle, { marginLeft: 12 }]}>새 에셋 만들기</Text>
+    </Pressable>
   );
 }
 
@@ -169,5 +296,35 @@ const styles = StyleSheet.create({
     color: widgetTokens.textSecondary,
     width: 24,
     textAlign: 'center',
+  },
+  /* Web fallback */
+  webRoot: { position: 'relative' },
+  webBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+    paddingTop: 96,
+    paddingHorizontal: 16,
+  },
+  webMenu: {
+    width: 320,
+    maxWidth: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 8 },
+  },
+  webMenuTitle: {
+    ...typography.footnote,
+    color: widgetTokens.textTertiary,
+    paddingHorizontal: 12,
+    paddingTop: 4,
+    paddingBottom: 6,
+    fontWeight: '600',
   },
 });

@@ -5,6 +5,7 @@ import React, { useState, useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated from 'react-native-reanimated';
+import { useShallow } from 'zustand/react/shallow';
 import { useAssetStore } from '../store/assetStore';
 import { useAssetTransition } from '../hooks/useAssetTransition';
 import { AssetSwitcher } from '../components/AssetSwitcher';
@@ -17,8 +18,18 @@ export interface AssetScreenProps {
 }
 
 export function AssetScreen({ onCreateNew }: AssetScreenProps) {
-  const current = useAssetStore((s) => s.assets.find((a) => a.id === s.currentAssetId) ?? null);
-  const assets = useAssetStore((s) => s.assets.filter((a) => a.status !== 'archived'));
+  const allAssets = useAssetStore((s) => s.assets);
+  const currentAssetId = useAssetStore((s) => s.currentAssetId);
+  const current = useMemo(
+    () => allAssets.find((a) => a.id === currentAssetId) ?? null,
+    [allAssets, currentAssetId]
+  );
+  const assets = useMemo(
+    () => allAssets.filter((a) => a.status !== 'archived'),
+    [allAssets]
+  );
+  // useShallow 진입점 보장 (zustand v5)
+  void useShallow;
   const archive = useAssetStore((s) => s.archiveAsset);
   const { switchTo, outgoingStyle } = useAssetTransition();
   const [activeTabId, setActiveTabId] = useState<string>('home');
