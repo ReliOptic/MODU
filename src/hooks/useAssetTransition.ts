@@ -31,8 +31,11 @@ export interface PendingTarget {
 }
 
 export interface UseAssetTransitionResult {
-  switchTo: (newAssetId: string) => void;
+  /** newAssetId 로 전환. mode='quick' (default) 또는 'ritual' (의식 필요 시) */
+  switchTo: (newAssetId: string, mode?: TransitionMode) => void;
   phase: TransitionPhase;
+  /** 현재 transition 의 mode — overlay 렌더 결정용 */
+  mode: TransitionMode;
   pending: PendingTarget | null;
   /** 현재 화면(outgoing) 에 적용할 reanimated style */
   outgoingStyle: ReturnType<typeof useAnimatedStyle>;
@@ -40,20 +43,44 @@ export interface UseAssetTransitionResult {
 
 export function useAssetTransition(): UseAssetTransitionResult {
   const [phase, setPhase] = useState<TransitionPhase>('idle');
+  const [mode, setMode] = useState<TransitionMode>('quick');
   const [pending, setPending] = useState<PendingTarget | null>(null);
   const progress = useSharedValue(0);
 
   const switchTo = useCallback(
-    (newAssetId: string) => {
+    (newAssetId: string, requestedMode: TransitionMode = 'quick') => {
       const target = useAssetStore.getState().assets.find((a) => a.id === newAssetId);
       if (!target) return;
-      // 같은 에셋 무시
       if (newAssetId === useAssetStore.getState().currentAssetId) return;
 
       setPending({ id: newAssetId, palette: target.palette, label: target.displayName });
+      setMode(requestedMode);
       setPhase('out');
       safeHaptic('selection');
 
+      if (requestedMode === 'quick') {
+        // ── Discord-like quick switch: 280ms cross-fade, no ritual overlay ──
+        progress.value = withTiming(1, {
+          duration: QUICK_HALF,
+          easing: Easing.out(Easing.cubic),
+        });
+        setTimeout(() => {
+          useAssetStore.getState().switchAsset(newAssetId);
+          setPhase('in');
+          progress.value = 0;
+          progress.value = withTiming(0, {
+            duration: QUICK_HALF,
+            easing: Easing.out(Easing.cubic),
+          });
+        }, QUICK_HALF);
+        setTimeout(() => {
+          setPhase('idle');
+          setPending(null);
+        }, QUICK_HALF * 2);
+        return;
+      }
+
+      // ── Ritual mode: 920ms with ChapterRitualOverlay ──
       progress.value = withTiming(1, {
         duration: FADE_OUT,
         easing: Easing.out(Easing.cubic),
@@ -64,13 +91,11 @@ export function useAssetTransition(): UseAssetTransitionResult {
         safeHaptic('light');
       }, FADE_OUT);
 
-      // ritual 중간 시점에 store commit (새 화면이 mount 되되 invisible)
       const COMMIT_DELAY = FADE_OUT + RITUAL_HOLD / 2;
       setTimeout(() => {
         useAssetStore.getState().switchAsset(newAssetId);
       }, COMMIT_DELAY);
 
-      // ritual 끝 → 새 화면 fade in
       setTimeout(() => {
         setPhase('in');
         progress.value = withTiming(0, {
@@ -79,7 +104,6 @@ export function useAssetTransition(): UseAssetTransitionResult {
         });
       }, FADE_OUT + RITUAL_HOLD);
 
-      // 마무리
       setTimeout(() => {
         setPhase('idle');
         setPending(null);
@@ -93,7 +117,7 @@ export function useAssetTransition(): UseAssetTransitionResult {
     transform: [{ scale: interpolate(progress.value, [0, 1], [1, 0.97]) }],
   }));
 
-  return { switchTo, phase, pending, outgoingStyle };
+  return { switchTo, phase, mode, pending, outgoingStyle };
 }
 
 function safeHaptic(kind: 'selection' | 'light' | 'medium') {
