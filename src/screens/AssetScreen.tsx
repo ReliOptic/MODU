@@ -8,6 +8,7 @@ import { useAssetStore } from '../store/assetStore';
 import { useAssetTransition } from '../hooks/useAssetTransition';
 import { AssetSwitcher } from '../components/AssetSwitcher';
 import { TabBar } from '../components/TabBar';
+import { ChapterRitualOverlay } from '../components/ChapterRitualOverlay';
 import { getPalette, widgetTokens } from '../theme';
 import { HomeTab } from './HomeTab';
 import { PlaceholderTab } from './PlaceholderTab';
@@ -30,7 +31,7 @@ export function AssetScreen({ onCreateNew }: AssetScreenProps) {
     [allAssets]
   );
 
-  const { switchTo, outgoingStyle } = useAssetTransition();
+  const { switchTo, outgoingStyle, phase, pending } = useAssetTransition();
   const [activeTabId, setActiveTabId] = useState<string>('home');
 
   // 에셋 전환 시 home 으로 리셋
@@ -77,6 +78,13 @@ export function AssetScreen({ onCreateNew }: AssetScreenProps) {
           activeTabId={activeTabId}
           onSelect={setActiveTabId}
           palette={current.palette}
+        />
+      )}
+      {pending && (
+        <ChapterRitualOverlay
+          visible={phase === 'ritual'}
+          palette={pending.palette}
+          label={pending.label}
         />
       )}
     </View>
