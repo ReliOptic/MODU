@@ -9,6 +9,7 @@ import { useAssetTransition } from '../hooks/useAssetTransition';
 import { AssetSwitcher } from '../components/AssetSwitcher';
 import { TabBar } from '../components/TabBar';
 import { ChapterRitualOverlay } from '../components/ChapterRitualOverlay';
+import { DemoControlPanel } from '../components/DemoControlPanel';
 import { getPalette, widgetTokens } from '../theme';
 import { HomeTab } from './HomeTab';
 import { PlaceholderTab } from './PlaceholderTab';
@@ -87,6 +88,8 @@ export function AssetScreen({ onCreateNew }: AssetScreenProps) {
           label={pending.label}
         />
       )}
+      {/* Demo mode floating panel — investor 시연용 */}
+      <DemoControlPanel />
     </View>
   );
 }

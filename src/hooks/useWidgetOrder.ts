@@ -9,6 +9,7 @@ import type { Asset, LayoutContext, WidgetType } from '../types';
 import { computeLayout, LayoutResult } from '../engine/layoutEngine';
 import { rulesByType } from '../engine/rules';
 import { eventPhaseAt } from '../types/event';
+import { useDemoMode } from '../lib/demo/useDemoMode';
 
 if (
   Platform.OS === 'android' &&
@@ -42,17 +43,26 @@ export function useWidgetOrder(
   const tab = opts.tab ?? 'home';
   const animate = opts.animate ?? true;
 
-  // 1분 tick — opts.now 가 있으면 고정, 없으면 자동 갱신
+  // Demo mode 통합 — fakeNow / 강제 이벤트 / emotion 주입
+  const demoEnabled = useDemoMode((s) => s.enabled);
+  const demoScenarioId = useDemoMode((s) => s.currentScenarioId);
+  const demoScenario = useDemoMode((s) => s.getCurrentScenario());
+
+  // 1분 tick — opts.now 우선 → demo fakeNow 차순 → 실시간
   const [tickedNow, setTickedNow] = useState(() => opts.now ?? new Date());
   useEffect(() => {
     if (opts.now) {
       setTickedNow(opts.now);
       return;
     }
+    if (demoEnabled && demoScenario) {
+      setTickedNow(demoScenario.fakeNow());
+      return;
+    }
     setTickedNow(new Date());
     const id = setInterval(() => setTickedNow(new Date()), TICK_MS);
     return () => clearInterval(id);
-  }, [opts.now]);
+  }, [opts.now, demoEnabled, demoScenarioId, demoScenario]);
 
   const result = useMemo<LayoutResult>(() => {
     if (!asset) {
@@ -75,18 +85,36 @@ export function useWidgetOrder(
       activeEvents.push({ type: e.type, phase });
     }
 
+    // Demo: scenario 가 강제 이벤트를 주입한 경우 추가
+    if (demoEnabled && demoScenario?.forceUpcomingEvent) {
+      const fe = demoScenario.forceUpcomingEvent;
+      const diffH = (fe.at.getTime() - tickedNow.getTime()) / 3_600_000;
+      if (diffH > 0) upcomingEvents.push({ type: fe.type, at: fe.at });
+      // phase 계산 (단순화): 0.5h 이내 = before, 그 이후 over 시 during
+      if (diffH > -1 && diffH <= 24) {
+        activeEvents.push({
+          type: fe.type,
+          phase: diffH < 0 ? 'during' : 'before',
+        });
+      }
+    }
+
     // 2) 오늘 이벤트 없음 판단 — activeEvents 가 비어있고 upcoming 도 24시간 내 없음
-    const has24hEvent = (asset.events ?? []).some((e) => {
-      const diffH = (new Date(e.at).getTime() - tickedNow.getTime()) / 3_600_000;
-      return diffH >= -12 && diffH <= 24;
-    });
+    const has24hEvent =
+      activeEvents.length > 0 ||
+      (asset.events ?? []).some((e) => {
+        const diffH = (new Date(e.at).getTime() - tickedNow.getTime()) / 3_600_000;
+        return diffH >= -12 && diffH <= 24;
+      });
     const noEventsToday = !has24hEvent;
 
     const ctx: LayoutContext = {
       now: tickedNow,
       upcomingEvents,
       activeEvents,
-      emotionTrend: opts.emotionTrend,
+      emotionTrend:
+        opts.emotionTrend ??
+        (demoEnabled ? demoScenario?.emotionTrend : undefined),
       noEventsToday,
       userResponses: asset.formationData?.responses ?? {},
     };
@@ -100,7 +128,7 @@ export function useWidgetOrder(
     return computeLayout(tabWidgets, allRules, ctx);
     // animate flag 의존 X — 첫 호출 시점에서만 적용.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [asset, tab, tickedNow, opts.emotionTrend]);
+  }, [asset, tab, tickedNow, opts.emotionTrend, demoEnabled, demoScenarioId]);
 
   return { ...result, homeOrder: result.order };
 }
