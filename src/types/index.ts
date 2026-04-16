@@ -23,3 +23,9 @@ export type {
   LayoutAction,
   LayoutContext,
 } from './layout';
+export type {
+  ScheduledEvent,
+  ScheduledEventType,
+  EventPhase,
+} from './event';
+export { eventPhaseAt } from './event';

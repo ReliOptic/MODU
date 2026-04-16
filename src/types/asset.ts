@@ -69,6 +69,7 @@ export interface FormationData {
 }
 
 import type { LayoutRule } from './layout';
+import type { ScheduledEvent } from './event';
 
 export interface Asset {
   id: string;
@@ -84,4 +85,6 @@ export interface Asset {
   lastActiveAt: string;
   /** 에셋 대표 사진 URI (반려동물 얼굴, 진료 카드 등). 로컬 fs:// 또는 원격 https://. */
   photoUri?: string;
+  /** 이 에셋이 알고 있는 일정 — LayoutEngine 가 시간 기반 우선순위 평가에 사용. */
+  events?: ScheduledEvent[];
 }

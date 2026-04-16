@@ -1,6 +1,10 @@
-// §4.1 Widget Priority Engine
+// §4.1 Widget Priority Engine — V2
 // 입력: 에셋의 widgets[] (defaultPriority) + layoutRules[] + LayoutContext
-// 출력: WidgetType[] (정렬된 순서) + 부수 효과(highlight 등)
+// 출력: WidgetType[] (정렬) + highlight / collapsed / expanded set
+// V2 변경:
+//   - event_phase condition: ScheduledEvent 의 before/during/after phase 매칭
+//   - user_context condition: formationData.responses 매칭
+//   - LayoutContext 에 activeEvents (phase 포함) + userResponses
 import type {
   WidgetConfig,
   WidgetType,
@@ -10,22 +14,16 @@ import type {
 } from '../types';
 
 export interface LayoutResult {
-  /** 정렬된 위젯 순서 (defaultPriority + 적용 규칙 반영) */
   order: WidgetType[];
-  /** 하이라이트 표시할 위젯 */
   highlighted: Set<WidgetType>;
-  /** collapse 상태 위젯 */
   collapsed: Set<WidgetType>;
-  /** expand 상태 위젯 */
   expanded: Set<WidgetType>;
-  /** 적용된 규칙 ID들 (디버깅) */
   appliedRules: string[];
 }
 
 const PROMOTE_BOOST = 1000;
 const DEMOTE_PENALTY = -1000;
 
-/** 레이아웃 계산. context 가 없으면 defaultPriority 만으로 정렬. */
 export function computeLayout(
   widgets: WidgetConfig[],
   rules: LayoutRule[],
@@ -39,19 +37,24 @@ export function computeLayout(
   const expanded = new Set<WidgetType>();
   const applied: string[] = [];
 
-  // priority 높은 규칙부터 적용
   const sorted = [...rules].sort((a, b) => b.priority - a.priority);
   for (const rule of sorted) {
-    if (!score.has(rule.effect.widgetId)) continue; // 해당 위젯이 에셋에 없음
+    if (!score.has(rule.effect.widgetId)) continue;
     if (!evaluate(rule.condition, context)) continue;
 
     applied.push(rule.id);
     switch (rule.effect.action) {
       case 'promote':
-        score.set(rule.effect.widgetId, (score.get(rule.effect.widgetId) ?? 0) + PROMOTE_BOOST + rule.priority);
+        score.set(
+          rule.effect.widgetId,
+          (score.get(rule.effect.widgetId) ?? 0) + PROMOTE_BOOST + rule.priority
+        );
         break;
       case 'demote':
-        score.set(rule.effect.widgetId, (score.get(rule.effect.widgetId) ?? 0) + DEMOTE_PENALTY - rule.priority);
+        score.set(
+          rule.effect.widgetId,
+          (score.get(rule.effect.widgetId) ?? 0) + DEMOTE_PENALTY - rule.priority
+        );
         break;
       case 'highlight':
         highlighted.add(rule.effect.widgetId);
@@ -73,7 +76,6 @@ export function computeLayout(
   return { order, highlighted, collapsed, expanded, appliedRules: applied };
 }
 
-/** 단일 condition 평가 */
 function evaluate(c: LayoutCondition, ctx: LayoutContext): boolean {
   switch (c.type) {
     case 'time_proximity': {
@@ -83,19 +85,36 @@ function evaluate(c: LayoutCondition, ctx: LayoutContext): boolean {
       for (const e of upcoming) {
         if (e.type !== event) continue;
         const diffMs = e.at.getTime() - ctx.now.getTime();
-        const diffHours = diffMs / (1000 * 60 * 60);
+        const diffHours = diffMs / 3_600_000;
         if (diffHours >= 0 && diffHours <= hoursBefore) return true;
       }
       return false;
     }
+    case 'event_phase': {
+      const eventType = String(c.params.event ?? '');
+      const phase = String(c.params.phase ?? '');
+      const active = ctx.activeEvents ?? [];
+      return active.some((e) => e.type === eventType && e.phase === phase);
+    }
     case 'emotion_state': {
       const trend = c.params.trend;
-      // window_hours 는 호출 측에서 emotionTrend 계산할 때 적용한다고 가정
       return ctx.emotionTrend === trend;
     }
     case 'day_type': {
       if (c.params.no_events === true) return ctx.noEventsToday === true;
       return false;
+    }
+    case 'user_context': {
+      // params: { stepId: 'fertility:step_04_partner', valueIn: ['alone'] }
+      const stepId = String(c.params.stepId ?? '');
+      const valueIn = (c.params.valueIn as string[] | undefined) ?? [];
+      const valueEquals = c.params.valueEquals as string | undefined;
+      const responses = ctx.userResponses ?? {};
+      const v = responses[stepId];
+      if (!v) return false;
+      if (valueEquals !== undefined) return v === valueEquals;
+      if (valueIn.length > 0) return valueIn.includes(v);
+      return true; // 응답 존재 자체만 체크
     }
     case 'manual':
       return false;

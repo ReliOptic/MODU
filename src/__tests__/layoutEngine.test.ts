@@ -20,25 +20,43 @@ describe('layoutEngine', () => {
     expect(r.order[r.order.length - 1]).toBe('partner_sync'); // priority 50
   });
 
-  it('T-DL-01: transfer D-1 promotes primary_event to top', () => {
+  it('T-DL-01: transfer D-1 (event_phase=before) promotes primary_event to top', () => {
     const ctx = makeContext({
-      upcomingEvents: [{ type: 'transfer', at: new Date('2026-04-18T03:00:00Z') }],
+      activeEvents: [{ type: 'transfer', phase: 'before' }],
     });
     const r = computeLayout(fertilityHomeWidgets, fertilityRules, ctx);
     expect(r.order[0]).toBe('primary_event');
-    expect(r.appliedRules).toContain('transfer_d1');
+    expect(r.appliedRules).toContain('transfer_before');
   });
 
   it('T-DL-02: injection 30min before promotes injection_timeline to top', () => {
     const now = new Date('2026-04-17T08:00:00Z');
     const ctx = makeContext({
       now,
-      // 25분 후 주사 (0.5h 이내)
       upcomingEvents: [{ type: 'injection', at: new Date(now.getTime() + 25 * 60 * 1000) }],
     });
     const r = computeLayout(fertilityHomeWidgets, fertilityRules, ctx);
     expect(r.order[0]).toBe('injection_timeline');
-    expect(r.appliedRules).toContain('injection_30min');
+    expect(r.appliedRules).toContain('injection_imminent');
+  });
+
+  it('V2: transfer after promotes mood_quicklog (회복 모드)', () => {
+    const ctx = makeContext({
+      activeEvents: [{ type: 'transfer', phase: 'after' }],
+    });
+    const r = computeLayout(fertilityHomeWidgets, fertilityRules, ctx);
+    expect(r.order[0]).toBe('mood_quicklog');
+    expect(r.appliedRules).toContain('transfer_after_calm');
+    expect(r.highlighted.has('partner_sync')).toBe(true);
+  });
+
+  it('V2: user_context = alone demotes partner_sync', () => {
+    const ctx = makeContext({
+      userResponses: { 'fertility:step_04_partner': 'alone' },
+    });
+    const r = computeLayout(fertilityHomeWidgets, fertilityRules, ctx);
+    expect(r.appliedRules).toContain('alone_demote_partner');
+    expect(r.order[r.order.length - 1]).toBe('partner_sync');
   });
 
   it('T-DL-03: emotion declining highlights partner_sync', () => {
