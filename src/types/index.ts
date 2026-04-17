@@ -30,3 +30,25 @@ export type {
   EventPhase,
 } from './event';
 export { eventPhaseAt } from './event';
+export type {
+  MoguEvent,
+  EventName,
+  EventBase,
+  Locale,
+  DeviceClass,
+  Role,
+  Sensitivity,
+  RegulatoryEnvelope,
+  ChapterType,
+  MemoryKind,
+  LengthBucket,
+  AgeBucket,
+  CareEventType,
+  EventPhase as CareEventPhase,
+  MomentSlot,
+  RoleGrant,
+  DelegatedActionKind,
+  ConsentItem,
+  ConsentDecision,
+} from './events';
+export { EVENT_REGISTRY } from './events';
