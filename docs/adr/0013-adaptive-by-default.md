@@ -216,10 +216,23 @@ Sync invitation 의 *시점·방식* 은 ADR-0011 Addendum 참조.
 
 ### 개정된 P0 (본문 Implementation 블록 override)
 
-P0 Moments (Phase 1, 4-6주):
+P0 Moments (Phase 1, **~2.5-3주** 병렬 분기 가정):
 - `tpo-signature` (skin) — App-Open TPO 즉시성
 - `next-step` (floating) — zero-friction action-message 루프
-- **`quiet-weave`** (hero) — role-aware 은유적 배려 가이드. 파트너 미연결 시 self-adaptive 로 자연 degradation.
+- **`quiet-weave`** (hero) — role-aware 은유적 배려 가이드. 파트너 미연결 시 self-adaptive 로 자연 degradation. Partner 로직은 **P0.5** 로 분할.
+
+P1 공통 요구: `en-US` + `ko-KR` **동시 렌더** 검증 통과 (ADR-0014).
+
+### A5. Role axis 결정 (Q1-Q4 확정 — 2026-04-17)
+
+- **Q1 Role 소속 단위 = Chapter × Account pair.** 같은 chapter 를 공유하는 두 사용자는 각자 다른 role 로 같은 data 를 본다. 예: fertility chapter → 나=`self`, 배우자=`partner`. 엄마 항암 chapter → 나=`caregiver`, 엄마=`self`. Account-level 이면 1인이 복수 chapter (본인+가족) 병행 불가.
+- **Q2 Role enum v1 = `self` | `partner` | `caregiver`.** `doctor` 는 v2+ (의료기기 판정 · HIPAA/KR 규제 리스크).
+- **Q3 Role 의 UI 노출 = 첫 초대 시 은유적 한 줄 1회.** *"이곳에서 당신은 ○○님과 함께 걸어갑니다"* 수준. 이후 UI 는 조용히 role-adaptive, 라벨·모드 선택 화면 전면 X. §4.6 준수.
+- **Q4 Role-adaptive 구현 단위 = Hybrid (c).** Moment 는 1 파일 · `id`/`intent`/`predicate` 는 role-blind (composeMoments 엔진이 role 을 몰라도 동작) · `render(ctx)` 가 `ctx.role` 로 role-specific sub-component 디스패치 (예: `<QuietWeaveSelf />` / `<QuietWeavePartner />` / `<QuietWeaveCaregiver />`). Library 디렉터리 scan 복잡화 (b) 회피 + Moment 비대화 (a) 회피.
+
+### A6. English-first authoring (참조 — ADR-0014)
+
+본 ADR 이후 Moments 관련 모든 신규 artifact 는 English-master. Moment `intent`, variant `lang` 기본 = `en`. 세부는 ADR-0014.
 
 ## References
 
