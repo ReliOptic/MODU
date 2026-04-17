@@ -14,7 +14,12 @@
 
 ## 0. One-sentence identity
 
-> **MODU is *the permanent library of life's medical chapters*.**
+> **MODU is *the permanent library of life's chapters*.**
+
+A chapter is any span of life worth recording — medical journeys, caregiving, daily practice, leisure, habit. Medical is the most serious expression and the v1 go-to-market surface (ADR-0004); it is not the system's definition. The system is category-agnostic by design.
+
+> *"No fixture is fixtures — formlessness is form."* (CEO reframe, 2026-04-17)
+> Signal axes (TPO · Role · Phase · Preference · Place) and invariants (voice · scaffold · ritual · river-shape) are the form. What the user brings — medical, caregiving, wellness, leisure, any recordable life — is the content.
 
 Four core metaphors descend from that sentence: **Chapter · Memory · Library · Companion**.
 
