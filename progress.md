@@ -6,6 +6,66 @@
 
 ---
 
+## Latest decision — 2026-04-17 (PM, /office-hours session)
+
+### Horizontal pivot — design doc APPROVED
+
+**Strategic shift**: ADR-0004 (fertility-only v1, KR-only) is **retired**. MODU is now positioned as a **horizontal metamorphic life-asset platform** from v1. Fertility downgraded from "vertical wedge" to "warm-start seed". Fertility, students, workers, athletes, caregivers, etc. are all peer assets.
+
+**Approved design doc**: [`docs/planning/2026-04-17-horizontal-pivot-asset-spawner-design.md`](docs/planning/2026-04-17-horizontal-pivot-asset-spawner-design.md)
+- Quality 7/10 after 2 rounds adversarial spec review
+- Recommended Approach: **Asset-Spawner-First (Approach A, high-fidelity, ALL-IN scope, no carve-outs)**
+- 14-day Sprint 1-5 plan (Day 14 = TestFlight release; D7/D14 metrics measured Day 14-28)
+- Reviewer Concerns RC1-RC6 acknowledged (founder explicit risk acceptance — see doc tail)
+
+### Five locked premises (P1-P5)
+
+- **P1 Positioning**: Horizontal metamorphic platform from v1. ADR-0004 retired.
+- **P2 AI thesis**: AI cost-collapse historically first makes metamorphic UX startup-affordable. Binding constraint = build velocity + meta-context routing quality, NOT architecture risk.
+- **P3 Demand-before-build refused**: Won't pre-interview. Ship → discover. Conscious risk premise.
+- **P4 Long-term moat**: Compound user-input + TPO + metamorphic = nonlinear value. (Cross-model spec reviewer challenged with Notion/Evernote/Day One/Roam churn data; founder defended with reasoning — AI-native vs prior-era epistemic separation. P4 retained, but instrumented for measured truth at month-3 memory-retrieval-rate.)
+- **P5 Operating order**: Regulation → data → UX preserved, but restructured as **per-asset compliance matrix** (E1 일반 / E2 미성년·교육 / E3 가족·관계 / E4 건강·sensitive Art.9). Defined in design doc §8.
+
+### Sprint 1 (Day 1-3) immediate next actions
+
+1. **ADR-0004 retirement + dependent doc rewrite** (Day 1-2, atomic commit series):
+   - `docs/adr/0004-vertical-first-launch.md`: supersede with new ADR (proposed `0018-horizontal-first-pivot.md`) referencing the approved design doc; or delete and redirect
+   - `CLAUDE.md`: rewrite §"v1 출시 스코프 (ADR-0004)" + §"8. v1 카테고리 단속 (ADR-0004)" — warnings already inlined this session pointing at the new design doc
+   - `docs/grammar/modu-product-grammar.md`: remove fertility-specific examples; add horizontal-asset framing per signal-axes (TPO·Role·Phase·Preference)
+   - `docs/data/2026-04-17-phase-1-event-schema.md`: keep `cycle_*` / `embryo_*` events but mark as fertility-asset-specific (not v1 categorical default)
+2. **Pretendard / Fraunces fonts** (Day 1) — ttf to `assets/fonts/`, register in `useFonts`
+3. **Jest preset** (Day 2) — `jest-expo` + reanimated mock → tests pass
+4. **Supabase project setup** (Day 2-3) — Seoul region, RLS schema, Edge Function for Anthropic + Whisper proxy
+5. **Cloudflare R2 bucket + presigned URL flow** (Day 3)
+
+### Open Questions (founder decision next session)
+
+- ADR-0004 retirement: delete vs supersede with `ADR-0018 Horizontal-First Pivot` (recommend supersede so the lineage is preserved)
+- App Store category change (fertility/health → Lifestyle / Productivity)
+- KR tagline: "Listen to your life" retained; fertility-specific marketing copy ("먼저 IVF 동반자로 시작") removed
+- Pricing tier redefinition for horizontal: Free / Plus ₩5,900 / Family ₩11,900 — asset-per-member vs unlimited assets in Plus/Family?
+- B2G consent UX disclosure timing in onboarding (hidden surface but plain consent required)
+- Fertility asset positioning in onboarding: warm-seed-only vs first-preset-option (tradeoff: fertility user acquisition velocity vs horizontal messaging clarity)
+
+### Reviewer Concerns acknowledged (founder explicit acceptance)
+
+- **RC1**: 14d sprint ALL-IN scope mathematically tight; sprint-level sequencing relief (Day 14 = "TestFlight 가능" not "100% complete")
+- **RC2**: LLM→preset prompt iteration cost; 30-seed eval harness in Sprint 1 mitigates
+- **RC3**: Vector-DB policy corpus = data sourcing project on its own; reduced to 3 verticals (fertility / study / childcare) for v1; 마라톤 / 자격증 ship with "정보 준비 중" placeholder
+- **RC4**: ADR-0010 4-layer cache fantasy in 14d; L1 (device) + L3 (edge) ship at v1, L2 (hint) + L4 (cron) deferred to OTA — interface designed 4-layer compatible
+- **RC5**: Lock-screen widget native binary constraint — iOS WidgetKit / Android AppWidget cannot OTA, requires store review; v1 binary ships **minimal widget (오늘의 nudge 1개)** only; multi-asset rich widget = v1.1 binary
+- **RC6**: minor open items — STT KR accuracy threshold, `consent_version_id` schema location, per-asset cost ceiling, KR legal review split into 2 touches (Day 8-10 envelopes + Day 11-12 consent UX)
+
+### Founder assignment (next 7 days, non-coding)
+
+KakaoTalk / Threads 1차 네트워크 5명 (active life chapter 보유자 — 수험·IVF·새 직장·마라톤·자격증·육아·부모 케어 등) 에 1:1 카톡: "지금 챕터 진행하면서 어떤 도구·앱·노트로 챙기고 있어? 불편한 거 한 가지만 골라줄 수 있어?" → 기록 (이름 / chapter / 도구 stack / verbatim 불편 / alpha invite 의향). **목표: ≥3명 invite-willing → Sprint 1 kickoff trigger**. <3명 → KakaoTalk Open Chat / Naver Cafe / Daangn 5개 채널로 cold cast 추가 1일.
+
+### Founder signals observed this session (Phase 4.5 of /office-hours)
+
+6 signals: pushback, domain expertise, taste, agency, **defended premise with reasoning against cross-model challenge** (P4), articulated real problem. Missing: named specific users (Q1 deflection × 3 → P3 conscious risk acceptance).
+
+---
+
 ## Last session — 2026-04-17
 
 ### Committed (chronological)
