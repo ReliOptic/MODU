@@ -7,7 +7,10 @@ import { useWidgetOrder } from '../hooks/useWidgetOrder';
 import {
   PrimaryEventCard,
   CalendarMiniWidget,
-  ValueMoment, // 추가
+  ValueMoment,
+  NarrativeMoment,
+  StepMoment,
+  GlanceMoment,
   InjectionTimeline,
   MoodQuickLog,
   PartnerSyncBar,
@@ -105,7 +108,25 @@ export function HomeTab({ asset }: HomeTabProps) {
   );
 }
 
-// ... pickMock, pick 함수들은 유지 ...
+function pickMock(type: Asset['type']): Record<string, unknown> | undefined {
+  switch (type) {
+    case 'fertility': return fertilityMock as unknown as Record<string, unknown>;
+    case 'cancer_caregiver': return cancerMock as unknown as Record<string, unknown>;
+    case 'pet_care': return petMock as unknown as Record<string, unknown>;
+    case 'chronic': return chronicMock as unknown as Record<string, unknown>;
+    default: return undefined;
+  }
+}
+
+function pick<T>(
+  mock: Record<string, unknown> | undefined,
+  key: string,
+  fallback: T,
+): T {
+  if (!mock || !(key in mock)) return fallback;
+  const v = mock[key];
+  return v === undefined || v === null ? fallback : (v as T);
+}
 
 function renderWidget(
   type: WidgetType,

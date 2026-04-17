@@ -49,6 +49,7 @@ alter table public.ai_audit
 -- Drop the old unnamed / loosely-scoped policy and replace with an
 -- explicit "to authenticated, anon" so the restriction is unambiguous.
 drop policy if exists "ai_audit: deny direct insert by non-service roles" on public.ai_audit;
+drop policy if exists "ai_audit_no_client_insert" on public.ai_audit;
 
 create policy "ai_audit_no_client_insert"
   on public.ai_audit

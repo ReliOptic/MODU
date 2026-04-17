@@ -56,3 +56,5 @@ PROGRESS.md.bak
 !.logs/.gitkeep
 !.logs/README.md
 .omx/
+.gstack/
+supabase/.temp/
