@@ -6,6 +6,65 @@
 
 ---
 
+## Latest session — 2026-04-17 (PM-late, infra bring-up + blocker patches)
+
+### What shipped this session
+
+- **Supabase project live** — `modu` under `MODU` org, Seoul (`ap-northeast-2`), ref `gjqjtvelzscxuincknum`. Dashboard: https://supabase.com/dashboard/project/gjqjtvelzscxuincknum
+- **10 SQL migrations applied** on remote (profiles / assets / formation / events / care / attachments / ai_audit / r2_audit / rate_limit_rpc + rls_helpers). RLS deny-by-default, S4 immutable trigger, GDPR anonymization escape (`current_user = 'service_role'`).
+- **5 Edge Functions deployed**: `ai` (deprecated, sunset 2026-05-01), `ai-claude`, `ai-whisper`, `r2-presign`, `r2-complete`. Smoke: OPTIONS `204` + POST-without-auth `401 UNAUTHORIZED_NO_AUTH_HEADER` on all four live surfaces.
+- **R2 bucket `modu-attachments` + CORS** (PUT/GET/HEAD `*`) created via wrangler.
+- **Secrets registered** (7 non-reserved): `OPENROUTER_API_KEY`, `GROQ_API_KEY`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_S3_API_ENDPOINT`. `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_DB_URL` auto-injected by Edge runtime (reserved prefix).
+- **Client env wired**: `.env.local` with `EXPO_PUBLIC_SUPABASE_URL` + `EXPO_PUBLIC_SUPABASE_ANON_KEY` (publishable key `sb_publishable_*`). `src/lib/supabase.ts` now constructs a real client instead of the stub.
+- **Commit `eb59a4c` pushed to `origin/main`** — HomeTab helper restoration + migration-09 idempotent policy + `supabase init` artifacts.
+
+### Blocker patches landed
+
+- `src/screens/HomeTab.tsx`: added missing `NarrativeMoment` / `StepMoment` / `GlanceMoment` named imports, and reinstated `pickMock` / `pick` helpers dropped during the horizontal pivot refactor (commit `5bf6268`). Without these the entire AssetScreen → Home path crashed at module-init with a ReferenceError — slipped every tsc/jest pass because no test imports `HomeTab`.
+- `supabase/migrations/20260417000009_09_rate_limit_rpc.sql`: added `drop policy if exists "ai_audit_no_client_insert"` before the `create policy` to make the migration idempotent after migration 07 already defined the same policy.
+
+### What is still NOT verified end-to-end
+
+- Auth signup → `profiles` row via `handle_new_user` trigger (0 runs; OAuth intentionally deferred — codex-style audit mode is enough for now).
+- Edge Function with a real user JWT + Anthropic/Groq call + response parse.
+- R2 presign → PUT → complete → `attachments` row.
+- RLS cross-user blocking on live Postgres (`supabase/tests/rls.sql` only validated locally).
+- Metro web bundle mounting React past ConsentScreen. Last observed state: HomeTab crashed on `pickMock is not defined`. Patch above should clear it, but browser re-verification did not happen before the session ended.
+
+### Resuming on another machine — required setup
+
+The secrets live outside git on purpose. To bring a fresh clone online:
+
+1. `git pull && npm install` (project uses npm lockfile today).
+2. Install CLIs: `npm i -g wrangler` + Supabase CLI binary from https://github.com/supabase/cli/releases (npm install for `supabase` is blocked by the publisher; download `supabase_linux_amd64.tar.gz`, untar, move to a `$PATH` dir).
+3. `supabase login` + `wrangler login` (both OAuth, one-shot each).
+4. Recreate `.env.local` in repo root with:
+   - `EXPO_PUBLIC_SUPABASE_URL=https://gjqjtvelzscxuincknum.supabase.co`
+   - `EXPO_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_9YNM5jLujNwxAGT6ObAVVg_4ayqJvBr`
+   - Optional parity: `EXPO_PUBLIC_ENV=development`, `EXPO_PUBLIC_SEED_DEMO=0`, `EXPO_PUBLIC_DEV_MESSAGES=0`
+5. Recreate `supabase/functions/.env.functions` with the server secrets — **pull these from your password manager, not from chat logs**. Required keys: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `OPENROUTER_API_KEY`, `GROQ_API_KEY`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, and optional `R2_S3_API_ENDPOINT`.
+6. `supabase link --project-ref gjqjtvelzscxuincknum` (will prompt for the DB password — also in your manager).
+7. No need to re-`db push` or re-`functions deploy` unless code changed.
+8. Dev server: `npx expo start --web --port 19006` in WSL, or `npx expo start` from Windows PowerShell for LAN QR scanning with Expo Go.
+
+### Next actions (in order of the real MVP loop, Auth deferred)
+
+1. **Mount test on web** — browser-verify the HomeTab patch lets ConsentScreen → Formation → AssetScreen render without another ReferenceError. If another identifier dies, grep → patch → recheck; same shape as this session.
+2. **`asset-spawn` RN hook** — client helper that calls `/functions/v1/ai-claude` with the formation transcript and returns `{ asset_type, widgets, preset }`. Wire into `formationStore.advance(CONFIRM)` so the store persists the spawned asset via `LocalAssetRepository.put` before navigating home.
+3. **Moment runtime components** — `tpo-signature`, `next-step`, `quiet-weave` declare `componentId` strings only; need real RN components (or at least `<Text>` stubs) that HomeTab can dispatch per slot, otherwise the "Home rearrangement" is invisible.
+4. **LocalAssetRepository ↔ Supabase sync** — Option A keeps only local state today. Add a thin `syncAssets()` that diffs `updatedAt` against the remote `assets` table and pushes unsynced rows via the authenticated client. Events follow the same pattern via `EventRepository.flushQueue → events` table (RLS + authed client, no Edge Function needed).
+5. **Image + voice capture UI** — `expo-image-picker` feeding `uploadAttachment` (already in `src/lib/r2Client.ts`), `expo-av` recorder feeding `transcribeAudio` (`src/lib/aiClient.ts`). Hook into Formation and the quiet-weave Moment.
+6. **30-seed eval harness** — script that runs 30 Korean intake transcripts against `ai-claude` with 3 candidate models (Gemini 2.0 Flash, Haiku 4.5, one Gemma via OpenRouter) and measures JSON-schema pass rate. Pick the cheapest model above 90% pass rate as default; keep the fallback in code.
+7. **QA smoke rerun** via `.gstack/qa-reports/` after steps 1-3 — expect Critical 0 once the identifier patches and Moment components land.
+
+### Residual cleanup (non-blocking)
+
+- `/home/reliqbit/project/MODU/modu/` — stale fertility-vertical worktree from before the pivot. Decide whether to delete or salvage into root; currently untracked.
+- `/home/reliqbit/project/MODU/.codex` — empty marker; ignore or delete.
+- `supabase/functions/ai/` — deprecated, sunset 2026-05-01. Remove once no client points at it.
+
+---
+
 ## Latest decision — 2026-04-17 (PM, /office-hours session)
 
 ### Founder insight log — adaptive specificity over static ICP
