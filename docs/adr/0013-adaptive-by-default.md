@@ -176,6 +176,51 @@ src/moments/
 - **Phase 2** (8-12주): row-slot Moment 마이그레이션, library 50% 구축
 - **Phase 3** (글로벌 v3): 100 Moments 달성, category-extensions 로 v2 카테고리 확장
 
+## Addendum — 2026-04-17 (P0 철학 refine)
+
+P0 design session 에서 다음 4가지를 본문에 더한다.
+
+### A1. `partner-echo` → **`quiet-weave`** rename
+
+*"partner-echo"* 는 *"파트너가 했음을 에코한다"* 는 증명 어휘였다. 사용자 교정 — *"아고라라는 것을 드러내는 것이 아니에요. 그건 촌스럽습니다. 자연스럽게 '아 이곳에서 나의 소중한 파트너들과 연계가 되는구나' 라고 느껴지는 것."*
+
+Hero slot P0 Moment 는 **`quiet-weave`** 로 변경. 파트너의 기록이 본인 timeline 에 *별도 알림 카드* 로 튀어나오지 않고 **자연스럽게 직조(weave)** 되는 방식. 예: 파트너의 최근 phase signal 이 있을 때, 본인의 `next-step` 이 *"오늘 저녁 같이 걷기"* 로 조용히 바뀌고 AmbientPalette 가 미묘하게 warmer — *"파트너가 힘들어요"* 같은 명시 문구 없이.
+
+### A2. Role axis 는 signal axes 의 일등 축
+
+`Role = { self | partner | caregiver | doctor }` (향후 확장). 같은 chapter 를 **본인은 patient role, 파트너는 partner role 로 접속** → 완전히 다른 Moment set render. 두 사람이 **같은 화면을 공유하는 게 아니라**, 같은 데이터 위에서 **각자의 role-adaptive UI** 를 가진다. 파트너 UI 에선 *"아내의 오늘 어떤 순간이었을지"* 에 맞춘 자기만의 signature + next-step.
+
+§Signal Axes (L1) 의 `Role` 은 *"컨텍스트 힌트"* 수준에서 **"렌더링 분기 1차 키"** 로 격상.
+
+### A3. 은유적 가이드 원칙 — 내부 메타포는 UI 표면에 드러내지 않는다
+
+*"Agora"*, *"Moments"*, *"TimeRiver"*, *"quiet-weave"* 등 본 시스템의 **내부 메타포 어휘는 설계/코드/ADR/commit scope 에만 존재**. 사용자 facing UI·카피·라벨·온보딩·설정 어디에도 노출 금지. MODU 는 Agora *임을 증명* 하지 않고 Agora *처럼 느껴지도록* 조용히 인도한다.
+
+Grammar §5 Anti-Lexicon 추가 대상 (별도 PR):
+- *"파트너가 ~을 했어요"* 같은 드러냄 카피 → 금지
+- 내부 메타포 라벨 (Moments, Agora, TimeRiver 등) UI 노출 → 금지
+
+새 컴포넌트·Moment 이름 지을 때 두 관문: (1) UI 카피로 나가도 촌스럽지 않은가 (2) *"무엇을 느끼게 하는가"* 를 담고 있는가. 둘 다 실패하면 내부 코드네임으로만 사용.
+
+### A4. Sync-ready schema shape — v1 부터 강제
+
+ADR-0011 (local-first) 을 유지하되, **schema 는 sync-ready 모양** 으로 v1 부터 설계:
+
+- `id`: UUID v4 (local incremental X)
+- `updated_at`: ISO timestamp (last-write-wins 기반)
+- `synced_at?: string | null` (v1 전부 null, sync 붙으면 채워짐)
+
+**Repository 추상화 필수**: `AsyncStorage` / `zustand persist` 직접 호출 금지. `ChapterMemoryRepository` 같은 인터페이스 뒤에 local 구현체. 나중에 `CloudRepository` 가 옆에 붙을 수 있게.
+
+Sync invitation 의 *시점·방식* 은 ADR-0011 Addendum 참조.
+
+### 개정된 P0 (본문 Implementation 블록 override)
+
+P0 Moments (Phase 1, 4-6주):
+- `tpo-signature` (skin) — App-Open TPO 즉시성
+- `next-step` (floating) — zero-friction action-message 루프
+- **`quiet-weave`** (hero) — role-aware 은유적 배려 가이드. 파트너 미연결 시 self-adaptive 로 자연 degradation.
+
 ## References
 
 - ADR-0003 Memory-First Data Model (Moment events → ChapterMemory 머지)

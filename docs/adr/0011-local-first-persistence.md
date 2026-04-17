@@ -74,6 +74,36 @@ Cloud Sync (opt-in)
 | Local-only without sync option | 멀티 디바이스 사용자 영구 차단, 파트너 기능 불가 |
 | Cloud-first + local cache | local 이 stale 가능, "내 데이터가 내 폰에" 메시지 약함 |
 
+## Addendum — 2026-04-17 (Sync invitation 타이밍)
+
+v1 은 본문대로 **local-first 유지 + cloud sync opt-in**. 다만 *"opt-in 을 언제 어떻게 권유하는가"* 를 다음과 같이 명시한다.
+
+### 원칙
+
+**Sync 권유는 온보딩에서 하지 않는다.** 온보딩에서 account/OAuth 요구 = *"쉬운 돌봄"* 철학 위배 + 이탈률 증가. **본딩이 쌓인 시점에 자연스럽게 Moment 로 권유**.
+
+### 구현 — Sync invitation 자체가 Moment
+
+설정 화면 push / modal / badge 전부 X. `row` slot 의 Moment 로 조용히 등장 (ADR-0013 Moment 시스템 정합):
+
+- **Predicate**: bonding predicate 만족 시점에 시동
+- **Copy**: *"이 기록들은 지금 이 기기에만 있어요"* 수준 — 은유적 가이드 원칙 (ADR-0013 Addendum A3) 준수. *"클라우드 동기화"* 같은 기술 어휘 금지
+- **Dismiss 후**: N주 후 재조건 검토 (매번 재등장 X)
+
+### Bonding predicate (v1 초기값)
+
+AND 조건:
+- 활동 ≥ 7일
+- ChapterMemory ≥ 5개
+- 사진 ≥ 1장 (high-commitment signal)
+- Phase transition ≥ 1회 (*"여기에 내 인생이 들어있다"* 의 가장 강한 single signal)
+
+특히 **Phase transition** 은 단독으로도 강력한 commitment signal — 여정의 챕터 넘김 경험이 sync 수용 문턱을 크게 낮춘다.
+
+### 수치는 Phase 1 런칭 후 재조정
+
+위 임계값은 *초기 추정치*. 실제 sync 수용률 / dismiss 후 재등장 시 수용률 데이터로 Phase 2 이전 재보정 (PostHog opt-in events, ADR-0005).
+
 ## References
 
 - ADR-0001 Backend Platform (Supabase 그대로 — sync target 으로)
