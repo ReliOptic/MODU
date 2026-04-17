@@ -169,9 +169,9 @@ export interface ExportAttachment {
   key: string;
   mime: string | null;
   byte_size: number | null;
-  /** Presigned GET URL — valid for 15 minutes from export time. */
+  /** Presigned GET URL — valid for expires_in seconds from export time. */
   download_url: string;
-  /** ISO-8601 expiry (exported_at + 15 min). */
+  /** ISO-8601 expiry (exported_at + expires_in seconds, per server response). */
   expires_at: string;
 }
 
@@ -202,19 +202,22 @@ export async function fetchAttachments(exportedAt: Date): Promise<ExportAttachme
   }
 
   const attachmentRows = (rows ?? []) as ExportAttachmentRow[];
-  const expiresAt = new Date(exportedAt.getTime() + 15 * 60 * 1000).toISOString();
 
   const results: ExportAttachment[] = [];
 
   for (const row of attachmentRows) {
     try {
-      // op_mode='export' requests a 15-minute TTL presigned GET URL.
-      // getAttachmentUrl passes op: 'download' to the r2-presign edge function.
-      const { url } = await getAttachmentUrl({
+      // op_mode='export' signals the Edge Function to return a 15-min TTL URL.
+      // expires_at is derived from the authoritative expires_in returned by the
+      // server — never from a hardcoded client-side constant.
+      const { url, expires_in } = await getAttachmentUrl({
         attachmentId: row.id,
         assetId: row.asset_id,
         mime: row.mime ?? 'application/octet-stream',
+        op_mode: 'export',
       });
+
+      const expiresAt = new Date(exportedAt.getTime() + expires_in * 1000).toISOString();
 
       results.push({
         id: row.id,

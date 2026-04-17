@@ -380,6 +380,22 @@ export interface FormationCompletedEvent extends EventBase {
 }
 
 // ---------------------------------------------------------------------------
+// Data export (S4 / E4) — immutable audit, HIPAA §164.528 / GDPR Art.15
+// ---------------------------------------------------------------------------
+
+export interface DataExportRequestedEvent extends EventBase {
+  name: 'data_export_requested';
+  properties: {
+    /** Total byte size of the exported bundle. */
+    bundle_size_bytes: number;
+    /** Per-section item counts (flexible; keys are section names). */
+    item_counts: Record<string, number>;
+    /** Whether S4 audit events were included in the bundle. */
+    includes_s4: boolean;
+  };
+}
+
+// ---------------------------------------------------------------------------
 // System (S1)
 // ---------------------------------------------------------------------------
 
@@ -463,6 +479,7 @@ export type MoguEvent =
   | SyncInvitationAcceptedEvent
   | SyncInvitationDismissedEvent
   | FormationCompletedEvent
+  | DataExportRequestedEvent
   | ErrorRaisedEvent
   | PerformanceMarkEvent
   | LocaleChangedEvent;
@@ -527,6 +544,8 @@ export const EVENT_REGISTRY: Record<
   sync_invitation_dismissed:  { sensitivity: 'S1', envelope: 'E2', requiredKeys: [] },
   // Formation lifecycle
   formation_completed:        { sensitivity: 'S1', envelope: 'E1', requiredKeys: ['asset_type', 'steps_answered'] },
+  // Data export audit (S4 / E4 — immutable, never purged, HIPAA §164.528)
+  data_export_requested:      { sensitivity: 'S4', envelope: 'E4', requiredKeys: ['bundle_size_bytes', 'item_counts', 'includes_s4'] },
   // System
   error_raised:               { sensitivity: 'S1', envelope: 'E2', requiredKeys: ['error_code', 'retry_attempted'] },
   performance_mark:           { sensitivity: 'S1', envelope: 'E1', requiredKeys: ['mark_name', 'value_ms'] },

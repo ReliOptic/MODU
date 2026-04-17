@@ -28,7 +28,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { emit } from '../lib/events';
-import { exportToJson, type ExportStep } from '../lib/export';
+import { buildExportBundle, exportToJson, type ExportStep } from '../lib/export';
 import { palettes, typography, widgetTokens } from '../theme';
 
 // ─── Step labels ──────────────────────────────────────────────────────────────
@@ -47,7 +47,7 @@ const STEP_LABELS: Record<ExportStep, { ko: string; en: string }> = {
 type ExportState =
   | { phase: 'idle' }
   | { phase: 'running'; step: ExportStep; detail?: string }
-  | { phase: 'done'; uri: string; size: number; exportedAt: Date }
+  | { phase: 'done'; uri: string; size: number; exportedAt: Date; attachmentExpiresAt: Date | null }
   | { phase: 'error'; message: string };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -74,16 +74,26 @@ export function ExportScreen({ onClose }: ExportScreenProps) {
 
       const exportedAt = new Date();
 
-      // S4 audit event — data_export_requested.
-      // Emitted AFTER successful write so the audit record reflects a real export.
-      // Properties kept minimal (no paths, no raw content) per data minimisation.
-      // NOTE: data_export_requested is not yet in EVENT_REGISTRY — if this emit
-      // produces a dev-mode warning, add the event to types/events.ts + EVENT_REGISTRY.
-      // Using screen_viewed as a proxy until the dedicated event type is added.
-      // TODO(Task #22): add 'data_export_requested' to EVENT_REGISTRY with S4/E4.
-      emit('screen_viewed', { screen_id: 'export_complete' });
+      // Derive authoritative attachment expiry from the first attachment entry,
+      // which carries expires_at computed from the server's expires_in value.
+      let attachmentExpiresAt: Date | null = null;
+      try {
+        const snapshot = await buildExportBundle({ includeS4Audit: false });
+        if (snapshot.attachments.length > 0) {
+          attachmentExpiresAt = new Date(snapshot.attachments[0].expires_at);
+        }
+      } catch {
+        // Non-fatal — expiry display falls back to null (no TTL shown)
+      }
 
-      setState({ phase: 'done', uri, size, exportedAt });
+      // S4 audit event — data_export_requested (immutable audit, never purged).
+      emit('data_export_requested', {
+        bundle_size_bytes: size,
+        item_counts: {},
+        includes_s4: true,
+      });
+
+      setState({ phase: 'done', uri, size, exportedAt, attachmentExpiresAt });
     } catch (err) {
       const message = (err as Error).message ?? '알 수 없는 오류';
       setState({ phase: 'error', message });
@@ -93,6 +103,16 @@ export function ExportScreen({ onClose }: ExportScreenProps) {
   const handleShare = useCallback(async () => {
     if (state.phase !== 'done') return;
     const { uri } = state;
+
+    // PII warning — shown before every share action (HIPAA §164.524 / GDPR Art.15).
+    await new Promise<void>((resolve) => {
+      Alert.alert(
+        '개인 건강정보 포함 / Contains Health Data',
+        '이 파일에는 메모·복약·돌봄 기록 등 개인 건강정보가 포함됩니다. 신뢰할 수 있는 수신자에게만 공유하세요.\n\nThis file contains your personal health data (notes, medications, care logs, S4 audit). Share only with trusted recipients.',
+        [{ text: '확인 / OK', onPress: () => resolve() }],
+        { cancelable: false }
+      );
+    });
 
     // expo-sharing — dynamically imported (peer dep, may not be installed).
     try {
@@ -224,8 +244,9 @@ export function ExportScreen({ onClose }: ExportScreenProps) {
               {(state.size / 1024).toFixed(1)} KB · {state.exportedAt.toLocaleString()}
             </Text>
             <Text style={styles.successNote}>
-              첨부파일 링크 만료: {new Date(state.exportedAt.getTime() + 15 * 60 * 1000).toLocaleTimeString()}{'\n'}
-              Attachment URLs expire at: {new Date(state.exportedAt.getTime() + 15 * 60 * 1000).toLocaleTimeString()}
+              {state.attachmentExpiresAt != null
+                ? `첨부파일 링크 만료: ${state.attachmentExpiresAt.toLocaleTimeString()}\nAttachment URLs expire at: ${state.attachmentExpiresAt.toLocaleTimeString()}`
+                : '첨부파일 링크가 없거나 만료 시각을 확인할 수 없습니다.\nNo attachments or expiry time unavailable.'}
             </Text>
           </View>
         )}

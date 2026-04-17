@@ -69,12 +69,12 @@ jest.mock('../lib/r2Client', () => ({
     url: 'https://r2.example.com/presigned',
     expires_in: 900,
   }),
-  // Plain ES5 class — no TypeScript parameter properties allowed in jest.mock factories.
   R2ClientError: class MockR2ClientError extends Error {
-    constructor(code, message) {
+    public code: string;
+    constructor(code: string, message: string) {
       super(message);
-      this.name = 'R2ClientError';
       this.code = code;
+      this.name = 'R2ClientError';
     }
   },
 }));

@@ -176,8 +176,16 @@ export async function buildExportBundle(
   }
 
   // ── Locale ────────────────────────────────────────────────────────────────
-  const locale =
-    (typeof navigator !== 'undefined' && navigator.language) || 'en-US';
+  // Prefer expo-localization (stable RN implementation) over navigator.language
+  // which can be unreliable in React Native environments.
+  let locale = 'en-US';
+  try {
+    const Localization = await import('expo-localization');
+    locale = Localization.getLocales?.()?.[0]?.languageTag ?? 'en-US';
+  } catch {
+    // expo-localization not installed — fall back to navigator.language.
+    locale = (typeof navigator !== 'undefined' && navigator.language) || 'en-US';
+  }
 
   onProgress?.('done');
 
@@ -262,6 +270,7 @@ export async function exportToJson(
  *   3. JSON already satisfies the GDPR Art.15 "structured, machine-readable"
  *      requirement; PDF adds human-readability for non-technical users.
  *
+ * @deprecated until task #22 (PDF export implementation)
  * @throws Error Always — not yet implemented.
  */
 export async function exportToPdf(

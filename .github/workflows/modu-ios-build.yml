@@ -1,0 +1,64 @@
+name: MODU iOS Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  ios-build:
+    name: iOS Build
+    runs-on: macos-14
+    timeout-minutes: 45
+
+    env:
+      CI: true
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate iOS native project
+        run: npx expo prebuild --platform ios --non-interactive
+
+      - name: Install CocoaPods dependencies
+        working-directory: ios
+        run: pod install --repo-update
+
+      - name: Resolve workspace and scheme
+        id: xcode
+        shell: bash
+        run: |
+          set -euo pipefail
+          workspace="$(find ios -maxdepth 1 -name '*.xcworkspace' | head -n 1)"
+          if [[ -z "${workspace}" ]]; then
+            echo "No Xcode workspace found under ios/" >&2
+            exit 1
+          fi
+
+          scheme="$(xcodebuild -list -json -workspace "${workspace}" | ruby -rjson -e 'data = JSON.parse(STDIN.read); schemes = data.fetch("workspace", {}).fetch("schemes", []); abort("No Xcode scheme found") if schemes.empty?; puts schemes.first')"
+
+          echo "workspace=${workspace}" >> "${GITHUB_OUTPUT}"
+          echo "scheme=${scheme}" >> "${GITHUB_OUTPUT}"
+
+      - name: Build iOS app for simulator
+        run: |
+          xcodebuild \
+            -workspace "${{ steps.xcode.outputs.workspace }}" \
+            -scheme "${{ steps.xcode.outputs.scheme }}" \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
