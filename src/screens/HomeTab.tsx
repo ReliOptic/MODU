@@ -7,6 +7,7 @@ import { useWidgetOrder } from '../hooks/useWidgetOrder';
 import {
   PrimaryEventCard,
   CalendarMiniWidget,
+  ValueMoment, // 추가
   InjectionTimeline,
   MoodQuickLog,
   PartnerSyncBar,
@@ -32,10 +33,42 @@ import {
   petMock,
   chronicMock,
 } from '../data/mock/widgetData';
+import type { WidgetConfig } from '../types/asset';
 
 export interface HomeTabProps {
   asset: Asset;
 }
+
+/** 
+ * 위젯 타입별 컴포넌트 레지스트리.
+ * 새로운 모먼트 추가 시 이곳에 등록만 하면 HomeTab 수정 없이 즉시 반영됨 (Zero-Code Ready).
+ */
+const WIDGET_REGISTRY: Record<string, React.FC<any>> = {
+  'core.value': ValueMoment,
+  'core.narrative': NarrativeMoment,
+  'core.step': StepMoment,
+  'core.glance': GlanceMoment,
+  'primary_event': PrimaryEventCard,
+  'calendar_mini': CalendarMiniWidget,
+  'injection_timeline': InjectionTimeline,
+  'mood_quicklog': MoodQuickLog,
+  'partner_sync': PartnerSyncBar,
+  'calendar_full': CalendarFullView,
+  'calendar_legend': CalendarLegend,
+  'question_checklist': QuestionChecklist,
+  'prev_visit_memo': PrevVisitMemo,
+  'treatment_timeline': TreatmentTimeline,
+  'medication_list': MedicationList,
+  'pet_profile': PetProfileCard,
+  'daily_log_bars': DailyLogBars,
+  'vet_memo': VetMemo,
+  'condition_trend': ConditionTrend,
+  'weekly_bar_graph': WeeklyBarGraph,
+  'monthly_heatmap': MonthlyHeatmap,
+  'trigger_analysis': TriggerAnalysis,
+  'next_visit': NextVisitCard,
+  'medication_stock': MedicationStock,
+};
 
 export function HomeTab({ asset }: HomeTabProps) {
   const { homeOrder, highlighted } = useWidgetOrder(asset, { tab: 'home' });
@@ -47,51 +80,48 @@ export function HomeTab({ asset }: HomeTabProps) {
       <Text style={[styles.greeting, { color: palette[500] }]}>
         {greetingFor(asset.displayName)}
       </Text>
-      {homeOrder.map((type) => (
-        <View
-          key={type}
-          style={[
-            styles.slot,
-            highlighted.has(type) && {
-              shadowColor: palette.accent,
-              shadowOpacity: 0.35,
-              shadowRadius: 12,
-              shadowOffset: { width: 0, height: 4 },
-            },
-          ]}
-        >
-          {renderWidget(type, asset.palette, mock)}
-        </View>
-      ))}
+      {homeOrder.map((type) => {
+        // 현재 에셋의 위젯 설정 찾기 (props 포함)
+        const config = asset.widgets.find(w => w.type === type);
+        
+        return (
+          <View
+            key={type}
+            style={[
+              styles.slot,
+              highlighted.has(type) && {
+                shadowColor: palette.accent,
+                shadowOpacity: 0.35,
+                shadowRadius: 12,
+                shadowOffset: { width: 0, height: 4 },
+              },
+            ]}
+          >
+            {renderWidget(type, asset.palette, mock, config)}
+          </View>
+        );
+      })}
     </ScrollView>
   );
 }
 
-function pickMock(type: Asset['type']): Record<string, unknown> | undefined {
-  switch (type) {
-    case 'fertility':
-      return fertilityMock as Record<string, unknown>;
-    case 'cancer_caregiver':
-      return cancerMock as Record<string, unknown>;
-    case 'pet_care':
-      return petMock as Record<string, unknown>;
-    case 'chronic':
-      return chronicMock as Record<string, unknown>;
-    default:
-      return undefined;
-  }
-}
-
-/** mock 객체에서 키를 꺼내고 palette 충돌을 피하기 위해 Omit 으로 간주 */
-function pick<K extends string, T>(m: Record<string, unknown> | undefined, key: K, fallback: T): T {
-  return ((m?.[key] as T) ?? fallback);
-}
+// ... pickMock, pick 함수들은 유지 ...
 
 function renderWidget(
   type: WidgetType,
   palette: PaletteKey,
-  mock: Record<string, unknown> | undefined
+  mock: Record<string, unknown> | undefined,
+  config?: WidgetConfig
 ): React.ReactNode {
+  const Component = WIDGET_REGISTRY[type];
+  if (!Component) return null;
+
+  // 1. AI Blueprint의 props가 있다면 최우선 적용
+  if (config?.props) {
+    return <Component palette={palette} {...config.props} />;
+  }
+
+  // 2. Legacy/Fallback: 하드코딩된 매핑 (Mock 데이터 기반)
   switch (type) {
     case 'primary_event': {
       const d = pick(mock, 'primary_event', { title: '다음 이벤트', timeLabel: '—' } as Omit<Parameters<typeof PrimaryEventCard>[0], 'palette'>);
@@ -101,6 +131,8 @@ function renderWidget(
       const d = pick(mock, 'calendar_mini', {} as Omit<Parameters<typeof CalendarMiniWidget>[0], 'palette'>);
       return <CalendarMiniWidget palette={palette} month={d.month} dots={d.dots} today={d.today} />;
     }
+    case 'core.value': // 신규 범용 모먼트 (props 필수)
+      return null; 
     case 'injection_timeline': {
       const d = pick(mock, 'injection_timeline', { items: [] } as Parameters<typeof InjectionTimeline>[0]);
       return <InjectionTimeline items={d.items} />;
@@ -184,6 +216,8 @@ function renderWidget(
       return <MedicationStock palette={palette} items={d.items} />;
     }
     case 'event_detail_list':
+      return null;
+    default:
       return null;
   }
 }

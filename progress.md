@@ -8,6 +8,16 @@
 
 ## Latest decision — 2026-04-17 (PM, /office-hours session)
 
+### Founder insight log — adaptive specificity over static ICP
+
+New founder insight captured at [`docs/strategy/2026-04-17-founder-log-adaptive-specificity.md`](docs/strategy/2026-04-17-founder-log-adaptive-specificity.md).
+
+- Office-hours pushback: "target group is not specific enough"
+- Founder counter-thesis: that logic fits pre-AI product economics better than AI-native adaptive UX
+- MODU specificity should come less from narrowing to one static persona and more from reading chapter/time/role/phase/memory with higher resolution
+- Competitive frame sharpened: not "another broad tool" but "more context-sensitive than Notion / Google Calendar"
+- New operating question: not only "is the ICP narrow enough?" but also "is the adaptation deep enough?"
+
 ### Horizontal pivot — design doc APPROVED
 
 **Strategic shift**: ADR-0004 (fertility-only v1, KR-only) is **retired**. MODU is now positioned as a **horizontal metamorphic life-asset platform** from v1. Fertility downgraded from "vertical wedge" to "warm-start seed". Fertility, students, workers, athletes, caregivers, etc. are all peer assets.
@@ -40,7 +50,7 @@
 
 ### Open Questions (founder decision next session)
 
-- ADR-0004 retirement: delete vs supersede with `ADR-0018 Horizontal-First Pivot` (recommend supersede so the lineage is preserved)
+- ~~ADR-0004 retirement: delete vs supersede~~ → **Resolved**: supersede. ADR-0004 marked `[Superseded by ADR-0018]` across all references; ADR history body preserved.
 - App Store category change (fertility/health → Lifestyle / Productivity)
 - KR tagline: "Listen to your life" retained; fertility-specific marketing copy ("먼저 IVF 동반자로 시작") removed
 - Pricing tier redefinition for horizontal: Free / Plus ₩5,900 / Family ₩11,900 — asset-per-member vs unlimited assets in Plus/Family?

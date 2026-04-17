@@ -119,8 +119,20 @@ export function useWidgetOrder(
       userResponses: asset.formationData?.responses ?? {},
     };
 
+    // 3) Blueprint 기반 동적 규칙 생성 (Zero-Code Engine)
+    const blueprintRules = (asset.blueprint?.tpoRules ?? []).map((r) => ({
+      id: `bp-${r.trigger}-${r.targetMoment}`,
+      widgetId: r.targetMoment,
+      condition: r.condition,
+      action: r.action,
+    }));
+
     const tabWidgets = asset.widgets.filter((w) => (w.tab ?? 'home') === tab);
-    const allRules = [...(asset.layoutRules ?? []), ...rulesByType[asset.type]];
+    const allRules = [
+      ...(asset.layoutRules ?? []),
+      ...blueprintRules, // AI가 생성한 동적 규칙 추가
+      ...rulesByType[asset.type],
+    ];
 
     if (animate) {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);

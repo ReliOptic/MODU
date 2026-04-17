@@ -1,3 +1,7 @@
+-- LEGACY: superseded by supabase/migrations/20260417000000_* – 20260417000006_*
+-- (Task #18, 2026-04-17). Do NOT apply to any new project.
+-- Preserved for historical reference only.
+--
 -- MODU Postgres schema — Memory-First Data Model (ADR-0003)
 -- 적용 순서: schema.sql → policies.sql → seed.sql (선택)
 --

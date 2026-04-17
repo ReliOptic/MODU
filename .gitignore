@@ -35,6 +35,12 @@ yarn-error.*
 .env*.local
 secrets/
 
+# Edge Function server-only secrets (never commit actual values)
+.env.functions
+.env.functions.*
+supabase/functions/.env.functions
+supabase/functions/.env.functions.*
+
 # typescript
 *.tsbuildinfo
 
@@ -44,3 +50,9 @@ secrets/
 .omc/
 PROGRESS.md.bak
 *.log
+
+# local daily thinking / scratch logs
+.logs/
+!.logs/.gitkeep
+!.logs/README.md
+.omx/

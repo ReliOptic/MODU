@@ -1,6 +1,7 @@
 // Formation 진행 상태 — Zustand
 import { create } from 'zustand';
 import type { FormationResponse, FormationContext, AssetType } from '../types';
+import { emit } from '../lib/events';
 
 export interface FormationStore {
   currentStepId: string;
@@ -24,10 +25,17 @@ export const useFormationStore = create<FormationStore>((set, get) => ({
   context: {},
 
   advance: (response, nextStepId) => {
-    set((s) => ({
-      responses: [...s.responses, response],
-      currentStepId: nextStepId,
-    }));
+    set((s) => {
+      const nextResponses = [...s.responses, response];
+      if (nextStepId === 'CONFIRM' && s.context.inferredType) {
+        const stepsAnswered = nextResponses.filter((r) => r.type !== 'skip').length;
+        emit('formation_completed', {
+          asset_type: s.context.inferredType as import('../types/events').ChapterType,
+          steps_answered: stepsAnswered,
+        });
+      }
+      return { responses: nextResponses, currentStepId: nextStepId };
+    });
   },
 
   setInferredType: (type) => {

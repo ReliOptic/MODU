@@ -2,7 +2,7 @@
 
 - Date: 2026-04-17
 - Status: Strategy (live document). Promote individual sections to ADRs as binding gates emerge.
-- Related: ADR-0004 · ADR-0005 · ADR-0011 · ADR-0013 · ADR-0014
+- Related: ADR-0004 [Superseded by ADR-0018] · ADR-0005 · ADR-0011 · ADR-0013 · ADR-0014 · ADR-0018
 - Companion strategy docs: `2026-04-17-w1-retention-and-scale-vision.md` · `2026-04-17-revenue-unit-economics.md` · `2026-04-17-caregiver-agora-and-micro-sessions.md` · `2026-04-17-regulatory-welcome-and-b2g.md`
 
 ## Thesis
@@ -127,7 +127,7 @@ This is the **public-good argument** for institutional sponsorship, B2G licensin
 
 ## References
 
-- ADR-0004 Vertical-First Launch · ADR-0005 Privacy as Moat · ADR-0011 Local-First · ADR-0013 Adaptive-by-Default · ADR-0014 English-First
+- ADR-0004 Vertical-First Launch [Superseded by ADR-0018] · ADR-0005 Privacy as Moat · ADR-0011 Local-First · ADR-0013 Adaptive-by-Default · ADR-0014 English-First · ADR-0018 Horizontal-First Pivot
 - `docs/strategy/2026-04-17-w1-retention-and-scale-vision.md` (retention as north-star metric)
 - `docs/strategy/2026-04-17-revenue-unit-economics.md` (consumer ARPU levers)
 - `docs/strategy/2026-04-17-caregiver-agora-and-micro-sessions.md` (network-effect seed)

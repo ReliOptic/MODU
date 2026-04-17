@@ -45,6 +45,17 @@ psql "$DATABASE_URL" -f supabase/seed.sql      # TBD
 - **vertical_waitlist**: 누구나 insert (비로그인 OK), self read.
 - **chapter_archives**: owner full only.
 
+## R2 MIME 신뢰 경계
+
+- **현재 (v1)**: MIME 타입은 클라이언트가 요청 body에 제출한 값을 신뢰합니다.
+  Edge Function은 허용 목록(`MIME_WHITELIST`) 검사만 수행하며, R2 `HeadObject`로
+  실제 바이트를 sniff하지 않습니다.
+- **근거**: HeadObject 호출은 추가 R2 API 비용 및 레이턴시를 유발하며,
+  업로드 URL은 이미 `Content-Type` 헤더를 고정(`PutObjectCommand.ContentType`)하여
+  클라이언트가 임의 MIME으로 PUT하는 것을 방지합니다.
+- **예정 (v2)**: 서버 사이드 MIME sniff(magic-bytes 검증)를 도입하여
+  클라이언트 신뢰를 제거할 예정입니다. 트래킹: TODO v2 mime-server-validation.
+
 ## 보안 약속 (ADR-0005)
 
 - ANTHROPIC_API_KEY 는 Supabase Secret 에만. client 노출 X.

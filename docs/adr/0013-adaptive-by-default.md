@@ -2,13 +2,13 @@
 
 - Status: **Proposed**
 - Date: 2026-04-17
-- Supersedes-relation: 보완 — ADR-0004 (vertical-first launch) 와 양립. ADR-0004 는 *go-to-market* 결정, 본 ADR 은 *아키텍처* 결정.
+- Supersedes-relation: 보완 — ADR-0004 [Superseded by ADR-0018] (vertical-first launch) 와 양립. ADR-0004 는 *go-to-market* 결정, 본 ADR 은 *아키텍처* 결정.
 - Related: ADR-0003 (Memory-First) · ADR-0005 (Privacy as Moat) · ADR-0009 예정 (Timeflow) · ADR-0010 예정 (Adaptive Engine) · ADR-0012 (Gemma)
 - Origin: 2026-04-17 brainstorming session (`d4ac6ce1-...`) — 7 pillars 합의
 
 ## Context
 
-MODU 의 핵심 약속은 *"누구에게나 각자 맞는 UI"* (TPO 기반 hyper-personalization). v1 fertility 단독 출시 (ADR-0004) 는 GTM 결정이지만, **아키텍처가 fertility 에 락인되면 핵심 약속이 무너진다.**
+MODU 의 핵심 약속은 *"누구에게나 각자 맞는 UI"* (TPO 기반 hyper-personalization). v1 fertility 단독 출시 (ADR-0004 [Superseded by ADR-0018]) 는 GTM 결정이었지만, ADR-0018 에서 horizontal-first 로 전환됨. **아키텍처가 fertility 에 락인되면 핵심 약속이 무너진다.**
 
 브레인스토밍에서 사용자가 명시 — *"사례 중심으로 가면 직관적이지만 하이퍼 퍼스널라이제이션의 개념이 흐려진다. 사례 중심으로 락인되는 방향으로 개발이 진전된다. 전세계 누구나 각자 니즈에 맞춰지는 앱이 필요하다."*
 
@@ -157,7 +157,7 @@ src/moments/
 | (D) Signal Graph (전부 동등 weight) | 디버깅 불가, MVP 과잉. SQM 위반 |
 | (X) Rule-only composition | AI 학습 친화 (사용자의 (c) 주장) 충족 X |
 | (Y) AI-first composition | 비용 linear, 일관성 ↓, 캐싱 어려움 (CTO plan §1.3 와 충돌) |
-| Persona/Case 우선 설계 | 카테고리 락인. ADR-0004 의 GTM 결정과 아키텍처를 혼동하는 실수 |
+| Persona/Case 우선 설계 | 카테고리 락인. ADR-0004 [Superseded by ADR-0018] 의 GTM 결정과 아키텍처를 혼동하는 실수 |
 
 ## Grammar 편입
 
@@ -237,7 +237,7 @@ P1 공통 요구: `en-US` + `ko-KR` **동시 렌더** 검증 통과 (ADR-0014).
 ## References
 
 - ADR-0003 Memory-First Data Model (Moment events → ChapterMemory 머지)
-- ADR-0004 Vertical-First Launch (GTM 결정 — 본 ADR 과 양립)
+- ADR-0004 Vertical-First Launch [Superseded by ADR-0018] (GTM 결정 — 본 ADR 과 양립. ADR-0018 으로 supersede)
 - ADR-0005 Privacy as Moat (events opt-in, Quality Contract §5 explainability)
 - ADR-0009 Timeflow (예정) — Slot 모델이 Timeflow paradigm 의 surface 표현
 - ADR-0010 Adaptive Engine (예정) — 본 ADR 의 composition pipeline 의 cache 구현

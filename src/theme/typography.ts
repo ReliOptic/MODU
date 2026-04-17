@@ -7,7 +7,7 @@ import type { TextStyle } from 'react-native';
 type Style = Pick<TextStyle, 'fontFamily' | 'fontSize' | 'fontWeight' | 'letterSpacing' | 'lineHeight'>;
 
 const PRETENDARD_BOLD = 'Pretendard-Bold';
-const PRETENDARD_SEMIBOLD = 'Pretendard-Semibold';
+const PRETENDARD_SEMIBOLD = 'Pretendard-SemiBold';
 const PRETENDARD_REGULAR = 'Pretendard-Regular';
 const FRAUNCES_LIGHT_ITALIC = 'Fraunces-LightItalic';
 

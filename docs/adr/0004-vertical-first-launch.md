@@ -1,8 +1,19 @@
 # ADR-0004: Vertical-First Launch — Fertility 단독 v1, 멀티에셋은 v2
 
-- Status: **Proposed (awaiting founder confirm)**
+- Status: **Superseded by [ADR-0018 Horizontal-First Pivot](./0018-horizontal-first-pivot.md)**
 - Date: 2026-04-17
+- Superseded: 2026-04-17 (PM, /office-hours session)
 - Related: CPO Review §4, §6.1
+
+> ⚠️ **Deprecation notice** — This ADR is superseded by ADR-0018 (2026-04-17 PM).
+> The fertility-only v1 vertical strategy was retired in the same session it was proposed.
+> The founder accepted the horizontal metamorphic platform thesis (P1-P5) over the wedge strategy.
+> AI cost-collapse (P2) was the decisive factor: per-vertical hand-build cost — the original constraint
+> that justified this ADR — no longer applies at startup scale. Fertility is demoted from
+> "v1 categorical default" to "warm-start seed asset" among peer asset types.
+>
+> **Do not use this ADR as a decision source.** History preserved below for lineage.
+> New source of truth: `docs/planning/2026-04-17-horizontal-pivot-asset-spawner-design.md`
 
 ## Context
 

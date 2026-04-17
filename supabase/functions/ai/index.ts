@@ -1,5 +1,8 @@
 // MODU AI Edge Function — Claude API proxy (ADR-0002)
 //
+// DEPRECATED: This function is deprecated and will be sunset on 2026-05-01.
+// Use `ai-claude` instead. See supabase/functions/README.md for migration details.
+//
 // 배포: `supabase functions deploy ai --no-verify-jwt=false`
 // 환경변수: ANTHROPIC_API_KEY (Supabase secret) + SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 //
@@ -14,6 +17,7 @@
 
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { redactValue } from '../_shared/redact.ts';
 
 interface IntentSpec {
   systemPrompt: string;
@@ -127,7 +131,7 @@ serve(async (req: Request) => {
       messages: [
         {
           role: 'user',
-          content: JSON.stringify(body.context ?? {}),
+          content: JSON.stringify(redactValue(body.context ?? {})),
         },
       ],
     }),

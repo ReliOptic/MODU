@@ -8,7 +8,7 @@
 - **Backend**: Supabase (Seoul) + Cloudflare R2 (ADR-0001)
 - **AI**: Claude API via Supabase Edge Function (ADR-0002)
 - **Data Model**: Memory-First (ChapterMemory 중심) (ADR-0003)
-- **출시 카테고리**: Fertility 단독 v1 (ADR-0004) ← *founder confirm 대기*
+- **출시 카테고리**: Horizontal metamorphic platform from v1 (ADR-0018) — ADR-0004 [Superseded by ADR-0018]
 - **Privacy**: Marketing moat 수준 (ADR-0005)
 - **수익 모델**: Freemium + Plus(₩5,900/mo) + Family(₩11,900/mo) — *ADR-0006 예정*
 - **타겟**: KR 선공, US/EU 는 v3 이후 — *ADR-0007 예정*
@@ -23,7 +23,7 @@
 | Auth: Apple / Google / Email magic | ⏳ | Apple 필수 (App Store 정책) |
 | 디자인 토큰 v2 (semantic + dark mode) | ⏳ | CPO §3.5 |
 | Sentry + PostHog (opt-in) | ⏳ | |
-| WelcomeScreen + 첫 챕터 birth ritual | 🟡 | 코드 작성됨, 통합 대기 (ADR-0004 확정 후) |
+| WelcomeScreen + 첫 챕터 birth ritual | 🟡 | 코드 작성됨, 통합 대기 (ADR-0018 확정) |
 | Mock 에셋 시드 → dev flag 로 분리 | ✅ | `EXPO_PUBLIC_SEED_DEMO=1` |
 
 ## Phase 1 — IA 완성 (Fertility 한정, 6-8주)
@@ -80,7 +80,7 @@
 
 | # | 결정 사항 | 상태 | 비고 |
 |---|-----------|------|------|
-| 1 | 단일 vs 다중 에셋 출시 | 🟡 ADR-0004 proposed | founder confirm 대기 |
+| 1 | 단일 vs 다중 에셋 출시 | 🟢 ADR-0018 확정 | Horizontal from v1. ADR-0004 [Superseded by ADR-0018] |
 | 2 | 수익 모델·가격 | 🟡 초안 (₩5,900 / ₩11,900) | ADR-0006 예정 |
 | 3 | 타겟 국가 | 🟡 KR 선공 권고 | ADR-0007 |
 | 4 | 파트너 동기화 모델 | ⏳ | 계정 필수 vs 게스트 링크 |

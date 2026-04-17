@@ -14,12 +14,12 @@
 
 ## 0. One-sentence identity
 
-> **MODU is *the permanent library of life's chapters*.**
+> **MODU is *the permanent library of life's transitions*.**
 
-A chapter is any span of life worth recording — medical journeys, caregiving, daily practice, leisure, habit. Medical is the most serious expression and the v1 go-to-market surface (ADR-0004); it is not the system's definition. The system is category-agnostic by design.
+A chapter is any span of life worth recording — the arc of a new challenge, a period of care, or a journey of growth. MODU is the vessel that holds these transitions, weaving disparate memories into a single, seamless narrative. The system is metamorphic by design; it adapts its form to the weight and nature of each chapter. MODU is a horizontal life-asset platform from v1 (ADR-0018). Medical is our most rigorous case, but every life chapter is a first-class citizen.
 
 > *"No fixture is fixtures — formlessness is form."* (CEO reframe, 2026-04-17)
-> Signal axes (TPO · Role · Phase · Preference · Place) and invariants (voice · scaffold · ritual · river-shape) are the form. What the user brings — medical, caregiving, wellness, leisure, any recordable life — is the content.
+> Signal axes (TPO · Role · Phase · Preference) and invariants (voice · scaffold · ritual · river-shape) are the form. What the user brings — any recordable life chapter — is the content.
 
 Four core metaphors descend from that sentence: **Chapter · Memory · Library · Companion**.
 
@@ -51,7 +51,7 @@ Each row: **(Code) — User-facing copy (en / ko) — Definition — Never say**
 
 | Code | User copy (en / ko) | Definition | Never |
 |------|---------------------|------------|-------|
-| `Asset` | **Chapter** / **챕터** | One care journey for one user (3rd IVF cycle, mom's chemo, Bori's joint care) | "project", "case" |
+| `Asset` | **Chapter** / **챕터** | One life chapter for one user — any span worth recording (university entrance prep, new job transition, marathon training, IVF cycle, child care, parent caregiving) | "project", "case" |
 | `ChapterMemory` | **Memory** / **기억** | Append-only timeline event (note, med, photo, mood, visit) | "record", "entry", "log" |
 | `ScheduledEvent` | **Upcoming / Past** / **다가오는 일 · 지나간 일** | Time-coordinate event (procedure, visit, injection) | "event", "appointment" |
 | `PartnerLink` | **Someone walking with you** / **함께하는 사람** | Person sharing the chapter (spouse, family, doctor) | "collaborator", "shared user" |
@@ -99,7 +99,7 @@ Rituals are moments where the user feels conscious weight. Distinct from ordinar
 | `TPO` | Time / Place / Occasion — adaptive UI signal |
 | `Moment` | Adaptive-by-Default atomic render unit — `id · intent · slot · predicate · render · events · variants` (ADR-0013) |
 | `Slot` | Five screen regions (`skin` / `glance` / `hero` / `row` / `floating`) — Moment placement |
-| `Signal Axes` | L0 (user declaration) > L1 (observed: TPO · Role · Phase) > L2 (AI inference) — priority enforced |
+| `Signal Axes` | Four axes: **TPO** (Time/Place/Occasion) · **Role** (self/partner/caregiver) · **Phase** (before/during/after) · **Preference** (AI-inferred). Priority: L0 (user declaration) > L1 (observed: TPO · Role · Phase) > L2 (AI inference) — enforced, never reversed. Asset-agnostic: same axes apply to fertility, study, work, fitness, caregiving, and any spawned chapter. (ADR-0018 P5) |
 | `Role` | `self` / `partner` / `caregiver` / `doctor` — primary render-branch key (same chapter × different role → different Moment set) |
 | `Quality Contract` | 7 constraints on Moment render (Bounded · Observable · Predictable · Reversible · Auditable · Fallback · A11y) |
 | `Agora` *internal philosophy* | Chatless shared care (not a solo diary). Never user-facing — §4.6 |
@@ -116,15 +116,18 @@ Rituals are moments where the user feels conscious weight. Distinct from ordinar
 2. **Verbs over nouns.** *"Write it down"* over *"record"*.
 3. **Second person, not first.** *"The note you wrote"* over *"the data we tracked"*.
 4. **Everyday time.** *"tomorrow morning"* over *"D-1"* over *"23 hours until transfer"*. Earlier is better.
-5. **Acknowledge weight.** IVF, chemo, caregiving are not light. Pause half a beat: *"Hold on..."*.
+5. **Acknowledge weight.** Hard chapters — IVF, chemo, bereavement, academic failure, caregiving — are not light. Pause half a beat: *"Hold on..."*.
 
 ### 3.2 Tone examples (good vs bad)
 
 | Situation | ❌ Bad | ✅ Good |
 |-----------|-------|---------|
-| Injection done | "1 injection complete! Today's mission cleared 🎯" | "Gonal-F this morning. Well done." |
-| Day after chemo | "Round 5/7 in progress. You got this!" | "Yesterday was round 5. Take today slowly." |
-| Memory surfacing | "Memory Unlock! 1 year ago today" | "One year ago today, you had your first shot." |
+| Care event logged (E4 health asset) | "1 injection complete! Today's mission cleared 🎯" | "Gonal-F this morning. Well done." |
+| Non-health chapter nudge (E1 training) | "You haven't logged today! Streak at risk 🔥" | "Yesterday you skipped the long run. What's worth noting today?" |
+| Hard day on a health chapter | "Round 5/7 in progress. You got this!" | "Yesterday was round 5. Take today slowly." |
+| Memory surfacing (any chapter) | "Memory Unlock! 1 year ago today" | "One year ago today, you started this chapter." |
+| Study chapter nudge | "You haven't logged today! Don't break the streak 🔥" | "Yesterday you noted three things. What's worth noting today?" |
+| New chapter spawned | "Asset created successfully ✅" | "Your chapter is ready. What do you want to remember first?" |
 | Error | "Error occurred. Please retry." | "Trouble connecting just now — one more try?" |
 | Empty state | "No data yet." | "Your first memory will settle here." |
 
@@ -240,7 +243,7 @@ Same lexicon, different decision lenses.
 ### 6.1 CEO — *"What is this in 10 years?"*
 - Prioritizes: mission, long-term assets, trust
 - Rejects: anti-lexicon to chase short-term growth / ad monetization / data sale
-- Signature: *"Will this still matter to the user in 5 years?"*
+- Signature: *"Does this capture the unique rhythm of this chapter while contributing to the user's permanent library?"*
 
 ### 6.2 CPO — *"Why would the user love this?"*
 - Prioritizes: UX, PMF, differentiation
@@ -366,6 +369,7 @@ MODU's internal register (§1-§10) is for the team. When speaking to regulators
 - `docs/planning/2026-04-17-adaptive-engine-cto-plan.md` (infrastructure vocabulary source)
 - `docs/adr/0013-adaptive-by-default.md` (Moments origin)
 - `docs/adr/0014-english-first-global-native.md` (this doc's language rule)
+- `docs/adr/0018-horizontal-first-pivot.md` (horizontal platform, signal axes, per-asset compliance matrix E1-E4)
 - `docs/grammar/modu-product-grammar.ko.md` (prior Korean master, preserved)
 
 ---

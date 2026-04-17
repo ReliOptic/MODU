@@ -2,7 +2,7 @@
 
 - Date: 2026-04-17
 - Status: Strategy (live document). Promote to ADR-0015 when binding gates emerge.
-- Related: ADR-0004 (Vertical-First) · ADR-0005 (Privacy as Moat) · ADR-0011 (Local-First) · ADR-0013 (Adaptive-by-Default) · ADR-0014 (English-First)
+- Related: ADR-0004 (Vertical-First) [Superseded by ADR-0018] · ADR-0005 (Privacy as Moat) · ADR-0011 (Local-First) · ADR-0013 (Adaptive-by-Default) · ADR-0014 (English-First) · ADR-0018 (Horizontal-First Pivot)
 - Companion: `docs/strategy/2026-04-17-revenue-unit-economics.md` (consumer model) · `docs/grammar/modu-product-grammar.md` §11 (external register)
 
 ## Thesis
@@ -109,7 +109,7 @@ Grant eligibility mapping: NIH Bridge2AI (open infra for health data) · Wellcom
 
 ## References
 
-- ADR-0004 Vertical-First Launch · ADR-0005 Privacy as Moat · ADR-0011 Local-First · ADR-0013 Adaptive-by-Default · ADR-0014 English-First
+- ADR-0004 Vertical-First Launch [Superseded by ADR-0018] · ADR-0005 Privacy as Moat · ADR-0011 Local-First · ADR-0013 Adaptive-by-Default · ADR-0014 English-First · ADR-0018 Horizontal-First Pivot
 - `docs/grammar/modu-product-grammar.md` §11 (external register quick-ref)
 - `docs/strategy/2026-04-17-revenue-unit-economics.md` (consumer unit economics)
 - Regulatory references: ONC HTI-1 · 21st Century Cures Act · HIPAA 45 CFR §164 · GDPR · MDR · EHDS · BfArM DiGA Leitfaden · CNIL · PMDA · MHLW · APPI · PIPEDA · PHIPA · PIPA

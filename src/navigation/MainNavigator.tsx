@@ -1,13 +1,14 @@
 // 최상위 컨테이너 — Formation 모달 ↔ AssetScreen 전환 + 웹 모바일 viewport
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { View, StyleSheet, Modal, Platform, useWindowDimensions } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { useAssetStore } from '../store/assetStore';
+import { useAssetStore, initAssetStore } from '../store/assetStore';
 import { useFormationStore } from '../store/formationStore';
 import { AssetScreen } from '../screens/AssetScreen';
 import { FormationFlow } from '../screens/FormationFlow';
+import { ConsentScreen, readConsentRecord } from '../screens/ConsentScreen';
 
 /**
  * 모바일 viewport 폭 — 모든 디바이스에서 동일한 모바일 경험 제공.
@@ -17,18 +18,35 @@ const MOBILE_MAX_WIDTH = 430;
 
 export function MainNavigator() {
   const allAssets = useAssetStore((s) => s.assets);
+  const initialized = useAssetStore((s) => s.initialized);
   const assets = useMemo(
     () => allAssets.filter((a) => a.status !== 'archived'),
     [allAssets]
   );
   const reset = useFormationStore((s) => s.reset);
   const [formationOpen, setFormationOpen] = useState(false);
+  // null = loading, false = not yet consented, true = consented
+  const [consentDone, setConsentDone] = useState<boolean | null>(null);
+  // Guard: Formation auto-open only on first boot, never on subsequent asset-archive events.
+  const firstBootRef = useRef(true);
 
-  // 첫 진입: 에셋 0개면 Formation 자동 시작 (§3.1)
+  // Boot: check consent + load assets in parallel.
   useEffect(() => {
-    if (assets.length === 0) setFormationOpen(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    readConsentRecord().then((record) => {
+      setConsentDone(record !== null);
+    });
+    initAssetStore();
   }, []);
+
+  // 첫 진입: 에셋 0개면 Formation 자동 시작 (§3.1) — wait until initialized and consented.
+  // firstBootRef prevents re-triggering when a user archives their last asset.
+  useEffect(() => {
+    if (consentDone === true && initialized && firstBootRef.current && assets.length === 0) {
+      firstBootRef.current = false;
+      setFormationOpen(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [consentDone, initialized]);
 
   const startFormation = useCallback(() => {
     reset();
@@ -38,6 +56,29 @@ export function MainNavigator() {
   const finishFormation = useCallback(() => {
     setFormationOpen(false);
   }, []);
+
+  // Still loading consent record — render nothing to avoid flash.
+  if (consentDone === null) {
+    return (
+      <SafeAreaProvider>
+        <GestureHandlerRootView style={styles.root} />
+      </SafeAreaProvider>
+    );
+  }
+
+  // Consent not yet recorded — show ConsentScreen.
+  if (!consentDone) {
+    return (
+      <SafeAreaProvider>
+        <GestureHandlerRootView style={styles.root}>
+          <StatusBar style="dark" />
+          <MobileFrame>
+            <ConsentScreen onAccepted={() => setConsentDone(true)} />
+          </MobileFrame>
+        </GestureHandlerRootView>
+      </SafeAreaProvider>
+    );
+  }
 
   return (
     <SafeAreaProvider>

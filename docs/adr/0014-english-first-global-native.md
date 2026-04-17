@@ -2,7 +2,7 @@
 
 - Status: **Proposed**
 - Date: 2026-04-17
-- Related: ADR-0004 (Vertical-First Launch) · ADR-0013 (Adaptive-by-Default) · ADR-0011 (Local-First Persistence) · ADR-0005 (Privacy as Moat)
+- Related: ADR-0004 (Vertical-First Launch) [Superseded by ADR-0018] · ADR-0013 (Adaptive-by-Default) · ADR-0011 (Local-First Persistence) · ADR-0005 (Privacy as Moat) · ADR-0018 (Horizontal-First Pivot)
 
 ## Context
 
@@ -81,7 +81,7 @@ Ship `en-US` and `ko-KR` together. Every P0 Moment must render correctly in both
 
 ## References
 
-- ADR-0004 Vertical-First Launch — GTM is KR-first, this ADR is *architecture* EN-first. No conflict.
+- ADR-0004 Vertical-First Launch [Superseded by ADR-0018] — GTM is KR-first, this ADR is *architecture* EN-first. No conflict.
 - ADR-0013 Adaptive-by-Default — global-native is what makes the category-agnostic claim real
 - ADR-0011 Local-First Persistence — `CloudRepository` regional routing derives from this ADR's locale table
 - ADR-0005 Privacy as Moat — regional compliance alignment

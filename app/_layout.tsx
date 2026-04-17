@@ -17,6 +17,12 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     ...FontAwesome.font,
+    // §7.2 typography 토큰 — Pretendard (Korean-first sans)
+    'Pretendard-Regular': require('../assets/fonts/Pretendard-Regular.ttf'),
+    'Pretendard-SemiBold': require('../assets/fonts/Pretendard-SemiBold.ttf'),
+    'Pretendard-Bold': require('../assets/fonts/Pretendard-Bold.ttf'),
+    // §7.2 typography 토큰 — Fraunces (display serif)
+    'Fraunces-LightItalic': require('../assets/fonts/Fraunces-LightItalic.ttf'),
   });
 
   useEffect(() => {
@@ -24,12 +30,12 @@ export default function RootLayout() {
   }, [error]);
 
   useEffect(() => {
-    if (loaded) {
+    if (loaded || error) {
       SplashScreen.hideAsync();
     }
-  }, [loaded]);
+  }, [loaded, error]);
 
-  if (!loaded) return null;
+  if (!loaded && !error) return null;
 
   return (
     <Stack screenOptions={{ headerShown: false }}>

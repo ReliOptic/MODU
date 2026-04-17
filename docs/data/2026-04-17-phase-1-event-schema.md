@@ -2,7 +2,7 @@
 
 - Date: 2026-04-17
 - Status: Design (live document). Events enumerated here are the ingestion boundary for the statistical foundation (retention survival, LTV integral, Thompson sampling, bonding predicate, Brier score).
-- Related: ADR-0005 Privacy as Moat · ADR-0011 Local-First + Addendum · ADR-0013 Adaptive-by-Default + Addendums · ADR-0014 English-First · candidate ADR-0015 Non-SaMD
+- Related: ADR-0005 Privacy as Moat · ADR-0011 Local-First + Addendum · ADR-0013 Adaptive-by-Default + Addendums · ADR-0014 English-First · ADR-0018 Horizontal-First Pivot · candidate ADR-0015 Non-SaMD
 - Companion docs: `docs/strategy/2026-04-17-economic-foundation-and-impact.md` · `docs/strategy/2026-04-17-regulatory-welcome-and-b2g.md` · `docs/grammar/modu-product-grammar.md` §11
 - Language: English-master per ADR-0014
 
@@ -92,6 +92,8 @@ Same envelope across US / CA / JP / DE / FR. We designed to the strictest (GDPR 
 |-------|---|---|---------|--------|
 | `event_logged` | S3 | E3 | Injection / visit / chemo logged | care-density covariate |
 | `phase_transition_observed` | S3 | E3 | System-observed phase change | retention covariate (phase_transitions), bonding predicate |
+
+> **Horizontal platform note (ADR-0018)**: The events above are asset-agnostic. Future asset-specific event extensions (e.g. `cycle_day_logged`, `cycle_phase_changed`, `embryo_transfer_recorded` for fertility; `study_session_logged`, `mock_exam_recorded` for study; `training_run_logged` for fitness) are **fertility-asset-specific / asset-specific — not v1 categorical defaults**. They belong to the E4 (fertility) or E1-E3 (other assets) envelope of their respective asset type. No asset-specific event may be treated as a platform-wide default or emitted for chapters outside that asset type. When implementing asset-specific events, annotate each with `// fertility-asset-specific (not v1 categorical default)` or the equivalent asset label in the source.
 
 ### 6. Moment lifecycle (adaptive observability)
 

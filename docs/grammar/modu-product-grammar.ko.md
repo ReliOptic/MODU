@@ -13,7 +13,9 @@
 
 ## 0. 한 문장 정체성
 
-> **MODU 는 *삶의 챕터별 의료 기억을 쌓아가는 영구 라이브러리*다.**
+> **MODU 는 *삶의 챕터별 기억을 쌓아가는 영구 라이브러리*다.**
+
+어떤 삶의 구간도 챕터가 될 수 있다 — 난임·항암·수험·새 직장·마라톤·육아·부모 케어 등. MODU 는 v1 부터 horizontal metamorphic life-asset platform (ADR-0018). 단일 vertical 에 묶이지 않는다. Fertility 는 여러 asset 중 하나의 warm-start seed 다.
 
 이 한 문장에서 다음 핵심 메타포 4개가 파생된다: **챕터 · 기억 · 라이브러리 · 동반자**.
 
@@ -45,7 +47,7 @@
 
 | Code | User-facing 카피 | 정의 | 절대 X |
 |------|-----------------|------|--------|
-| `Asset` | **챕터** | 한 사용자의 한 돌봄 여정 단위 (시험관 3회차, 어머니 항암, 보리 관절관리 등) | "프로젝트", "케이스" |
+| `Asset` | **챕터** | 한 사용자의 한 삶의 구간 단위 — 기록할 가치 있는 모든 챕터 (수능 준비, 새 직장 적응, 마라톤 훈련, 난임 시술, 자녀 케어, 부모 부양 등) | "프로젝트", "케이스" |
 | `ChapterMemory` | **기억** | 사용자가 챕터에 누적한 timeline event (메모, 약 복용, 사진, 감정, 진료 …) — append-only | "기록", "엔트리", "로그" |
 | `ScheduledEvent` | **다가오는 일** / **지나간 일** | 시간 좌표가 있는 일정 (시술, 진료, 주사 등) | "이벤트", "어포인트먼트" |
 | `PartnerLink` | **함께하는 사람** | 챕터를 공유하는 동반자 (배우자, 가족, 의사) | "협업자", "shared user" |
@@ -93,7 +95,7 @@ MODU 에서 *Ritual* 은 사용자가 의식적 무게를 느끼는 순간이다
 | `TPO` | Time / Place / Occasion — UI 적응 입력 신호 |
 | `Moment` | Adaptive-by-Default atomic 렌더 단위 — `id · intent · slot · predicate · render · events · variants` (ADR-0013) |
 | `Slot` | 화면 5영역 (`skin` / `glance` / `hero` / `row` / `floating`) — Moment 배치 공간 |
-| `Signal Axes` | L0 (사용자 선언) > L1 (관측: TPO · Role · Phase) > L2 (AI 추론) — 우선순위 enforce |
+| `Signal Axes` | 네 개 축: **TPO** (Time/Place/Occasion) · **Role** (self/partner/caregiver) · **Phase** (before/during/after) · **Preference** (AI 추론). 우선순위: L0 (사용자 선언) > L1 (관측: TPO · Role · Phase) > L2 (AI 추론) — enforce, 역순 금지. 어떤 asset type 에도 동일하게 적용 (난임·수험·직장·운동·케어 등). (ADR-0018 P5) |
 | `Role` | `self` / `partner` / `caregiver` / `doctor` — 렌더링 분기 1차 키 (같은 chapter · 다른 role → 다른 Moment set) |
 | `Quality Contract` | Moment 렌더의 7조항 (Bounded · Observable · Predictable · Reversible · Auditable · Fallback · A11y) |
 | `Agora` *내부 철학* | 채팅 없는 공동 돌봄 시스템 (솔로 다이어리 X). 사용자 facing 어휘 절대 X — §4.6 |
@@ -110,15 +112,18 @@ MODU 에서 *Ritual* 은 사용자가 의식적 무게를 느끼는 순간이다
 2. **명사보다 동사 (action over thing)** — *"기록"* 보다 *"적어두세요"*.
 3. **사용자 시점 (you, not we)** — *"○○님이 적어주신 메모"* > *"우리가 기록한 데이터"*.
 4. **시간을 일상어로 (everyday time)** — *"D-1"* > *"이식까지 23시간"* > *"내일 아침"*. 후자 우선.
-5. **결정의 무게 인정 (acknowledge weight)** — 시술·항암·돌봄은 가벼운 게 아니다. *"잠깐만요"* 같은 호흡 한 박자.
+5. **결정의 무게 인정 (acknowledge weight)** — 힘든 챕터들 — 시술·항암·사별·입시 실패·돌봄 — 은 가벼운 게 아니다. *"잠깐만요"* 같은 호흡 한 박자.
 
 ### 3.2 톤 예시 (good vs bad)
 
 | 상황 | ❌ Bad | ✅ Good |
 |------|-------|---------|
-| 주사 완료 | "주사 1건 완료! 오늘의 미션 클리어 🎯" | "오늘 아침 Gonal-F, 수고하셨어요." |
-| 항암 다음 날 | "5/7 회차 진행 중. 화이팅!" | "어제 5차였어요. 오늘은 천천히 가요." |
-| 기억 surfacing | "Memory Unlock! 1년 전 오늘" | "1년 전 오늘, 처음 주사를 맞으셨어요." |
+| 케어 이벤트 기록 (E4 건강 에셋) | "주사 1건 완료! 오늘의 미션 클리어 🎯" | "오늘 아침 Gonal-F, 수고하셨어요." |
+| 비건강 챕터 nudge (E1 훈련) | "오늘 기록 안 하셨어요! 스트릭 위험 🔥" | "어제 장거리 러닝을 빠지셨어요. 오늘 남기고 싶은 게 있으세요?" |
+| 힘든 날 (건강 챕터) | "5/7 회차 진행 중. 화이팅!" | "어제 5차였어요. 오늘은 천천히 가요." |
+| 기억 surfacing (어느 챕터든) | "Memory Unlock! 1년 전 오늘" | "1년 전 오늘, 이 챕터를 시작하셨어요." |
+| 수험 챕터 nudge | "오늘 기록 안 하셨어요! 스트릭 끊기지 말아요 🔥" | "어제 세 가지 적어두셨어요. 오늘은 뭘 남기고 싶으세요?" |
+| 새 챕터 생성 | "에셋 생성 완료 ✅" | "챕터가 준비됐어요. 첫 번째로 뭘 기억해두고 싶으세요?" |
 | 에러 | "오류 발생. 다시 시도해주세요." | "지금 잠깐 연결이 어렵네요. 다시 한 번요." |
 | 빈 상태 | "아직 데이터가 없습니다." | "여기에 ○○님의 첫 기억이 쌓일 거예요." |
 
@@ -308,11 +313,13 @@ refactor(layout-engine): L2 cache hint integration
 새 기능·UI·문서·발표를 만들 때:
 
 - [ ] 사용자 노출 카피가 anti-lexicon 을 안 쓰는가?
-- [ ] 컴포넌트 이름이 6개 메타포 안에 있는가?
+- [ ] 컴포넌트 이름이 7개 메타포 안에 있는가?
 - [ ] Voice & Tone 5원칙을 통과하는가?
 - [ ] commit message 의 scope 가 lexicon 어휘인가?
 - [ ] Ritual 인지 transition 인지 명확한가?
 - [ ] 5년 후에도 이 어휘가 유효한가?
+- [ ] 사용자 facing 카피가 English-master 로 작성되었는가? (ADR-0014)
+- [ ] Moment 가 `en-US` 와 `ko-KR` 양쪽에서 올바르게 렌더되는가?
 
 ---
 
@@ -334,3 +341,5 @@ refactor(layout-engine): L2 cache hint integration
 - `docs/strategy/2026-04-17-ceo-decision-pack.md` (메타포의 전략적 근거)
 - `docs/planning/2026-04-17-timeflow-frontend-plan.md` (Surface 어휘 source)
 - `docs/planning/2026-04-17-adaptive-engine-cto-plan.md` (인프라 어휘 source)
+- `docs/adr/0018-horizontal-first-pivot.md` (horizontal platform, signal axes, per-asset compliance matrix E1-E4)
+- `docs/grammar/modu-product-grammar.md` (English master — ADR-0014 준수. 본 파일은 Korean 보조)

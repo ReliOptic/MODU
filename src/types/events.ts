@@ -107,7 +107,13 @@ export interface ScreenViewedEvent extends EventBase {
 // Chapter lifecycle (S3 / E3)
 // ---------------------------------------------------------------------------
 
-export type ChapterType = 'fertility' | 'cancer_caregiver' | 'pet_care' | 'chronic' | 'custom';
+// Horizontal platform (ADR-0018): all chapter types are peer assets from v1.
+// 'fertility' is a warm-start seed, not a categorical default.
+// Asset-specific events (e.g. cycle_day_logged, embryo_transfer_recorded for fertility;
+// study_session_logged for study; training_run_logged for fitness) must be annotated
+// "// fertility-asset-specific (not v1 categorical default)" or equivalent when implemented.
+// category_hint in the LLM asset schema extends this set dynamically.
+export type ChapterType = 'fertility' | 'cancer_caregiver' | 'pet_care' | 'chronic' | 'study' | 'work' | 'fitness' | 'caregiving' | 'hobby' | 'custom';
 
 export interface ChapterCreatedEvent extends EventBase {
   name: 'chapter_created';
@@ -176,6 +182,9 @@ export interface MemoryGlanceShownEvent extends EventBase {
 // Care event (S3 / E3)
 // ---------------------------------------------------------------------------
 
+// ADR-0018: 현재 CareEventType 는 fertility(transfer/retrieval)/oncology(chemo)/pet(vet_visit)
+// specific 토큰을 포함. 타 asset 의 care event 타입은 v1 활성화 시 확장 필요.
+// General-purpose callers 는 'visit'|'medication'|'consultation' 을 우선 사용.
 export type CareEventType =
   | 'transfer'
   | 'injection'
@@ -220,6 +229,8 @@ export interface MomentExposedEvent extends EventBase {
     slot: MomentSlot;
     /** SHA-256 of serialized signal context. Never raw signals. */
     signals_hash: string;
+    /** Render outcome. 'rendered' = successful display; 'fallback' = below threshold. */
+    outcome: 'rendered' | 'fallback';
   };
 }
 
@@ -355,6 +366,20 @@ export interface SyncInvitationDismissedEvent extends EventBase {
 }
 
 // ---------------------------------------------------------------------------
+// Formation lifecycle (S1 / E1)
+// ---------------------------------------------------------------------------
+
+export interface FormationCompletedEvent extends EventBase {
+  name: 'formation_completed';
+  properties: {
+    /** Asset type selected during formation. */
+    asset_type: ChapterType;
+    /** Number of steps answered (not skipped). */
+    steps_answered: number;
+  };
+}
+
+// ---------------------------------------------------------------------------
 // System (S1)
 // ---------------------------------------------------------------------------
 
@@ -418,6 +443,7 @@ export type MoguEvent =
   | SyncInvitationShownEvent
   | SyncInvitationAcceptedEvent
   | SyncInvitationDismissedEvent
+  | FormationCompletedEvent
   | ErrorRaisedEvent
   | PerformanceMarkEvent
   | LocaleChangedEvent;
@@ -438,47 +464,52 @@ export type EventName = MoguEvent['name'];
  * here, (3) updating docs/data/2026-04-17-phase-1-event-schema.md with
  * purpose + power.
  */
-export const EVENT_REGISTRY: Record<EventName, { sensitivity: Sensitivity; envelope: RegulatoryEnvelope }> = {
+export const EVENT_REGISTRY: Record<
+  EventName,
+  { sensitivity: Sensitivity; envelope: RegulatoryEnvelope; requiredKeys: readonly string[] }
+> = {
   // Session
-  session_started:            { sensitivity: 'S1', envelope: 'E2' },
-  session_ended:              { sensitivity: 'S1', envelope: 'E2' },
-  app_foreground:             { sensitivity: 'S1', envelope: 'E2' },
-  app_background:             { sensitivity: 'S1', envelope: 'E2' },
+  session_started:            { sensitivity: 'S1', envelope: 'E2', requiredKeys: ['tz_offset_minutes', 'cold_start'] },
+  session_ended:              { sensitivity: 'S1', envelope: 'E2', requiredKeys: ['duration_ms'] },
+  app_foreground:             { sensitivity: 'S1', envelope: 'E2', requiredKeys: [] },
+  app_background:             { sensitivity: 'S1', envelope: 'E2', requiredKeys: [] },
   // Navigation
-  tab_viewed:                 { sensitivity: 'S1', envelope: 'E2' },
-  screen_viewed:              { sensitivity: 'S1', envelope: 'E2' },
+  tab_viewed:                 { sensitivity: 'S1', envelope: 'E2', requiredKeys: ['tab_id'] },
+  screen_viewed:              { sensitivity: 'S1', envelope: 'E2', requiredKeys: ['screen_id'] },
   // Chapter lifecycle
-  chapter_created:            { sensitivity: 'S3', envelope: 'E3' },
-  chapter_switched:           { sensitivity: 'S3', envelope: 'E3' },
-  chapter_archived:           { sensitivity: 'S3', envelope: 'E3' },
-  chapter_rehydrated:         { sensitivity: 'S3', envelope: 'E3' },
+  chapter_created:            { sensitivity: 'S3', envelope: 'E3', requiredKeys: ['type'] },
+  chapter_switched:           { sensitivity: 'S3', envelope: 'E3', requiredKeys: ['to_asset_id'] },
+  chapter_archived:           { sensitivity: 'S3', envelope: 'E3', requiredKeys: ['days_active'] },
+  chapter_rehydrated:         { sensitivity: 'S3', envelope: 'E3', requiredKeys: ['hours_since_last_activity'] },
   // Memory
-  chapter_memory_created:     { sensitivity: 'S3', envelope: 'E3' },
-  chapter_memory_viewed:      { sensitivity: 'S3', envelope: 'E3' },
-  memory_glance_shown:        { sensitivity: 'S3', envelope: 'E3' },
+  chapter_memory_created:     { sensitivity: 'S3', envelope: 'E3', requiredKeys: ['memory_id', 'kind', 'has_photo', 'length_bucket'] },
+  chapter_memory_viewed:      { sensitivity: 'S3', envelope: 'E3', requiredKeys: ['memory_id', 'age_days_bucket'] },
+  memory_glance_shown:        { sensitivity: 'S3', envelope: 'E3', requiredKeys: ['memory_id', 'age_years'] },
   // Care event
-  event_logged:               { sensitivity: 'S3', envelope: 'E3' },
-  phase_transition_observed:  { sensitivity: 'S3', envelope: 'E3' },
+  event_logged:               { sensitivity: 'S3', envelope: 'E3', requiredKeys: ['event_type', 'phase_at_log'] },
+  phase_transition_observed:  { sensitivity: 'S3', envelope: 'E3', requiredKeys: ['event_id', 'from_phase', 'to_phase', 'observed_at'] },
   // Moment lifecycle
-  moment_exposed:             { sensitivity: 'S2', envelope: 'E3' },
-  moment_tapped:              { sensitivity: 'S2', envelope: 'E3' },
-  moment_dwelled:             { sensitivity: 'S2', envelope: 'E3' },
-  moment_dismissed:           { sensitivity: 'S2', envelope: 'E3' },
-  moment_resulted_memory:     { sensitivity: 'S2', envelope: 'E3' },
+  moment_exposed:             { sensitivity: 'S2', envelope: 'E3', requiredKeys: ['moment_id', 'variant', 'slot', 'signals_hash', 'outcome'] },
+  moment_tapped:              { sensitivity: 'S2', envelope: 'E3', requiredKeys: ['moment_id', 'variant', 'slot', 'latency_ms'] },
+  moment_dwelled:             { sensitivity: 'S2', envelope: 'E3', requiredKeys: ['moment_id', 'dwell_ms'] },
+  moment_dismissed:           { sensitivity: 'S2', envelope: 'E3', requiredKeys: ['moment_id', 'via'] },
+  moment_resulted_memory:     { sensitivity: 'S2', envelope: 'E3', requiredKeys: ['moment_id', 'memory_id', 'latency_ms'] },
   // Partner / caregiver
-  partner_invited:            { sensitivity: 'S4', envelope: 'E4' },
-  partner_linked:             { sensitivity: 'S4', envelope: 'E4' },
-  partner_revoked:            { sensitivity: 'S4', envelope: 'E4' },
-  role_changed:               { sensitivity: 'S4', envelope: 'E4' },
-  delegated_action:           { sensitivity: 'S4', envelope: 'E4' },
+  partner_invited:            { sensitivity: 'S4', envelope: 'E4', requiredKeys: ['role_offered'] },
+  partner_linked:             { sensitivity: 'S4', envelope: 'E4', requiredKeys: ['partner_id', 'role_granted'] },
+  partner_revoked:            { sensitivity: 'S4', envelope: 'E4', requiredKeys: ['partner_id', 'revoked_by_role'] },
+  role_changed:               { sensitivity: 'S4', envelope: 'E4', requiredKeys: ['partner_id', 'from_role', 'to_role'] },
+  delegated_action:           { sensitivity: 'S4', envelope: 'E4', requiredKeys: ['partner_id', 'action', 'audit_id'] },
   // Consent / sync
-  consent_screen_shown:       { sensitivity: 'S1', envelope: 'E2' },
-  consent_decision_recorded:  { sensitivity: 'S4', envelope: 'E4' },
-  sync_invitation_shown:      { sensitivity: 'S1', envelope: 'E2' },
-  sync_invitation_accepted:   { sensitivity: 'S1', envelope: 'E2' },
-  sync_invitation_dismissed:  { sensitivity: 'S1', envelope: 'E2' },
+  consent_screen_shown:       { sensitivity: 'S1', envelope: 'E2', requiredKeys: ['screen_version'] },
+  consent_decision_recorded:  { sensitivity: 'S4', envelope: 'E4', requiredKeys: ['item', 'decision', 'decided_at'] },
+  sync_invitation_shown:      { sensitivity: 'S1', envelope: 'E2', requiredKeys: ['bonding_score', 'trigger_reason'] },
+  sync_invitation_accepted:   { sensitivity: 'S1', envelope: 'E2', requiredKeys: [] },
+  sync_invitation_dismissed:  { sensitivity: 'S1', envelope: 'E2', requiredKeys: [] },
+  // Formation lifecycle
+  formation_completed:        { sensitivity: 'S1', envelope: 'E1', requiredKeys: ['asset_type', 'steps_answered'] },
   // System
-  error_raised:               { sensitivity: 'S1', envelope: 'E2' },
-  performance_mark:           { sensitivity: 'S1', envelope: 'E1' },
-  locale_changed:             { sensitivity: 'S1', envelope: 'E2' },
+  error_raised:               { sensitivity: 'S1', envelope: 'E2', requiredKeys: ['error_code', 'retry_attempted'] },
+  performance_mark:           { sensitivity: 'S1', envelope: 'E1', requiredKeys: ['mark_name', 'value_ms'] },
+  locale_changed:             { sensitivity: 'S1', envelope: 'E2', requiredKeys: ['from_locale', 'to_locale'] },
 };
