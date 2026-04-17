@@ -42,6 +42,8 @@ export interface GetAttachmentUrlParams {
   attachmentId: string;
   assetId: string;
   mime: string;
+  /** Operation mode — 'inline' uses 5-min TTL, 'export' requests 15-min TTL. */
+  op_mode?: 'inline' | 'export';
 }
 
 export interface GetAttachmentUrlResult {
@@ -204,7 +206,7 @@ export async function getAttachmentUrl(
     throw new R2ClientError('unknown', 'Supabase 미설정 — .env 확인');
   }
 
-  const { attachmentId, assetId, mime } = params;
+  const { attachmentId, assetId, mime, op_mode } = params;
   const token = await getBearerToken();
 
   let res: Response;
@@ -221,6 +223,7 @@ export async function getAttachmentUrl(
         byte_size: 0,
         op: 'download',
         attachment_id: attachmentId,
+        ...(op_mode !== undefined && { op_mode }),
       }),
     });
   } catch (err) {
