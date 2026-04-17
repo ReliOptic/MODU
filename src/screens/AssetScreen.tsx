@@ -1,6 +1,6 @@
 // §6 + §8 에셋별 라우팅 컨테이너
 // 그라데이션 배경 + 헤더(AssetSwitcher) + 동적 탭바 + 활성 탭 컨텐츠
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated from 'react-native-reanimated';
@@ -13,6 +13,13 @@ import { DemoControlPanel } from '../components/DemoControlPanel';
 import { getPalette, widgetTokens } from '../theme';
 import { HomeTab } from './HomeTab';
 import { PlaceholderTab } from './PlaceholderTab';
+import { CalendarTab } from './tabs/CalendarTab';
+import { MoodTab } from './tabs/MoodTab';
+import { PartnerTab } from './tabs/PartnerTab';
+import { ChecklistTab } from './tabs/ChecklistTab';
+import { InsightTab } from './tabs/InsightTab';
+import { ShareTab } from './tabs/ShareTab';
+import { ChapterGalleryScreen } from './ChapterGalleryScreen';
 
 export interface AssetScreenProps {
   onCreateNew: () => void;
@@ -34,6 +41,40 @@ export function AssetScreen({ onCreateNew }: AssetScreenProps) {
 
   const { switchTo, outgoingStyle, phase, pending } = useAssetTransition();
   const [activeTabId, setActiveTabId] = useState<string>('home');
+  const [galleryOpen, setGalleryOpen] = useState(false);
+
+  const openGallery = useCallback(() => setGalleryOpen(true), []);
+  const closeGallery = useCallback(() => setGalleryOpen(false), []);
+  const handleGallerySelect = useCallback(
+    (id: string) => {
+      setGalleryOpen(false);
+      setTimeout(() => switchTo(id), 180);
+    },
+    [switchTo]
+  );
+  const handleGalleryCreateNew = useCallback(() => {
+    setGalleryOpen(false);
+    setTimeout(() => onCreateNew(), 180);
+  }, [onCreateNew]);
+
+  function renderTabContent() {
+    if (!current) return null;
+    if (activeTabId === 'home') return <HomeTab asset={current} />;
+    switch (activeTabId) {
+      case 'calendar': return <CalendarTab asset={current} />;
+      case 'mood':     return <MoodTab asset={current} />;
+      case 'partner':  return <PartnerTab asset={current} />;
+      case 'checklist': return <ChecklistTab asset={current} />;
+      case 'insight':  return <InsightTab asset={current} />;
+      case 'share':    return <ShareTab asset={current} />;
+      default: {
+        const fallbackTab = current.tabs.find((t) => t.id === activeTabId);
+        return fallbackTab ? (
+          <PlaceholderTab tabLabel={fallbackTab.label} palette={current.palette} />
+        ) : null;
+      }
+    }
+  }
 
   // 에셋 전환 시 home 으로 리셋
   useEffect(() => {
@@ -45,11 +86,6 @@ export function AssetScreen({ onCreateNew }: AssetScreenProps) {
     [current]
   );
 
-  // 현재 활성 탭 라벨
-  const activeTab = useMemo(
-    () => current?.tabs.find((t) => t.id === activeTabId) ?? null,
-    [current, activeTabId]
-  );
 
   return (
     <View style={styles.root}>
@@ -65,13 +101,11 @@ export function AssetScreen({ onCreateNew }: AssetScreenProps) {
           onSwitch={switchTo}
           onCreateNew={onCreateNew}
           onArchive={archive}
+          onOpenGallery={openGallery}
         />
       </View>
-      <Animated.View style={[styles.body, outgoingStyle]}>
-        {current && activeTabId === 'home' && <HomeTab asset={current} />}
-        {current && activeTabId !== 'home' && activeTab && (
-          <PlaceholderTab tabLabel={activeTab.label} palette={current.palette} />
-        )}
+      <Animated.View style={[styles.body, outgoingStyle as unknown as object]}>
+        {renderTabContent()}
       </Animated.View>
       {current && (
         <TabBar
@@ -88,6 +122,14 @@ export function AssetScreen({ onCreateNew }: AssetScreenProps) {
           label={pending.label}
         />
       )}
+      <ChapterGalleryScreen
+        visible={galleryOpen}
+        assets={assets}
+        currentAssetId={currentAssetId}
+        onClose={closeGallery}
+        onSelect={handleGallerySelect}
+        onCreateNew={handleGalleryCreateNew}
+      />
       {/* Demo mode floating panel — investor 시연용 */}
       <DemoControlPanel />
     </View>
@@ -103,6 +145,11 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingHorizontal: 20,
     paddingBottom: 12,
+    // Dropdown inside AssetSwitcher needs to paint on top of body + tab bar.
+    // Without this, the absolute overlay gets covered by siblings rendered later.
+    position: 'relative',
+    zIndex: 200,
+    elevation: 200,
   },
   body: {
     flex: 1,

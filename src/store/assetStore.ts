@@ -108,6 +108,7 @@ export const useAssetStore = create<AssetStore>()((set, get) => ({
       type,
       displayName: options?.displayName ?? t.defaultDisplayName,
       palette: options?.palette ?? t.palette,
+      envelope: t.envelope,
       tabs: options?.tabs ?? t.tabs,
       widgets: options?.widgets ?? t.widgets,
       layoutRules: [],

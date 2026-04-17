@@ -16,6 +16,7 @@ function fromTemplate(
     type: t.type,
     displayName: overrides.displayName ?? t.defaultDisplayName,
     palette: t.palette,
+    envelope: t.envelope,
     tabs: t.tabs,
     widgets: t.widgets,
     layoutRules: [],

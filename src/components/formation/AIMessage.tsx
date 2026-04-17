@@ -1,6 +1,7 @@
-// AI 메시지 버블 — 좌측 정렬, 부드러운 톤
+// AI 메시지 버블 — 좌측 정렬, 부드러운 톤. 진입 시 fade+slide.
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { Text, StyleSheet } from 'react-native';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 import { typography, widgetTokens } from '../../theme';
 
 export interface AIMessageProps {
@@ -9,11 +10,11 @@ export interface AIMessageProps {
 
 export function AIMessage({ text }: AIMessageProps) {
   return (
-    <View style={styles.row}>
-      <View style={styles.bubble}>
+    <Animated.View entering={FadeInUp.duration(260).springify().damping(16)} style={styles.row}>
+      <Animated.View style={styles.bubble}>
         <Text style={styles.text}>{text}</Text>
-      </View>
-    </View>
+      </Animated.View>
+    </Animated.View>
   );
 }
 

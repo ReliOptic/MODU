@@ -1,5 +1,30 @@
 // §1.1 Asset 인터페이스 — 에셋 시스템의 핵심 타입
 import type { PaletteKey } from '../theme';
+import type { LayoutRule } from './layout';
+import type { ScheduledEvent } from './event';
+
+/**
+ * Sync-ready base per ADR-0013 Addendum A4 / ADR-0011.
+ * Every persisted entity carries UUID id + monotonic update clock +
+ * last-synced timestamp (null → local-only, never pushed).
+ */
+export interface Syncable {
+  id: string;
+  updatedAt: string; // ISO-8601 UTC
+  syncedAt: string | null;
+}
+
+/**
+ * Raw formation transcript + AI-inferred summary captured during the
+ * interactive asset-spawner flow. Persisted verbatim so chapters can be
+ * explained back to the user and so future models can reinterpret.
+ */
+export interface FormationData {
+  /** Map of FormationStep.id → user response value (preset id or free text). */
+  responses: Record<string, string>;
+  /** AI-generated one-paragraph reasoning. Surfaced in confirmation screen. */
+  summary?: string;
+}
 
 export type AssetType = 'fertility' | 'cancer_caregiver' | 'pet_care' | 'chronic' | 'custom' | string;
 
@@ -41,10 +66,33 @@ export type AtomicMomentType =
 
 export type WidgetType =
   | AtomicMomentType
-  // legacy shared
+  // shared
   | 'primary_event'
   | 'calendar_mini'
-  // ... (rest of the legacy types)
+  | 'calendar_full'
+  | 'calendar_legend'
+  // fertility
+  | 'injection_timeline'
+  | 'mood_quicklog'
+  | 'partner_sync'
+  | 'question_checklist'
+  | 'prev_visit_memo'
+  // cancer caregiver
+  | 'treatment_timeline'
+  | 'medication_list'
+  | 'primary_medication'
+  | 'event_detail_list'
+  // pet care
+  | 'pet_profile'
+  | 'daily_log_bars'
+  | 'vet_memo'
+  // chronic
+  | 'condition_trend'
+  | 'primary_condition'
+  | 'weekly_bar_graph'
+  | 'monthly_heatmap'
+  | 'trigger_analysis'
+  | 'next_visit'
   | 'medication_stock';
 
 export interface WidgetConfig {
@@ -78,8 +126,6 @@ export interface AssetBlueprint {
 }
 
 export type AssetStatus = 'forming' | 'active' | 'archived';
-
-// ... (Syncable interface remains same)
 
 export interface Asset extends Syncable {
   type: AssetType;

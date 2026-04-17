@@ -55,7 +55,7 @@ export async function fetchFormation(): Promise<ExportFormation> {
     return { sessions: [], answers: [] };
   }
 
-  const sessionIds = (sessions ?? []).map((s) => s.id);
+  const sessionIds = ((sessions ?? []) as ExportFormationSession[]).map((s) => s.id);
 
   let answers: ExportFormationAnswer[] = [];
   if (sessionIds.length > 0) {

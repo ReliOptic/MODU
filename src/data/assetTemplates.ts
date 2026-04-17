@@ -1,10 +1,11 @@
 // §2 에셋 타입별 기본 tabs / widgets / palette 매핑
-import type { AssetType, TabConfig, WidgetConfig } from '../types';
+import type { AssetType, Envelope, TabConfig, WidgetConfig } from '../types';
 import type { PaletteKey } from '../theme';
 
 export interface AssetTemplate {
   type: AssetType;
   palette: PaletteKey;
+  envelope: Envelope;
   defaultDisplayName: string;
   tabs: TabConfig[];
   widgets: WidgetConfig[];
@@ -14,6 +15,7 @@ export const assetTemplates: Record<AssetType, AssetTemplate> = {
   fertility: {
     type: 'fertility',
     palette: 'dawn',
+    envelope: 'E4',
     defaultDisplayName: '시험관 1회차',
     tabs: [
       { id: 'home', icon: 'house', label: '홈' },
@@ -23,7 +25,6 @@ export const assetTemplates: Record<AssetType, AssetTemplate> = {
     ],
     widgets: [
       { type: 'primary_event', defaultPriority: 90, tab: 'home' },
-      { type: 'calendar_mini', defaultPriority: 70, tab: 'home' },
       { type: 'injection_timeline', defaultPriority: 80, tab: 'home' },
       { type: 'mood_quicklog', defaultPriority: 60, tab: 'home' },
       { type: 'partner_sync', defaultPriority: 50, tab: 'home' },
@@ -35,6 +36,7 @@ export const assetTemplates: Record<AssetType, AssetTemplate> = {
   cancer_caregiver: {
     type: 'cancer_caregiver',
     palette: 'mist',
+    envelope: 'E4',
     defaultDisplayName: '어머니 항암',
     tabs: [
       { id: 'home', icon: 'house', label: '홈' },
@@ -53,6 +55,7 @@ export const assetTemplates: Record<AssetType, AssetTemplate> = {
   pet_care: {
     type: 'pet_care',
     palette: 'blossom',
+    envelope: 'E1',
     defaultDisplayName: '보리 관절 관리',
     tabs: [
       { id: 'home', icon: 'house', label: '홈' },
@@ -71,6 +74,7 @@ export const assetTemplates: Record<AssetType, AssetTemplate> = {
   chronic: {
     type: 'chronic',
     palette: 'sage',
+    envelope: 'E4',
     defaultDisplayName: '편두통 관리',
     tabs: [
       { id: 'home', icon: 'house', label: '홈' },
@@ -90,6 +94,7 @@ export const assetTemplates: Record<AssetType, AssetTemplate> = {
   custom: {
     type: 'custom',
     palette: 'dusk',
+    envelope: 'E1',
     defaultDisplayName: '내 에셋',
     tabs: [
       { id: 'home', icon: 'house', label: '홈' },

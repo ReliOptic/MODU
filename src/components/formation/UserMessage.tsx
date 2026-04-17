@@ -1,6 +1,7 @@
-// 사용자 메시지 버블 — 우측 정렬, palette accent 톤
+// 사용자 메시지 버블 — 우측 정렬, palette accent 톤. 진입 시 fade+slide.
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { Text, StyleSheet } from 'react-native';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 import { typography, getPalette, PaletteKey } from '../../theme';
 
 export interface UserMessageProps {
@@ -12,11 +13,11 @@ export interface UserMessageProps {
 export function UserMessage({ text, palette = 'dawn' }: UserMessageProps) {
   const p = getPalette(palette);
   return (
-    <View style={styles.row}>
-      <View style={[styles.bubble, { backgroundColor: p[100] }]}>
+    <Animated.View entering={FadeInUp.duration(220).springify().damping(18)} style={styles.row}>
+      <Animated.View style={[styles.bubble, { backgroundColor: p[100] }]}>
         <Text style={[styles.text, { color: p[500] }]}>{text}</Text>
-      </View>
-    </View>
+      </Animated.View>
+    </Animated.View>
   );
 }
 

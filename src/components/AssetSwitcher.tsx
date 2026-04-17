@@ -9,8 +9,6 @@ import {
   StyleSheet,
   ScrollView,
   Platform,
-  Modal,
-  TouchableWithoutFeedback,
 } from 'react-native';
 import BottomSheet, { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import type { Asset } from '../types';
@@ -23,6 +21,7 @@ export interface AssetSwitcherProps {
   onSwitch: (assetId: string) => void;
   onCreateNew: () => void;
   onArchive?: (assetId: string) => void;
+  onOpenGallery?: () => void;
 }
 
 export function AssetSwitcher(props: AssetSwitcherProps) {
@@ -38,6 +37,7 @@ function AssetSwitcherNative({
   onSwitch,
   onCreateNew,
   onArchive,
+  onOpenGallery,
 }: AssetSwitcherProps) {
   const sheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ['40%', '60%'], []);
@@ -70,7 +70,7 @@ function AssetSwitcherNative({
 
   return (
     <>
-      <TriggerButton currentAsset={currentAsset} onPress={open} />
+      <TriggerButton currentAsset={currentAsset} onPress={open} onLongPress={onOpenGallery} />
       <BottomSheet
         ref={sheetRef}
         index={-1}
@@ -101,20 +101,29 @@ function AssetSwitcherWeb({
   onSwitch,
   onCreateNew,
   onArchive,
+  onOpenGallery,
 }: AssetSwitcherProps) {
   const [open, setOpen] = useState(false);
+  const rootRef = useRef<View | null>(null);
 
-  // ESC 로 닫기
   useEffect(() => {
     if (!open || Platform.OS !== 'web') return;
-    const handler = (e: KeyboardEvent) => {
+
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false);
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (globalThis as any).addEventListener?.('keydown', handler);
+    const onClick = (e: MouseEvent) => {
+      const node = rootRef.current as unknown as HTMLElement | null;
+      if (node && e.target instanceof Node && !node.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('mousedown', onClick);
     return () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (globalThis as any).removeEventListener?.('keydown', handler);
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('mousedown', onClick);
     };
   }, [open]);
 
@@ -129,36 +138,26 @@ function AssetSwitcherWeb({
   const handleLongPress = useCallback((id: string) => onArchive?.(id), [onArchive]);
 
   return (
-    <View style={styles.webRoot}>
-      <TriggerButton currentAsset={currentAsset} onPress={() => setOpen((v) => !v)} />
+    <View ref={rootRef} style={styles.webRoot}>
+      <TriggerButton currentAsset={currentAsset} onPress={() => setOpen((v) => !v)} onLongPress={onOpenGallery} />
       {open && (
-        <Modal
-          transparent
-          visible={open}
-          animationType="fade"
-          onRequestClose={() => setOpen(false)}
+        <View
+          style={styles.webMenu}
+          accessibilityRole="menu"
+          accessibilityLabel="에셋 전환"
         >
-          <TouchableWithoutFeedback onPress={() => setOpen(false)}>
-            <View style={styles.webBackdrop}>
-              {/* 클릭 차단 영역: 메뉴 자체 */}
-              <TouchableWithoutFeedback>
-                <View style={styles.webMenu}>
-                  <Text style={styles.webMenuTitle}>에셋 전환</Text>
-                  <ScrollView style={{ maxHeight: 360 }}>
-                    <AssetList
-                      allAssets={allAssets}
-                      currentAsset={currentAsset}
-                      onSwitch={handleSwitch}
-                      onLongPress={handleLongPress}
-                    />
-                    <Separator style={{ marginVertical: 6 }} />
-                    <CreateRow onPress={handleCreate} />
-                  </ScrollView>
-                </View>
-              </TouchableWithoutFeedback>
-            </View>
-          </TouchableWithoutFeedback>
-        </Modal>
+          <Text style={styles.webMenuTitle}>에셋 전환</Text>
+          <ScrollView style={styles.webMenuScroll}>
+            <AssetList
+              allAssets={allAssets}
+              currentAsset={currentAsset}
+              onSwitch={handleSwitch}
+              onLongPress={handleLongPress}
+            />
+            <Separator style={{ marginVertical: 6 }} />
+            <CreateRow onPress={handleCreate} />
+          </ScrollView>
+        </View>
       )}
     </View>
   );
@@ -169,15 +168,20 @@ function AssetSwitcherWeb({
 function TriggerButton({
   currentAsset,
   onPress,
+  onLongPress,
 }: {
   currentAsset: Asset | null;
   onPress: () => void;
+  onLongPress?: () => void;
 }) {
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={600}
       accessibilityRole="button"
       accessibilityLabel="에셋 전환"
+      accessibilityHint="길게 눌러 갤러리 열기"
       style={styles.trigger}
     >
       <Text style={styles.triggerLabel} numberOfLines={1}>
@@ -297,27 +301,33 @@ const styles = StyleSheet.create({
     width: 24,
     textAlign: 'center',
   },
-  /* Web fallback */
-  webRoot: { position: 'relative' },
-  webBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.18)',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
-    paddingTop: 96,
-    paddingHorizontal: 16,
+  /* Web fallback — anchored to trigger, stays inside MobileFrame */
+  webRoot: {
+    position: 'relative',
+    ...(Platform.OS === 'web' ? { zIndex: 100 } : {}),
   },
   webMenu: {
-    width: 320,
-    maxWidth: '100%',
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    marginTop: 8,
+    width: 280,
+    maxWidth: 360,
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
     paddingVertical: 8,
     paddingHorizontal: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.18,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 8 },
+    ...(Platform.OS === 'web'
+      ? ({ boxShadow: '0 8px 24px rgba(0,0,0,0.18)' } as unknown as object)
+      : {
+          shadowColor: '#000',
+          shadowOpacity: 0.18,
+          shadowRadius: 24,
+          shadowOffset: { width: 0, height: 8 },
+        }),
+  },
+  webMenuScroll: {
+    maxHeight: 360,
   },
   webMenuTitle: {
     ...typography.footnote,

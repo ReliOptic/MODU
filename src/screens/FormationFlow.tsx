@@ -1,5 +1,5 @@
 // Formation 전체 화면 — 채팅 형 인터뷰 + 마지막 confirm
-import React, { useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useCallback, useMemo, useRef, useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet, Pressable, Text } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFormationStore } from '../store/formationStore';
@@ -12,8 +12,10 @@ import { PresetOptions } from '../components/formation/PresetOptions';
 import { FreeTextInput } from '../components/formation/FreeTextInput';
 import { VoiceInputButton } from '../components/formation/VoiceInputButton';
 import { FormationConfirmation } from '../components/formation/FormationConfirmation';
+import { TypingDots } from '../components/formation/TypingDots';
 import { PhotoPicker } from '../components/ui/PhotoPicker';
 import { getPalette, typography } from '../theme';
+import { chatViaOpenRouter } from '../lib/aiClient';
 
 export interface FormationFlowProps {
   onDone: () => void;
@@ -30,11 +32,49 @@ export function FormationFlow({ onDone }: FormationFlowProps) {
   const scrollRef = useRef<ScrollView>(null);
 
   const step = getStep(currentStepId);
-  const palette = inferredType ? getPalette(getPaletteFor(inferredType)) : getPalette('dusk');
+  const paletteKey = inferredType ? getPaletteFor(inferredType) ?? 'dusk' : 'dusk';
+  const palette = getPalette(paletteKey);
+
+  const [reflection, setReflection] = useState<string | null>(null);
+  const [reflecting, setReflecting] = useState(false);
 
   useEffect(() => {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 60);
-  }, [responses.length, currentStepId]);
+  }, [responses.length, currentStepId, reflection, reflecting]);
+
+  // Step 전환 시 이전 reflection 정리 (responses 증가 = step 이동)
+  useEffect(() => {
+    setReflection(null);
+  }, [currentStepId]);
+
+  const requestReflection = useCallback(
+    async (userText: string, aiContext: string) => {
+      setReflecting(true);
+      setReflection(null);
+      try {
+        const result = await chatViaOpenRouter({
+          messages: [
+            {
+              role: 'system',
+              content:
+                '당신은 MODU 라는 앱의 공감형 안내자입니다. 사용자가 자신의 삶의 챕터를 설명할 때, 그 답변을 **한 문장 (최대 28자)** 으로 따뜻하게 되비춰주세요. 조언 금지, 질문 금지, 판단 금지. 존댓말.',
+            },
+            { role: 'user', content: `AI 질문: ${aiContext}\n사용자 응답: ${userText}` },
+          ],
+          temperature: 0.7,
+          maxTokens: 80,
+        });
+        if (result.ok) {
+          setReflection(result.content.trim().replace(/^["']|["']$/g, ''));
+        }
+      } catch {
+        // silent — reflection is ambient, never blocks flow
+      } finally {
+        setReflecting(false);
+      }
+    },
+    []
+  );
 
   const handleResponse = useCallback(
     (
@@ -65,10 +105,20 @@ export function FormationFlow({ onDone }: FormationFlowProps) {
     [step, responses, inferredType, advance, createAsset, setInferred, reset, onDone]
   );
 
-  const handlePreset = (o: PresetOption) =>
+  const handlePreset = (o: PresetOption) => {
+    setReflection(null);
     handleResponse(o.id, 'preset', o.shortLabel ?? o.label, o.leadsTo);
-  const handleFree = (t: string) => handleResponse(t, 'text');
-  const handleVoice = (t: string) => handleResponse(t, 'voice');
+  };
+  const handleFree = (t: string) => {
+    const ai = step?.aiMessage ?? '';
+    void requestReflection(t, ai);
+    handleResponse(t, 'text');
+  };
+  const handleVoice = (t: string) => {
+    const ai = step?.aiMessage ?? '';
+    void requestReflection(t, ai);
+    handleResponse(t, 'voice');
+  };
   const handlePhoto = (uri: string) => handleResponse(uri, 'photo', '📷 사진 첨부됨', undefined, uri);
   const handleSkip = () => {
     if (!step) return;
@@ -84,6 +134,9 @@ export function FormationFlow({ onDone }: FormationFlowProps) {
       <ScrollView ref={scrollRef} contentContainerStyle={styles.body}>
         {/* 누적 메시지 렌더 */}
         {renderHistory(responses, palette)}
+        {/* Gemma reflection (free-text/voice 후, step 전환 전 잠깐 떠 있음) */}
+        {reflecting && <TypingDots />}
+        {reflection && !reflecting && <AIMessage text={reflection} />}
         {/* 현재 step AI 메시지 */}
         {step && <AIMessage text={step.aiMessage} />}
         {/* confirm preview */}
@@ -97,14 +150,14 @@ export function FormationFlow({ onDone }: FormationFlowProps) {
             <PresetOptions
               options={step.presets}
               onSelect={handlePreset}
-              palette={inferredType ? getPaletteFor(inferredType) : 'dusk'}
+              palette={paletteKey}
             />
           )}
           {/* 모든 step (photo + confirm 제외) 에 직접 입력 영역. preset 만 있는 step 에서는 "기타" 라벨. */}
           {step.responseType !== 'photo' && !isConfirmStep(step.id) && (
             <FreeTextInput
               onSend={handleFree}
-              palette={inferredType ? getPaletteFor(inferredType) : 'dusk'}
+              palette={paletteKey}
               sectionLabel={
                 step.responseType === 'preset' ? '기타 · 직접 입력' : '직접 입력'
               }
@@ -114,7 +167,7 @@ export function FormationFlow({ onDone }: FormationFlowProps) {
           {step.responseType === 'photo' && (
             <View style={styles.photoSlot}>
               <PhotoPicker
-                palette={inferredType ? getPaletteFor(inferredType) : 'dusk'}
+                palette={paletteKey}
                 shape="square"
                 size={140}
                 placeholder="사진 선택"
@@ -125,7 +178,7 @@ export function FormationFlow({ onDone }: FormationFlowProps) {
           {step.allowVoice && (
             <VoiceInputButton
               onTranscribe={handleVoice}
-              palette={inferredType ? getPaletteFor(inferredType) : 'dusk'}
+              palette={paletteKey}
             />
           )}
           {step.allowSkip && (
@@ -150,14 +203,15 @@ function SkipRow({ onSkip }: { onSkip: () => void }) {
   );
 }
 
-function getPaletteFor(type: AssetType) {
-  return ({
-    fertility: 'dawn' as const,
-    cancer_caregiver: 'mist' as const,
-    pet_care: 'blossom' as const,
-    chronic: 'sage' as const,
-    custom: 'dusk' as const,
-  })[type];
+function getPaletteFor(type: AssetType): import('../theme').PaletteKey {
+  const map: Record<string, import('../theme').PaletteKey> = {
+    fertility: 'dawn',
+    cancer_caregiver: 'mist',
+    pet_care: 'blossom',
+    chronic: 'sage',
+    custom: 'dusk',
+  };
+  return map[type] ?? 'dusk';
 }
 
 function resolveNext(

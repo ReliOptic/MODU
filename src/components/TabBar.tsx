@@ -26,6 +26,9 @@ const ICON_MAP: Record<TabIcon, keyof typeof Ionicons.glyphMap> = {
   gear: 'settings-outline',
   'chart.line': 'stats-chart-outline',
   'square.grid': 'grid-outline',
+  'list.bullet': 'list-outline',
+  pencil: 'pencil-outline',
+  trophy: 'trophy-outline',
 };
 
 const ICON_MAP_FILLED: Record<TabIcon, keyof typeof Ionicons.glyphMap> = {
@@ -39,6 +42,9 @@ const ICON_MAP_FILLED: Record<TabIcon, keyof typeof Ionicons.glyphMap> = {
   gear: 'settings',
   'chart.line': 'stats-chart',
   'square.grid': 'grid',
+  'list.bullet': 'list',
+  pencil: 'pencil',
+  trophy: 'trophy',
 };
 
 export function TabBar({ tabs, activeTabId, onSelect, palette }: TabBarProps) {

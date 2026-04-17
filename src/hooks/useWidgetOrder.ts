@@ -5,7 +5,7 @@
 //   - 1분마다 now tick → 시간 흐름에 따라 위젯 순서가 부드럽게 변함
 import { useEffect, useMemo, useState } from 'react';
 import { LayoutAnimation, Platform, UIManager } from 'react-native';
-import type { Asset, LayoutContext, WidgetType } from '../types';
+import type { Asset, LayoutContext, LayoutRule, WidgetType } from '../types';
 import { computeLayout, LayoutResult } from '../engine/layoutEngine';
 import { rulesByType } from '../engine/rules';
 import { eventPhaseAt } from '../types/event';
@@ -120,11 +120,20 @@ export function useWidgetOrder(
     };
 
     // 3) Blueprint 기반 동적 규칙 생성 (Zero-Code Engine)
-    const blueprintRules = (asset.blueprint?.tpoRules ?? []).map((r) => ({
+    const actionMap: Record<string, LayoutRule['effect']['action']> = {
+      rank_up: 'promote',
+      rank_down: 'demote',
+      hide: 'collapse',
+      highlight: 'highlight',
+    };
+    const blueprintRules: LayoutRule[] = (asset.blueprint?.tpoRules ?? []).map((r) => ({
       id: `bp-${r.trigger}-${r.targetMoment}`,
-      widgetId: r.targetMoment,
-      condition: r.condition,
-      action: r.action,
+      condition: { type: 'manual', params: { raw: r.condition } },
+      effect: {
+        widgetId: r.targetMoment,
+        action: actionMap[r.action] ?? 'highlight',
+      },
+      priority: 60,
     }));
 
     const tabWidgets = asset.widgets.filter((w) => (w.tab ?? 'home') === tab);

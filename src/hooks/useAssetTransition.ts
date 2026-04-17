@@ -21,8 +21,11 @@ import type { PaletteKey } from '../theme';
 const FADE_OUT = 280;
 const RITUAL_HOLD = 360;
 const FADE_IN = 280;
+const QUICK = 280;
+const QUICK_HALF = QUICK / 2;
 
 export type TransitionPhase = 'idle' | 'out' | 'ritual' | 'in';
+export type TransitionMode = 'quick' | 'ritual';
 
 export interface PendingTarget {
   id: string;

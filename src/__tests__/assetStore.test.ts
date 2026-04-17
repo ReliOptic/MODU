@@ -302,7 +302,7 @@ describe('assetStore', () => {
 
   it('initAssetStore failure: initialized stays false, _initStarted resets, retry succeeds', async () => {
     // First call: repo.list rejects → initAssetStore must throw and reset guard
-    const failRepo: typeof import('../data/repositories/ChapterRepository').AssetRepository & {
+    const failRepo: import('../data/repositories/ChapterRepository').AssetRepository & {
       putSpy: jest.Mock;
     } = {
       list: jest.fn().mockRejectedValueOnce(new Error('storage failure')),

@@ -226,11 +226,11 @@ export async function exportToJson(
   options: BuildExportOptions = {},
   onProgress?: ExportProgressCallback
 ): Promise<ExportFileResult> {
-  // expo-file-system is a peer dependency — import dynamically so the module
-  // can be tree-shaken in environments where it is absent (e.g. web tests).
-  let FileSystem: typeof import('expo-file-system');
+  // expo-file-system legacy API (documentDirectory + writeAsStringAsync + EncodingType)
+  // lives at 'expo-file-system/legacy' since SDK 54. Dynamic import keeps web tests tree-shakable.
+  let FileSystem: typeof import('expo-file-system/legacy');
   try {
-    FileSystem = await import('expo-file-system');
+    FileSystem = await import('expo-file-system/legacy');
   } catch {
     throw new Error(
       'expo-file-system is not installed. Run: npx expo install expo-file-system'

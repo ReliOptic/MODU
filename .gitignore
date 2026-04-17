@@ -58,3 +58,9 @@ PROGRESS.md.bak
 .omx/
 .gstack/
 supabase/.temp/
+
+# local agent / tooling state
+.claude/
+
+# external UI benchmark references (not part of MODU source)
+benchmark_modern app_component_2026/
