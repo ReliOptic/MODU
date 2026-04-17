@@ -330,6 +330,29 @@ When building a new feature / UI / doc / presentation:
 
 ---
 
+## 11. External register — speaking to regulators and institutions
+
+MODU's internal register (§1-§10) is for the team. When speaking to regulators, grant bodies, health systems, research institutions, or institutional investors, **translate to the register those audiences already index on**. The full mapping and country-level strategy live in `docs/strategy/2026-04-17-regulatory-welcome-and-b2g.md`; the abbreviated table below exists so internal-lexicon leakage into external documents is caught at the authoring moment.
+
+| Internal | External equivalent |
+|----------|---------------------|
+| Chapter (Asset) | Longitudinal care episode |
+| ChapterMemory | Patient-generated health data (PGHD) entry |
+| Library | Patient-owned longitudinal personal health record (PHR) |
+| Companion | Non-SaMD patient-facing digital health tool |
+| Moments | Adaptive UI surface (non-clinical) |
+| Agora / quiet-weave | Patient-delegated shared-care coordination |
+| Role = partner / caregiver | Patient-delegated caregiver access, revocable + audited |
+| Privacy as Moat | Data minimization by design (GDPR Art. 5(1)(c), HIPAA-aligned) |
+| Post-bonding sync invitation | Cross-device provisioning with explicit consent |
+| Formation | Patient-reported intake |
+
+**Rule**: external-audience artifacts — grant applications, DiGA / PECAN submissions, NHS DTAC packs, B2G RFP responses, institutional-investor decks — use the **right** column only. Internal artifacts (ADRs, commits, code, internal strategy docs) may use either. Mixing registers within one external document is the failure mode; catch it at review.
+
+**Supporting permanent constraint**: *Stay non-SaMD.* No diagnostic claims, no treatment recommendations, no clinical alerting. MODU surfaces memory and context; clinicians interpret. See the strategy doc for full rationale and candidate ADR-0015.
+
+---
+
 ## References
 
 - `CLAUDE.md` §2-7 (north star · voice · 5-year retention test)
