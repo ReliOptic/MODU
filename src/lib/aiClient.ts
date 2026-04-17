@@ -4,6 +4,7 @@
 // CLIENT NEVER references ANTHROPIC_API_KEY or OPENROUTER_API_KEY directly.
 
 import { supabase, isSupabaseConfigured } from './supabase';
+import { getDeviceId } from './deviceId';
 import { FORMATION_MODEL, SYNTHESIS_FALLBACK } from '../config/ai-models';
 import {
   AIClientError,
@@ -107,8 +108,10 @@ function makeClaudeFallbackUsage(tokensIn: number, tokensOut: number): OpenRoute
 
 /**
  * Calls the `ai-openrouter` Edge Function (primary path, ADR-0012).
- * On 5xx or timeout > 15s, retries once against `ai-claude` (haiku fallback).
- * Returns a discriminated-union ChatResult — callers must check `.ok`.
+ * Identity: device-local UUID v4 (ADR-0011 local-first, ADR-0005 privacy-as-moat) —
+ * no user account required. On any failure returns a discriminated-union
+ * ChatResult — callers must check `.ok`. No Claude fallback in the
+ * device-identity path (fallback requires user JWT; kept only on callClaude).
  *
  * @example
  * const result = await chatViaOpenRouter({ messages: [{ role: 'user', content: '안녕' }] });
@@ -119,12 +122,15 @@ export async function chatViaOpenRouter(params: ChatViaOpenRouterParams): Promis
     return { ok: false, code: 'SERVICE_NOT_CONFIGURED', message: 'Supabase 미설정 — .env 확인' };
   }
 
-  let token: string;
+  let deviceId: string;
   try {
-    token = await getBearerToken();
+    deviceId = await getDeviceId();
   } catch (err) {
-    const e = err as AIClientError;
-    return { ok: false, code: e.code ?? 'UNAUTHORIZED_NO_AUTH_HEADER', message: e.message };
+    return {
+      ok: false,
+      code: 'UNAUTHORIZED_NO_AUTH_HEADER',
+      message: `device_id 생성 실패: ${(err as Error).message}`,
+    };
   }
 
   const model = params.model ?? FORMATION_MODEL;
@@ -140,31 +146,14 @@ export async function chatViaOpenRouter(params: ChatViaOpenRouterParams): Promis
     if (requestBody[k] === undefined) delete requestBody[k];
   }
 
-  // ── Primary: OpenRouter ──────────────────────────────────────────────────
-  const primary = await _invokeOpenRouter(token, requestBody, params.signal);
-  if (primary.ok) return primary;
+  // Unused in device-identity path but kept referenced for future fallback wiring.
+  void SYNTHESIS_FALLBACK;
 
-  // Only fall back on server errors (5xx) or network/timeout failures
-  const shouldFallback =
-    primary.code === 'UPSTREAM_ERROR' ||
-    primary.code === 'UPSTREAM_UNREACHABLE' ||
-    primary.code === 'TIMEOUT' ||
-    primary.code === 'NETWORK_ERROR';
-
-  if (!shouldFallback) return primary;
-
-  // ── Fallback: Claude haiku ───────────────────────────────────────────────
-  console.warn(JSON.stringify({
-    event: 'openrouter_fallback_triggered',
-    reason: primary.code,
-    fallback_model: SYNTHESIS_FALLBACK,
-  }));
-
-  return _invokeClaude(token, params.messages, params.signal);
+  return _invokeOpenRouter(deviceId, requestBody, params.signal);
 }
 
 async function _invokeOpenRouter(
-  token: string,
+  deviceId: string,
   body: Record<string, unknown>,
   signal?: AbortSignal
 ): Promise<ChatResult> {
@@ -179,7 +168,7 @@ async function _invokeOpenRouter(
       signal: combinedSignal,
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        'X-Device-Id': deviceId,
       },
       body: JSON.stringify(body),
     });
@@ -215,55 +204,6 @@ async function _invokeOpenRouter(
     request_id: data.request_id ?? null,
     provider: 'openrouter',
     usedFallback: false,
-  };
-}
-
-async function _invokeClaude(
-  token: string,
-  messages: ChatMessage[],
-  signal?: AbortSignal
-): Promise<ChatResult> {
-  // Map ChatMessage roles: Claude doesn't support 'system' in messages array;
-  // filter to user/assistant only for the fallback call.
-  const claudeMessages = messages
-    .filter((m) => m.role === 'user' || m.role === 'assistant')
-    .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
-
-  let res: Response;
-  try {
-    res = await fetch(edgeFunctionUrl('ai-claude'), {
-      method: 'POST',
-      signal,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        messages: claudeMessages,
-        model: 'claude-haiku-4-5-20251001',
-        context: { role: 'self', locale: 'ko-KR' },
-      }),
-    });
-  } catch (err) {
-    const e = err as Error;
-    return { ok: false, code: 'NETWORK_ERROR', message: `네트워크 오류 (fallback): ${e.message}` };
-  }
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    return { ok: false, code: 'UPSTREAM_ERROR', message: `Claude fallback 오류 (${res.status}): ${text.slice(0, 200)}` };
-  }
-
-  const data = (await res.json()) as CallClaudeResponse;
-  return {
-    ok: true,
-    content: data.content,
-    usage: makeClaudeFallbackUsage(data.usage.input_tokens, data.usage.output_tokens),
-    model: data.model,
-    latency_ms: 0,
-    request_id: data.request_id,
-    provider: 'anthropic',
-    usedFallback: true,
   };
 }
 

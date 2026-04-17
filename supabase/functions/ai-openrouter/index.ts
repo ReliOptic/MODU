@@ -1,8 +1,10 @@
-// MODU ai-openrouter Edge Function — OpenRouter LLM proxy
+// MODU ai-openrouter Edge Function — OpenRouter LLM proxy (device-identity)
 // ADR-0012: Gemma routing via OpenRouter to reduce AI cost
+// ADR-0011: local-first, no user accounts required → device_id header only
+// ADR-0005: privacy-as-moat, anonymous audit row (no PII linkage)
 //
 // POST /functions/v1/ai-openrouter
-//   Authorization: Bearer <supabase user JWT>
+//   X-Device-Id: <uuid-v4 generated client-side>
 //   Body: {
 //     model?: OpenRouterModel,
 //     messages: ChatMessage[],
@@ -12,13 +14,15 @@
 //   }
 //   Response: { content: string, usage: {...}, model: string, latency_ms: number, request_id: string }
 //
-// Deploy: supabase functions deploy ai-openrouter --no-verify-jwt=false
+// Deploy: supabase functions deploy ai-openrouter --no-verify-jwt
+//   (Supabase gateway JWT verification disabled — this function does its own
+//    device-id validation. See supabase/config.toml: verify_jwt = false.)
 // Secrets: OPENROUTER_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 
 import { corsPreFlight, jsonResp } from '../_shared/cors.ts';
-import { getUserFromRequest } from '../_shared/auth.ts';
-import { checkRateLimit } from '../_shared/rateLimit.ts';
-import { insertAudit } from '../_shared/audit.ts';
+import { requireDeviceId } from '../_shared/deviceAuth.ts';
+import { checkDeviceRateLimit } from '../_shared/rateLimit.ts';
+import { insertDeviceAudit } from '../_shared/audit.ts';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -133,20 +137,26 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return corsPreFlight();
   if (req.method !== 'POST') return jsonResp(405, { code: 'METHOD_NOT_ALLOWED', message: 'Only POST is accepted' });
 
-  // 1) Auth
-  let userId: string;
+  // 1) Device identity (X-Device-Id header, UUID v4 validated)
+  let deviceId: string;
   try {
-    const auth = await getUserFromRequest(req);
-    userId = auth.userId;
+    const auth = requireDeviceId(req);
+    deviceId = auth.deviceId;
   } catch (resp) {
     return resp as Response;
   }
 
-  // 2) Rate limit
+  // 2) Rate limit (per device, not per user — ADR-0011 local-first)
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
-  const allowed = await checkRateLimit(supabaseUrl, serviceKey, userId, 'ai-openrouter', RATE_LIMIT_PER_MINUTE);
+  const allowed = await checkDeviceRateLimit(
+    supabaseUrl,
+    serviceKey,
+    deviceId,
+    'ai-openrouter',
+    RATE_LIMIT_PER_MINUTE
+  );
   if (!allowed) {
     return jsonResp(429, { code: 'RATE_LIMIT_EXCEEDED', message: 'AI 사용량을 초과했어요. 잠시 후 다시 시도해 주세요.' });
   }
@@ -227,10 +237,10 @@ Deno.serve(async (req: Request) => {
   const tokensOut = usage?.completion_tokens ?? 0;
   const costEstimate = estimateCost(model, tokensIn, tokensOut);
 
-  // 7) Audit log
+  // 7) Audit log (device-scoped, no PII linkage)
   console.log(JSON.stringify({
     event: 'ai_openrouter_call',
-    user_id: userId,
+    device_id: deviceId,
     model,
     tokens_in: tokensIn,
     tokens_out: tokensOut,
@@ -238,8 +248,8 @@ Deno.serve(async (req: Request) => {
     cost_estimate_usd: costEstimate,
   }));
 
-  const requestId = await insertAudit(supabaseUrl, serviceKey, {
-    userId,
+  const requestId = await insertDeviceAudit(supabaseUrl, serviceKey, {
+    deviceId,
     model,
     tokensIn,
     tokensOut,

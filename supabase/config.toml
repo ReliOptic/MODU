@@ -375,6 +375,13 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# ai-openrouter is device-identity only (ADR-0011 local-first): this function
+# validates a client-generated X-Device-Id UUID v4 itself; Supabase gateway
+# JWT verification is disabled so MODU does not require user accounts for
+# anonymous Gemma calls.
+[functions.ai-openrouter]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

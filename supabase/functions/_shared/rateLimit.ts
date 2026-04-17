@@ -93,3 +93,64 @@ export async function checkRateLimit(
   memoryBuckets.set(bucketKey, { count: currentCount, windowStart: windowStartMs });
   return allowed;
 }
+
+/**
+ * Device-identity variant of {@link checkRateLimit} — mirrors the same L1+L2
+ * logic but keyed by `deviceId` (UUID v4) instead of `userId`.
+ * Calls the `increment_device_rate_limit` RPC against the
+ * `ai_device_rate_limits` table (no auth.users FK).
+ *
+ * Same fail-closed semantics: any DB error saturates L1 for the window.
+ */
+export async function checkDeviceRateLimit(
+  supabaseUrl: string,
+  serviceKey: string,
+  deviceId: string,
+  key: string,
+  limitPerMinute: number
+): Promise<boolean> {
+  const bucketKey = `device:${deviceId}:${key}`;
+  const now = Date.now();
+
+  // ── L1 ──────────────────────────────────────────────────────────
+  const mem = memoryBuckets.get(bucketKey);
+  if (mem) {
+    const elapsed = now - mem.windowStart;
+    if (elapsed < WINDOW_MS) {
+      if (mem.count >= limitPerMinute) return false;
+      mem.count += 1;
+      return true;
+    } else {
+      memoryBuckets.delete(bucketKey);
+    }
+  }
+
+  // ── L2 ──────────────────────────────────────────────────────────
+  const client = createClient(supabaseUrl, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  const windowStartMs = now - (now % WINDOW_MS);
+  const windowStart = new Date(windowStartMs).toISOString();
+
+  const { data, error } = await client.rpc('increment_device_rate_limit', {
+    p_device_id: deviceId,
+    p_key: key,
+    p_window_start: windowStart,
+    p_limit: limitPerMinute,
+    p_window_ms: WINDOW_MS,
+  });
+
+  if (error) {
+    console.error('[rateLimit/device] DB error — failing closed:', error.message);
+    memoryBuckets.set(bucketKey, { count: limitPerMinute, windowStart: windowStartMs });
+    return false;
+  }
+
+  const row = Array.isArray(data) ? data[0] : data;
+  const currentCount: number = row?.count ?? limitPerMinute + 1;
+  const allowed: boolean = row?.allowed ?? false;
+
+  memoryBuckets.set(bucketKey, { count: currentCount, windowStart: windowStartMs });
+  return allowed;
+}

@@ -52,6 +52,49 @@ export async function insertAudit(
   return (data as { id: string }).id ?? null;
 }
 
+export interface DeviceAuditParams {
+  deviceId: string;
+  model: string;
+  tokensIn: number;
+  tokensOut: number;
+  latencyMs: number;
+}
+
+/**
+ * Inserts a device-identity audit record (no user_id, no PII).
+ * Writes `device_id` column instead of `user_id` — row is unreadable by any
+ * authenticated user (see ai_audit RLS in migration 10_device_identity).
+ */
+export async function insertDeviceAudit(
+  supabaseUrl: string,
+  serviceKey: string,
+  params: DeviceAuditParams
+): Promise<string | null> {
+  const client = createClient(supabaseUrl, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  const { data, error } = await client
+    .from('ai_audit')
+    .insert({
+      user_id: null,
+      device_id: params.deviceId,
+      model: params.model,
+      tokens_in: params.tokensIn,
+      tokens_out: params.tokensOut,
+      latency_ms: params.latencyMs,
+      bytes_in: 0,
+    })
+    .select('id')
+    .single();
+
+  if (error) {
+    console.warn('[audit/device] insert error:', error.message);
+    return null;
+  }
+  return (data as { id: string }).id ?? null;
+}
+
 /**
  * Inserts a Whisper STT call audit record.
  * `bytesIn` stores the raw audio payload size for cost tracking.
