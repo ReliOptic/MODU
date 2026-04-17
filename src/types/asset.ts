@@ -71,8 +71,22 @@ export interface FormationData {
 import type { LayoutRule } from './layout';
 import type { ScheduledEvent } from './event';
 
-export interface Asset {
+/**
+ * Minimum shape for any sync-ready entity. Introduced 2026-04-17
+ * (ADR-0013 Addendum A4 + ADR-0011 Addendum).
+ *
+ *   id         — UUID v4. Stable across devices.
+ *   updatedAt  — ISO-8601. Last-write-wins base for conflict resolution.
+ *   syncedAt   — ISO-8601 of the last successful cloud push, or null for
+ *                records that have never been pushed (all records in v1).
+ */
+export interface Syncable {
   id: string;
+  updatedAt: string;
+  syncedAt?: string | null;
+}
+
+export interface Asset extends Syncable {
   type: AssetType;
   displayName: string;
   palette: PaletteKey;
@@ -83,8 +97,8 @@ export interface Asset {
   status: AssetStatus;
   createdAt: string;
   lastActiveAt: string;
-  /** 에셋 대표 사진 URI (반려동물 얼굴, 진료 카드 등). 로컬 fs:// 또는 원격 https://. */
+  /** Representative photo (pet face, appointment card, etc.) — local `fs://` or remote `https://`. */
   photoUri?: string;
-  /** 이 에셋이 알고 있는 일정 — LayoutEngine 가 시간 기반 우선순위 평가에 사용. */
+  /** Known events on this chapter — LayoutEngine consumes them for time-based widget ranking. */
   events?: ScheduledEvent[];
 }

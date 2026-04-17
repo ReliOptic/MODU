@@ -7,6 +7,7 @@ export type {
   WidgetConfig,
   WidgetType,
   FormationData,
+  Syncable,
 } from './asset';
 export type {
   FormationStep,

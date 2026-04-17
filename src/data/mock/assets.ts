@@ -23,6 +23,10 @@ function fromTemplate(
     status: 'active',
     createdAt: now,
     lastActiveAt: now,
+    // Sync-ready fields (ADR-0013 A4 + ADR-0011 Addendum). Mocks default
+    // updatedAt to the same frozen `now` so deterministic tests stay stable.
+    updatedAt: now,
+    syncedAt: null,
     ...overrides,
   };
 }
