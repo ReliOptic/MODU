@@ -1,8 +1,14 @@
 # MODU — Claude Code Context
 
-> **이 파일을 항상 먼저 읽어라.** PROJECT_SPEC.md (= ../modu-project-spec.md) 는 비전 / 멀티에셋 풀 그림.
-> ROADMAP.md, docs/adr/, docs/reviews/ 가 실제 출시 기준.
-> 본 문서는 Claude Code 가 한 세션에서 다음 세션으로 넘길 영구 가이드라인이다.
+> **세션 재개 시 필독 순서** (Session-start read order):
+> 1. 본 파일 `CLAUDE.md` — 영구 가이드라인 (permanent guidance).
+> 2. **`progress.md`** — 직전 세션의 마지막 상태 + 바인딩 결정 + 다음 액션. 현재 작업을 이어서 수행하는 기준.
+> 3. `../modu-project-spec.md` (PROJECT_SPEC) — 비전 / 멀티에셋 풀 그림.
+> 4. 필요 시 `ROADMAP.md`, `docs/adr/`, `docs/reviews/`, 관련 `docs/strategy/` 와 `docs/data/`.
+>
+> **세션 종료 시**: `progress.md` 를 반드시 최신 상태로 갱신하고 같은 커밋 혹은 직후 커밋에 포함한다 (`docs: progress snapshot YYYY-MM-DD`).
+>
+> 본 문서는 Claude Code 가 한 세션에서 다음 세션으로 넘길 영구 가이드라인이다. `progress.md` 는 세션-간 상태 전달이다.
 
 ## North Star (절대 잊지 말 것)
 
