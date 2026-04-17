@@ -211,6 +211,26 @@ begin
 end;
 $$;
 
+-- ─── Test 5b (read-back): user_b update left user_a note body intact ────────
+-- Still in user_b context. Switch to user_a and confirm body was not tampered.
+set local "request.jwt.claims" to '{"sub":"00000000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+do $$
+declare
+  note_body text;
+begin
+  select body into note_body
+  from public.notes
+  where id = 'bbbbbbbb-0000-0000-0000-000000000001';
+
+  if note_body = 'User A private note' then
+    raise notice 'PASS: user_a note body unchanged after user_b tamper attempt';
+  else
+    raise warning 'FAIL: user_a note body is "%" — tampering succeeded', note_body;
+  end if;
+end;
+$$;
+
 -- ─── Test 6: user_a can read own profile ─────────────────────────────────
 -- Reset JWT claims before switching to user_a to ensure no stale context.
 set local "request.jwt.claims" to '{"sub":"00000000-0000-0000-0000-000000000001","role":"authenticated"}';
@@ -342,6 +362,63 @@ begin
   else
     raise warning 'FAIL: anon can read % ai_audit row(s)', cnt;
   end if;
+end;
+$$;
+
+-- ─── Test 11: service_role may anonymize an S4 event ─────────────────────
+-- SET ROLE service_role reflects in current_user (not session_user), which is
+-- what the block_s4_mutation trigger now checks.
+set local role postgres;
+set local "request.jwt.claims" to '{}';
+
+do $$
+begin
+  set local role service_role;
+
+  begin
+    update public.events
+    set user_id      = null,
+        anonymized_at = now()
+    where id = 'eeeeeeee-0000-0000-0000-000000000001';
+
+    if found then
+      raise notice 'PASS: service_role anonymization UPDATE succeeded on S4 event';
+    else
+      raise warning 'FAIL: service_role UPDATE affected 0 rows (row not found or RLS blocked)';
+    end if;
+  exception when others then
+    raise warning 'FAIL: service_role anonymization blocked unexpectedly (error: %)', sqlerrm;
+  end;
+end;
+$$;
+
+-- ─── Test 12: service_role UPDATE tampering other fields is blocked ───────
+-- Restore the row so this test starts from a clean state.
+set local role postgres;
+
+update public.events
+set user_id       = '00000000-0000-0000-0000-000000000001',
+    anonymized_at = null
+where id = 'eeeeeeee-0000-0000-0000-000000000001';
+
+do $$
+begin
+  set local role service_role;
+
+  -- Attempt: anonymize AND change an immutable field (properties).
+  begin
+    update public.events
+    set user_id       = null,
+        anonymized_at = now(),
+        properties    = '{"tampered":true}'::jsonb
+    where id = 'eeeeeeee-0000-0000-0000-000000000001';
+
+    raise warning 'FAIL: trigger allowed mutation of immutable fields on S4 event';
+  exception when restrict_violation then
+    raise notice 'PASS: trigger blocked field-tampering UPDATE on S4 event (restrict_violation)';
+  when others then
+    raise notice 'PASS: trigger blocked field-tampering UPDATE on S4 event (error: %)', sqlerrm;
+  end;
 end;
 $$;
 

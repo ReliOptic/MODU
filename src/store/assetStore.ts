@@ -18,6 +18,7 @@ import { uuid, nowIso } from '../lib/ids';
 import { createLocalAssetRepository } from '../data/repositories/LocalAssetRepository';
 import type { AssetRepository } from '../data/repositories/ChapterRepository';
 import { emit } from '../lib/events';
+import { isKnownChapterType } from '../types/events';
 
 // ---------------------------------------------------------------------------
 // Internal singleton — replaceable in tests via _setRepository().
@@ -88,8 +89,11 @@ export const useAssetStore = create<AssetStore>()((set, get) => ({
       console.warn('[assetStore] switchAsset repo.put failed', err);
       throw err;
     }
-    const fromId = get().currentAssetId ?? undefined;
-    emit('chapter_switched', { from_asset_id: fromId, to_asset_id: id });
+    const fromId = get().currentAssetId;
+    emit('chapter_switched', {
+      to_asset_id: id,
+      ...(fromId ? { from_asset_id: fromId } : {}),
+    });
     set((s) => ({
       assets: s.assets.map((a) => (a.id === id ? switched : a)),
       currentAssetId: id,
@@ -122,7 +126,11 @@ export const useAssetStore = create<AssetStore>()((set, get) => ({
       console.warn('[assetStore] createAsset repo.put failed', err);
       throw err;
     }
-    emit('chapter_created', { type: asset.type as import('../types/events').ChapterType });
+    if (isKnownChapterType(asset.type)) {
+      emit('chapter_created', { type: asset.type });
+    } else if (__DEV__) {
+      console.warn('[assetStore] unknown asset type, skipping chapter_created emit', asset.type);
+    }
     set((s) => ({ assets: [...s.assets, asset], currentAssetId: asset.id }));
     return asset;
   },
@@ -139,7 +147,7 @@ export const useAssetStore = create<AssetStore>()((set, get) => ({
       throw err;
     }
     const createdMs = existing.createdAt ? new Date(existing.createdAt).getTime() : Date.now();
-    const daysActive = Math.floor((Date.now() - createdMs) / 86_400_000);
+    const daysActive = Math.max(0, Math.floor((Date.now() - createdMs) / 86_400_000));
     emit('chapter_archived', { days_active: daysActive });
     set((s) => {
       const next = s.assets.map((a) => (a.id === id ? archived : a));

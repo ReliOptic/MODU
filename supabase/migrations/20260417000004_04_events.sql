@@ -62,6 +62,11 @@ create index if not exists events_user_occurred_idx
 create index if not exists events_user_sensitivity_idx
   on public.events (user_id, sensitivity);
 
+-- Index for GDPR reporting/cleanup: find anonymized rows efficiently.
+create index if not exists events_anonymized_idx
+  on public.events (anonymized_at)
+  where anonymized_at is not null;
+
 -- ─── S4 IMMUTABLE: block DELETE and UPDATE ────────────────────────────────
 -- S4 events (partner/consent/delegation audit) must never be deleted or
 -- modified. This trigger enforces the constraint at the database layer,
@@ -78,7 +83,7 @@ begin
     --   UPDATE events SET user_id=null, anonymized_at=now() WHERE user_id=<uuid>
     -- then deletes the auth.users row. No other fields may be changed.
     if tg_op = 'UPDATE'
-      and session_user = 'service_role'
+      and current_user = 'service_role'  -- SET ROLE service_role reflects in current_user, not session_user
       and new.user_id is null
       and new.anonymized_at is not null
       -- Ensure no other fields were touched beyond user_id and anonymized_at.

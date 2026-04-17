@@ -17,6 +17,25 @@ jest.mock('react-native', () => ({
   Platform: { OS: 'ios' },
 }));
 
+// ConsentScreen imports expo-linear-gradient which requires native modules.
+// Mock the whole screen module — only readConsentRecord is used by export.ts.
+jest.mock('../screens/ConsentScreen', () => ({
+  readConsentRecord: jest.fn().mockResolvedValue(null),
+  CONSENT_STORAGE_KEY: '@modu/consent:v1',
+  CONSENT_SCREEN_VERSION: 'v1.0.0-test',
+}));
+
+// expo-linear-gradient native module stub
+jest.mock('expo-linear-gradient', () => ({
+  LinearGradient: 'LinearGradient',
+}));
+
+// react-native-safe-area-context stub (ConsentScreen imports useSafeAreaInsets)
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+  SafeAreaProvider: ({ children }: any) => children,
+}));
+
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
@@ -227,75 +246,81 @@ describe('buildExportBundle', () => {
 
   // ─────────────────────────────────────────────────────────────────────────
   // Case 4: Attachment URL generation failure → entry skipped + console.warn
+  // Tested directly against fetchAttachments internals by calling getAttachmentUrl
+  // mock sequences and verifying the skip + warn behaviour in remoteExport.ts.
   // ─────────────────────────────────────────────────────────────────────────
   it('케이스 4: attachment URL 생성 실패 시 해당 entry skip + console.warn 호출', async () => {
-    // We test the remoteExport.fetchAttachments helper directly since
-    // the Supabase mock returns empty arrays. Simulate by spying on
-    // getAttachmentUrl to fail on first call.
-    const { getAttachmentUrl } = require('../lib/r2Client');
-    (getAttachmentUrl as jest.Mock)
-      .mockRejectedValueOnce(new Error('presign failed'))
-      .mockResolvedValue({ url: 'https://r2.example.com/ok', expires_in: 900 });
-
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
-    // fetchAttachments with an empty Supabase response — test skip logic
-    // by importing and calling the helper with mocked rows via the module.
-    // Since isSupabaseConfigured=false, fetchAttachments returns [] directly.
-    // We test the skip logic via the remoteExport module's internal path
-    // by temporarily enabling the mock to return rows.
-    const { supabase } = require('../lib/supabase');
-    supabase.from.mockReturnValueOnce({
-      select: jest.fn().mockReturnThis(),
-      order: jest.fn().mockResolvedValue({
-        data: [
-          { id: 'att-1', asset_id: 'asset-1', r2_key: 'k/1', mime: 'image/jpeg', byte_size: 1024, created_at: new Date().toISOString() },
-          { id: 'att-2', asset_id: 'asset-1', r2_key: 'k/2', mime: 'image/jpeg', byte_size: 2048, created_at: new Date().toISOString() },
-        ],
-        error: null,
-      }),
-    });
-
-    // Import remoteExport and call fetchAttachments with configured=true temporarily
-    // We test the skip logic directly in remoteExport.
+    // Import the module under test (already loaded by Jest module registry).
     const remoteExport = require('../lib/remoteExport');
-
-    // Patch isSupabaseConfigured temporarily for this call
+    const { getAttachmentUrl } = require('../lib/r2Client');
     const supabaseModule = require('../lib/supabase');
-    const origConfigured = supabaseModule.isSupabaseConfigured;
-    Object.defineProperty(supabaseModule, 'isSupabaseConfigured', { value: true, configurable: true });
 
-    // Override supabase.from to return our test rows
-    supabase.from.mockReturnValue({
-      select: jest.fn().mockReturnThis(),
-      order: jest.fn().mockResolvedValue({
-        data: [
-          { id: 'att-fail', asset_id: 'asset-1', r2_key: 'k/fail', mime: 'image/jpeg', byte_size: 512, created_at: new Date().toISOString() },
-          { id: 'att-ok', asset_id: 'asset-1', r2_key: 'k/ok', mime: 'image/png', byte_size: 256, created_at: new Date().toISOString() },
-        ],
-        error: null,
-      }),
+    // Temporarily enable Supabase so fetchAttachments proceeds past the guard.
+    Object.defineProperty(supabaseModule, 'isSupabaseConfigured', {
+      value: true,
+      configurable: true,
+      writable: true,
     });
 
-    // getAttachmentUrl: first call fails, second succeeds
+    // Make supabase.from().select().order() resolve with two attachment rows.
+    const orderMock = jest.fn().mockResolvedValue({
+      data: [
+        {
+          id: 'att-fail',
+          asset_id: 'asset-1',
+          r2_key: 'k/fail',
+          mime: 'image/jpeg',
+          byte_size: 512,
+          created_at: new Date().toISOString(),
+        },
+        {
+          id: 'att-ok',
+          asset_id: 'asset-1',
+          r2_key: 'k/ok',
+          mime: 'image/png',
+          byte_size: 256,
+          created_at: new Date().toISOString(),
+        },
+      ],
+      error: null,
+    });
+    supabaseModule.supabase.from.mockReturnValue({
+      select: jest.fn().mockReturnValue({ order: orderMock }),
+    });
+
+    // First URL call fails; second succeeds.
     (getAttachmentUrl as jest.Mock)
       .mockRejectedValueOnce(new Error('presign failed'))
       .mockResolvedValueOnce({ url: 'https://r2.example.com/ok', expires_in: 900 });
 
     const attachments = await remoteExport.fetchAttachments(new Date());
 
-    // Failed entry is skipped; only the successful one returned
+    // Failed entry is skipped; only the successful one is in the result.
     expect(attachments).toHaveLength(1);
     expect(attachments[0].id).toBe('att-ok');
 
-    // console.warn was called for the failed entry
+    // console.warn was called for the failed entry with the expected message prefix.
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining('attachment URL generation failed'),
       expect.any(String)
     );
 
-    // Restore
-    Object.defineProperty(supabaseModule, 'isSupabaseConfigured', { value: origConfigured, configurable: true });
+    // Restore isSupabaseConfigured and reset from() mock to the default chain.
+    Object.defineProperty(supabaseModule, 'isSupabaseConfigured', {
+      value: false,
+      configurable: true,
+      writable: true,
+    });
+    // Restore the default chainable from() mock so subsequent tests are unaffected.
+    const defaultChain = {
+      select: jest.fn().mockReturnThis(),
+      order: jest.fn().mockReturnThis(),
+      in: jest.fn().mockReturnThis(),
+      then: jest.fn(),
+    };
+    supabaseModule.supabase.from.mockReturnValue(defaultChain);
     warnSpy.mockRestore();
   });
 

@@ -244,6 +244,48 @@ describe('assetStore', () => {
     emitSpy.mockRestore();
   });
 
+  it('archiveAsset with future createdAt → days_active clamped to 0 (T-EM-05)', async () => {
+    const emitSpy = jest.spyOn(eventsModule, 'emit');
+    // Asset with createdAt in the future (clock skew scenario)
+    const futureAsset: Asset = {
+      ...mockAssets[0],
+      id: 'future-asset',
+      createdAt: new Date(Date.now() + 86_400_000 * 5).toISOString(), // 5 days in future
+    };
+    const repo = makeMockRepo([futureAsset]);
+    _setRepository(repo);
+    await initAssetStore();
+    emitSpy.mockClear();
+
+    await useAssetStore.getState().archiveAsset('future-asset');
+
+    const archivedCalls = emitSpy.mock.calls.filter((c) => c[0] === 'chapter_archived');
+    expect(archivedCalls).toHaveLength(1);
+    expect(archivedCalls[0][1]).toEqual(expect.objectContaining({ days_active: 0 }));
+    emitSpy.mockRestore();
+  });
+
+  it('switchAsset with null currentAssetId → from_asset_id key absent in payload (T-EM-06)', async () => {
+    const emitSpy = jest.spyOn(eventsModule, 'emit');
+    const repo = makeMockRepo([...mockAssets]);
+    _setRepository(repo);
+    await initAssetStore();
+
+    // Force currentAssetId to null
+    useAssetStore.setState({ currentAssetId: null });
+    emitSpy.mockClear();
+
+    const target = useAssetStore.getState().assets[0];
+    await useAssetStore.getState().switchAsset(target.id);
+
+    const switchedCalls = emitSpy.mock.calls.filter((c) => c[0] === 'chapter_switched');
+    expect(switchedCalls).toHaveLength(1);
+    const payload = switchedCalls[0][1] as Record<string, unknown>;
+    expect(payload).not.toHaveProperty('from_asset_id');
+    expect(payload.to_asset_id).toBe(target.id);
+    emitSpy.mockRestore();
+  });
+
   it('switchAsset unknown id → emit 호출 없음 (T-EM-04)', async () => {
     const emitSpy = jest.spyOn(eventsModule, 'emit');
     const repo = makeMockRepo([...mockAssets]);

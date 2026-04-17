@@ -1,6 +1,7 @@
 // Formation 분기 + 5스텝 완료 검증
 import { getStep, isConfirmStep, typeFromStepId, allSteps } from '../data/formationSteps';
 import { useFormationStore } from '../store/formationStore';
+import * as eventsModule from '../lib/events';
 
 describe('formation step graph', () => {
   it('entry step exists with 4 presets (T-FM-01)', () => {
@@ -82,5 +83,45 @@ describe('formationStore', () => {
     const s = useFormationStore.getState();
     expect(s.currentStepId).toBe('step_01');
     expect(s.responses).toHaveLength(0);
+  });
+
+  it('advance double-call to CONFIRM → formation_completed emitted exactly once (T-FM-08)', () => {
+    const emitSpy = jest.spyOn(eventsModule, 'emit');
+    emitSpy.mockClear();
+
+    // Set up inferredType
+    useFormationStore.getState().setInferredType('fertility');
+
+    const step1Response: import('../types').FormationResponse = {
+      stepId: 'step_01',
+      value: 'fertility',
+      type: 'preset',
+    };
+    const step2Response: import('../types').FormationResponse = {
+      stepId: 'fertility:step_02',
+      value: 'first',
+      type: 'preset',
+    };
+
+    // First advance to CONFIRM
+    useFormationStore.getState().advance(step1Response, 'CONFIRM');
+    // Second advance to CONFIRM (simulates double-tap / race)
+    useFormationStore.getState().advance(step2Response, 'CONFIRM');
+
+    const completedCalls = emitSpy.mock.calls.filter((c) => c[0] === 'formation_completed');
+    expect(completedCalls).toHaveLength(1);
+
+    emitSpy.mockRestore();
+  });
+
+  it('completedFired resets to false after reset() (T-FM-09)', () => {
+    useFormationStore.getState().setInferredType('chronic');
+    useFormationStore.getState().advance(
+      { stepId: 'step_01', value: 'chronic', type: 'preset' },
+      'CONFIRM'
+    );
+    expect(useFormationStore.getState().completedFired).toBe(true);
+    useFormationStore.getState().reset();
+    expect(useFormationStore.getState().completedFired).toBe(false);
   });
 });

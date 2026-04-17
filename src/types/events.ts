@@ -412,6 +412,25 @@ export interface LocaleChangedEvent extends EventBase {
 // Discriminated union + name alias
 // ---------------------------------------------------------------------------
 
+/** Runtime guard: returns true if value is a known ChapterType. */
+export function isKnownChapterType(value: unknown): value is ChapterType {
+  return (
+    typeof value === 'string' &&
+    (
+      value === 'fertility' ||
+      value === 'cancer_caregiver' ||
+      value === 'pet_care' ||
+      value === 'chronic' ||
+      value === 'study' ||
+      value === 'work' ||
+      value === 'fitness' ||
+      value === 'caregiving' ||
+      value === 'hobby' ||
+      value === 'custom'
+    )
+  );
+}
+
 export type MoguEvent =
   | SessionStartedEvent
   | SessionEndedEvent
