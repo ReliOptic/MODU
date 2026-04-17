@@ -9,17 +9,46 @@
 
 MODU is not "a health app." It is an **appreciating, user-owned asset** whose value to the user compounds with time, and whose externalized value to society compounds as invisible labor and long medical trajectories become witnessed. Every decision — feature, team KPI, country entry, policy partnership — must either increase the asset's value to the user or increase its externalized social value, **measurably**. "Tenacity and luck" are replaced by **statistical efficiency grounded in cost accounting**.
 
-## The three real-world failures and their societal analogues
+## The three user-side realities MODU tunes to, and their societal analogues
 
-Each individual failure that MODU resolves has a societal analogue that a national ministry of health already counts as a political pain. The B2G pitch surface is exactly the right-hand columns of this table.
+These are **realities the user lives**, not failures the user causes. MODU's job is to tune around them. The societal / aggregate / policy surface on the right-hand columns is an **internal strategic layer** (see §"Hidden B2G surface" below) — it never reaches the user as a frame.
 
-| Individual failure | Societal issue | Policy lever | Aggregate metric MODU can surface (consent-gated, de-identified, purpose-limited) |
-|--------------------|----------------|--------------|------------------------------------------------------------------------------------|
-| Medical amnesia | Chronic-disease productivity loss; poor adherence across long trajectories | Primary-care redesign, EHDS-style secondary use of PGHD | Regional adherence curves, phase-transition distributions |
-| Caregiver invisibility | Unpaid care labor (~USD 600B in US, ~EUR 400B in EU); caregiver burnout | Caregiver tax credits, paid family leave, respite-care infrastructure | Hours of caregiving per dyad per week; caregiver sleep/mood proxies |
-| Clinical-memory gap | Information asymmetry driving overtreatment and re-diagnosis | Digital-health integration into primary care | Re-diagnosis-rate reduction, pre-visit-summary acceptance rate |
+| User-side reality | Societal analogue | Policy lever | Aggregate metric MODU can surface (consent-gated, de-identified, purpose-limited) |
+|-------------------|-------------------|--------------|------------------------------------------------------------------------------------|
+| The journey outruns recall (care spans months; recall spans days) | Chronic-disease productivity loss; poor adherence across long trajectories | Primary-care redesign, EHDS-style secondary use of PGHD | Regional adherence curves, phase-transition distributions |
+| Caregiving goes unwitnessed (partner / family effort is unpriced and invisible) | Unpaid care labor (~USD 600B in US, ~EUR 400B in EU); caregiver burnout | Caregiver tax credits, paid family leave, respite-care infrastructure | Hours of caregiving per dyad per week; caregiver sleep / mood proxies |
+| The visit cannot hold 30 days (information asymmetry between dyad and clinician) | Information asymmetry driving overtreatment and re-diagnosis | Digital-health integration into primary care | Re-diagnosis-rate reduction, pre-visit-summary acceptance rate |
 
-Every politician reading the right-hand columns identifies a problem their constituents complain about. That is the B2G first paragraph.
+Every politician reading the right-hand columns identifies a problem their constituents already complain about. The B2G first paragraph writes itself — but only in **internal** B2G artifacts. User-facing copy never carries this frame.
+
+## Hidden B2G surface — strategic layer users never see
+
+The B2G, institutional-sponsorship, and Big-Tech aggregate-data paths are **internal** strategic surfaces. They live in ADRs, in the regulatory-welcome strategy doc, in RFP responses, in grant applications, and in institutional-investor pitches. They never reach user-facing artifacts:
+
+- Never in in-app copy, onboarding screens, push copy, marketing pages, App Store descriptions, or public website hero copy.
+- Never in user-visible feature names, settings labels, or error messages.
+- Never in customer support responses.
+
+**However, informed consent at onboarding is the permanent surface.** One paragraph, plain language, disclosed upfront at Formation:
+
+1. Local-first default — no cloud sync until the user explicitly opts in.
+2. Future opt-in syncing, post-bonding (ADR-0011 Addendum) — the user decides.
+3. Future opt-in aggregate research use — standalone toggle, off by default, revocable at any time.
+
+Transparency at onboarding is not the same as surfacing the B2G strategy. The user sees a product that tunes to their life; the strategic layer behind it is invisible to them and invisible in their copy. **Compliance is maximum; exposure is zero.**
+
+## Core user experience — orchestrated care
+
+The feeling that **real-life patterns are being arranged around you** is the central user experience MODU delivers. In Korean: *실제 삶의 패턴이 조율되는 느낌*.
+
+- The user does not feel they are working harder.
+- The user does not feel they are tracking data.
+- The user does not feel they are operating an app.
+- The user feels the hour, the day, the week, and the people around them are being *tuned* toward the care they need, by something in the background that already knows enough.
+
+This experience is only possible because the system collects the right data (within the regulatory envelope for each country) and uses it immediately in the render — ADR-0013 Adaptive-by-Default Moments, Role-adaptive rendering, quiet-weave hero, TPO-signature skin. The hidden-B2G strategic layer compounds this data's value *externally* without ever asking the user to participate in that compounding.
+
+**Operating sequence — non-negotiable**: regulatory strategy per country → data-collection mechanism fit to that regulation → orchestrated-care UX delivered on that mechanism. Never the reverse. Product features that require data the regulator will not welcome do not ship.
 
 ## Contribution margin as the operating language
 

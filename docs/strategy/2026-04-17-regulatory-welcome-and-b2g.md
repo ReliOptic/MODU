@@ -63,6 +63,7 @@ Five constraints that eliminate wasted compliance cost by making MODU welcomed a
 3. **Caregiver = patient-delegated, revocable.** `Role = partner / caregiver` requires explicit patient consent with an immutable audit trail on every role change. Maps cleanly to CMS caregiver frameworks, NHS carers guidance, MHLW 介護者 support policy.
 4. **Data minimization by default.** Local-first (ADR-0011) is the implementation of GDPR Art. 5(1)(c) and EHDS data-minimization expectations. Post-bonding sync opt-in is the consent mechanism.
 5. **No ad SDK, no data sale — permanent.** Codified in ADR-0005. Auditable at source (PR template checkbox). Every regulator welcomes a product that cannot monetize against its users.
+6. **Consent at onboarding is the permanent surface.** Every regulatory path (HIPAA, GDPR, PIPA, APPI, PIPEDA, Quebec Bill 25) agrees on one thing: upfront plain-language consent. MODU makes this a first-class UX surface at Formation, covering local-first default, future opt-in sync (post-bonding), and future opt-in aggregate research use (standalone toggle, off by default, revocable). The B2G / institutional / Big-Tech paths behind this consent surface are **never** surfaced to the user. Compliance is maximum, exposure is zero. See economic-foundation doc §"Hidden B2G surface" for the principle; this is its regulatory-welcome implementation.
 
 ## Business-model surface
 
@@ -75,6 +76,7 @@ Welcome unlocks five revenue streams beyond the consumer Free/Plus/Family tiers.
 | B2G license | National / provincial health systems (NHS, MHLW, CMS, Canada Health Infoway, Mon Espace Santé) | Annual per-covered-life license, typically multi-year |
 | Institutional sponsorship | NIH, ARPA-H, Wellcome, AMED, Mozilla, Linux Foundation Public Health, NLNet | Grants to maintain open-source core; non-dilutive |
 | Research access (consent-gated) | RWE / PRO / clinical-trial consortia | User opt-in on a per-study basis; revenue share back to user is under consideration |
+| Enterprise / Big Tech de-identified aggregate license | Apple Health, Google Health, Amazon (One Medical), Microsoft Health Bot, Oracle Cerner, and equivalents | Per-dataset license, **fully consent-gated, purpose-limited, audit-trailed**. Requires stricter consent UI than public-good B2G because Big Tech is not a public-good actor by default. Never surfaced to users as a reason-for-feature. |
 
 ## Open-source posture (for sponsorship + moat preservation)
 
