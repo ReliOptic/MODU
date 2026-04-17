@@ -19,7 +19,7 @@
 
 ---
 
-## 1. Core Metaphors (5+1)
+## 1. Core Metaphors (7)
 
 | 메타포 | 의미 | 등장 위치 | 안티 메타포 (쓰지 말 것) |
 |--------|------|----------|--------------------------|
@@ -29,8 +29,11 @@
 | **강 (River)** | 시간의 흐름. 위→과거, 아래→미래 | TimeRiver | "타임라인", "피드", "스트림" |
 | **동반자 (Companion)** | MODU 자신의 정체. 함께 걸어가는 존재 | AI 응답 톤, FormationFlow 메시지 | "비서", "헬퍼", "어시스턴트" |
 | **빛 (Light)** *부수* | 부드럽게 비추는 강조. 깜빡이지 않음. | AmbientPalette accent, highlight | "알림", "배지", "팝업" |
+| **순간 (Moments)** *2026-04-17 추가* | AI 가 선택·조합·학습 가능한 의미 단위 (위젯 < Moment < 화면) | Moment library (ADR-0013) — **내부 전용** | "위젯", "컴포넌트" |
 
-**적용 룰**: 새 기능 이름을 지을 때 위 6개 메타포 중 하나에 정렬되는지 확인. 정렬 안 되면 메타포를 새로 만들기 전에 *왜 기존 6개로 안 되는지* 반증.
+**노출 구분** (2026-04-17 refine): 사용자 facing 에 단어로 등장 가능 = **챕터 · 기억 · 라이브러리**. 내부 전용 (UI 라벨·카피 노출 금지) = **강 · 동반자 · 빛 · 순간**. 내부 메타포 UI 노출 금지 세부는 §4.6 참조.
+
+**적용 룰**: 새 기능 이름을 지을 때 위 7개 메타포 중 하나에 정렬되는지 확인. 정렬 안 되면 메타포를 새로 만들기 전에 *왜 기존 7개로 안 되는지* 반증.
 
 ---
 
@@ -88,6 +91,14 @@ MODU 에서 *Ritual* 은 사용자가 의식적 무게를 느끼는 순간이다
 | `palette` | 챕터 타입별 색상 토큰 (dawn/mist/blossom/sage/dusk) |
 | `phase` | 이벤트의 시점 단계 (before / during / after) |
 | `TPO` | Time / Place / Occasion — UI 적응 입력 신호 |
+| `Moment` | Adaptive-by-Default atomic 렌더 단위 — `id · intent · slot · predicate · render · events · variants` (ADR-0013) |
+| `Slot` | 화면 5영역 (`skin` / `glance` / `hero` / `row` / `floating`) — Moment 배치 공간 |
+| `Signal Axes` | L0 (사용자 선언) > L1 (관측: TPO · Role · Phase) > L2 (AI 추론) — 우선순위 enforce |
+| `Role` | `self` / `partner` / `caregiver` / `doctor` — 렌더링 분기 1차 키 (같은 chapter · 다른 role → 다른 Moment set) |
+| `Quality Contract` | Moment 렌더의 7조항 (Bounded · Observable · Predictable · Reversible · Auditable · Fallback · A11y) |
+| `Agora` *내부 철학* | 채팅 없는 공동 돌봄 시스템 (솔로 다이어리 X). 사용자 facing 어휘 절대 X — §4.6 |
+| `quiet-weave` | P0 hero Moment — 파트너 signal 을 본인 timeline 에 드러내지 않고 자연스럽게 직조 (ADR-0013 Addendum A1) |
+| `bonding predicate` | sync invitation 의 트리거 조건 (활동≥7d · ChapterMemory≥5 · 사진≥1 · Phase transition≥1 — ADR-0011 Addendum) |
 
 ---
 
@@ -158,6 +169,30 @@ MODU 에서 *Ritual* 은 사용자가 의식적 무게를 느끼는 순간이다
 
 → 대신: *지나갔어요 / 다음에 / 천천히 / 그럴 수 있어요*.
 
+### 4.6 내부 메타포·시스템 어휘 UI 노출 (2026-04-17 추가)
+
+> MODU 는 *그것임을 증명* 하지 않고 *그것처럼 느껴지도록* 조용히 인도한다. (ADR-0013 Addendum A3)
+
+내부 메타포·시스템 어휘 (설계/코드/ADR/commit 에서만 사용) 는 사용자 facing UI·카피·라벨·온보딩·설정 어디에도 노출 금지:
+
+`Agora` `Moments` `순간` `quiet-weave` `TimeRiver` `StoryCard` `AmbientPalette` `Signal Axes` `slot` `predicate` `Role` `phase` `L0` `L1` `L2` `L4` `TPO` `bonding predicate`
+
+또한 **관계·공동 돌봄을 드러내는 카피도 금지** — 자연스럽게 느껴져야 한다:
+
+| ❌ 드러냄 | ✅ 은유적 가이드 |
+|-----------|------------------|
+| "파트너가 주사를 맞으셨어요" | *(별도 알림 X, timeline 에 자연스럽게 포함 + 본인 "다음 한 걸음" 이 조용히 조정)* |
+| "아고라에 파트너가 접속 중" | *(표시하지 않음)* |
+| "AI Moment 가 시작됩니다" | *(렌더만 바뀌고 UI 설명 없음)* |
+| "역할: 파트너 모드" | *(UI 가 이미 role-adaptive, 라벨 불필요)* |
+| "클라우드 동기화 켜기" | "이 기록들은 지금 이 기기에만 있어요" (ADR-0011 Addendum) |
+
+새 Moment / 컴포넌트 / 카피 작성 시 **두 관문**:
+1. 이 단어가 UI 카피로 나가도 *촌스럽지* 않은가?
+2. *"무엇을 느끼게 하는가"* 를 담고 있는가?
+
+둘 다 실패하면 내부 코드네임으로만 사용.
+
 ---
 
 ## 5. Decision Phrasing — 회의·문서·commit
@@ -177,7 +212,7 @@ fix(memory): MemoryGlance crash on empty ChapterMemory
 refactor(layout-engine): L2 cache hint integration
 ```
 
-- type(scope) 의 scope 는 lexicon 어휘 사용 (chapter / memory / layout / ritual / formation / partner / media / lexicon / engine ...)
+- type(scope) 의 scope 는 lexicon 어휘 사용 (chapter / memory / layout / ritual / formation / partner / media / lexicon / engine / moments / adr / grammar / strategy ...)
 
 ### 5.3 PR 제목 / 디자인 파일명
 
@@ -283,7 +318,7 @@ refactor(layout-engine): L2 cache hint integration
 
 ## 10. Quick Reference — 외울 것 7개
 
-1. **챕터 / 기억 / 라이브러리 / 강 / 동반자 / 빛** — 메타포 6
+1. **챕터 / 기억 / 라이브러리 / 강 / 동반자 / 빛 / 순간** — 메타포 7 (뒤 4개는 내부 전용, UI 노출 X)
 2. **사용자는 환자가 아니라 챕터를 사는 사람**
 3. **Ritual = 사용자가 무게를 느끼는 순간**
 4. **모든 인터랙션 = ChapterMemory append**
