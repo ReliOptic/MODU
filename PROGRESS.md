@@ -6,6 +6,92 @@
 
 ---
 
+## Latest session — 2026-04-18 PM-late (Metamorphic refactor — Phase 1+2 LANDED)
+
+### Intent (user direction, verbatim)
+- "압도적으로 새로운 디자인이 마음에 드는데 제품철학은 또 기존 제품이 더 마음에 듭니다" — 새 Claude Design 비주얼(Metamorphic TPO-reactive home) + 기존 제품 철학(Memory-First ADR-0003 · Privacy moat ADR-0005 · Caregiver Agora · Compliance envelope E1-E4 ADR-0018 · Adaptive engine · Local-first ADR-0011 · Gemma routing ADR-0012 · Timeflow) 합치기.
+- "Phase 1 + 2 를 한 세션에 마치고 커밋하고 바로 Phase 3 로 시각 전환."
+
+### Design bundle (source of truth for visual — used by Phase 3)
+- `/tmp/modu_design/modu/project/MODU Metamorphic.html` — root HTML, loads lib/* scripts.
+- `/tmp/modu_design/modu/project/lib/tpo.js` (167 LOC) — TPO v2 source. **이미 TS 이식 완료** → `src/engine/tpo/`.
+- `/tmp/modu_design/modu/project/lib/i18n.js` — 5 locale stack source. **이미 TS 이식 완료** → `src/i18n/`.
+- `/tmp/modu_design/modu/project/lib/theme.js` — dawn/mist/blossom palettes + motion bpm + display fonts. (Phase 3 에서 시각 참고)
+- `/tmp/modu_design/modu/project/lib/variation-{cinematic,bento,morph}.jsx` — 3 renderer variations, TPO-driven reorder. **Phase 3 이식 대상.**
+- `/tmp/modu_design/modu/project/lib/create-chapter.jsx` — in-frame FAB + flow. **Phase 3 이식 대상.**
+- `/tmp/modu_design/modu/project/lib/formation.jsx` — **position:fixed inset:0 z:3000** ✗. **Phase 3 에서 in-frame 으로 교정.**
+- `/tmp/modu_design/modu/project/lib/ios-frame.jsx`, `chapter.js`, `icons.jsx` — 보조 layout/icon helper.
+- `/tmp/modu_design/modu/chats/chat1.md` — 디자인 의도 원전.
+
+### Architecture — "Thin Renderer over Fat Domain" (locked)
+3 layers, domain은 손대지 않는다:
+1. **Domain (existing, frozen)**: `src/types/asset.ts`, `src/store/assetStore.ts`, `src/engine/layoutEngine.ts`, `src/types/event.ts`, `src/data/assetTemplates.ts`, `src/theme/palettes.ts`, ADR 계약 전부.
+2. **Adapter (new, LANDED)**: `src/adapters/*` — Asset+tpoState+now → ResolvedTPO. MoodEntry[] → TimelineDay[]. WidgetConfig → RendererBlock.
+3. **Renderer (Phase 3, NEXT)**: Cinematic/Bento/Morph + in-frame Formation. ResolvedTPO + RendererBlock + TimelineDay 만 소비.
+
+### Phase 1 — LANDED in commit `a7645c8` (refactor(engine))
+- `src/engine/tpo/` (10 files): `types`, `time`, `roles`, `places`, `copy` + `copy-fertility/cancer/pet`, `selectors`, `index`. Pure functions. `getTPOCopy` · `getTPOVisual` · `getPlaceResources` · `lpick` · `hourToTimeOfDay`.
+- `src/i18n/` (6 files): `types`, `locales` (ko/en/ja/de/ar incl. RTL), `registry` (STRINGS), `selectors` (`tr`/`getLocale`/`isRTL`), `use-locale` hook, `index`.
+- `src/store/tpoStore.ts` + `tpo-persistence.ts`: Zustand v5 + AsyncStorage `modu.tpo.v1`. Validated setters, corrupt-JSON resilience, structured error logs.
+- 70 tests across 5 suites. `tsc --noEmit` 0 errors.
+- **0 도메인 import** — 검증 완료 (`src/engine/tpo/` and `src/i18n/` are universal substrate).
+
+### Phase 2 — LANDED in commit `80649e4` (refactor(adapters))
+- `src/adapters/assetToTPO.ts` — `resolveTPO(asset, state, now) → ResolvedTPO`. Proximity ladder: `during > after > near(≤24h) > week(≤72h) > far` via `eventPhaseAt` 168h lookAhead. Role inferred from type+envelope, `state.role` overrides. Exposed: `mapAssetKey`, `inferRole`, `computeProximity`.
+- `src/adapters/chapterMemoryToTimeline.ts` — `groupByDay` + `fromMoodEntries`. UTC-safe `dateKey` (offset strings parsed through Date, no `slice(0,10)` shortcut).
+- `src/adapters/widgetToBlock.ts` — `widgetToBlock` + `widgetsToBlocks`. 27 WidgetType variants → 6 BlockVariant (hero/card/list/strip/grid/stat). Priority-clamped, stable-sorted desc.
+- `src/adapters/index.ts` barrel.
+- 83 tests across 6 suites including real `assetTemplates` + `mockAssets` integration. `tsc --noEmit` 0 errors. `expo export --platform web` exit 0.
+
+### Phase 3 — RESUME CHECKLIST (next session, this session 또는 새 세션)
+
+**Decisions taken before kickoff:**
+- v1 default variation = **Bento** (정보 밀도 + iOS 느낌, fertility/cancer 양쪽에 자연스러움). Cinematic/Morph 는 사용자 선택 또는 TPO 트리거.
+- v1 노출 locale = **ko + en** only. ja/de/ar 는 registry 에 적재된 채 hidden (P2+ unlock).
+- Formation in-frame = **(b) overlay portal inside MobileFrame** — 라우팅 변경 최소화. `presentationStyle: 'pageSheet'` Modal 을 `<View style={StyleSheet.absoluteFill}>` overlay 로 치환, MobileFrame 내부 z-index 로 stacking.
+
+**Order of work (Phase 3 sub-phases):**
+
+1. **3A — Variation primitives + Bento default** (highest leverage, ships first)
+   - `src/screens/variations/types.ts` — shared `VariationProps { tpo: ResolvedTPO; blocks: RendererBlock[]; timeline: TimelineDay[]; palette: PaletteKey }`.
+   - `src/screens/variations/BentoVariation.tsx` — port from `lib/variation-bento.jsx`. LinearGradient (`expo-linear-gradient`) hero band + BlurView (`expo-blur`) cards + 2-col grid for `card`/`stat` blocks. Reanimated FadeIn/Layout for re-order.
+   - `src/screens/variations/CinematicVariation.tsx` — port from `lib/variation-cinematic.jsx`. Full-bleed gradient hero + single-column flowing cards.
+   - `src/screens/variations/MorphVariation.tsx` — port from `lib/variation-morph.jsx`. Asymmetric tiles, scale-on-press.
+   - `src/screens/variations/index.ts` barrel + `VARIATION_REGISTRY: Record<VariationId, ComponentType<VariationProps>>`.
+2. **3B — `AssetScreen.tsx` refactor**
+   - Inject `useTPOStore` + `resolveTPO(activeAsset, tpoState, now)` → `ResolvedTPO`.
+   - Map `activeAsset.widgets` → `widgetsToBlocks(...)` → `RendererBlock[]`.
+   - Map `moodJournalStore` for `activeAsset.id` → `fromMoodEntries(...)` → `TimelineDay[]`.
+   - Variation picker: header chevron 옆 segmented control (Bento/Cinematic/Morph). Persist 선택 → tpoStore (new field `variationId`).
+   - TPO-driven hero copy: `tpo.copy.headline` + visual modulation per `tpo.proximity`.
+3. **3C — Formation in-frame**
+   - `src/screens/FormationFlow.tsx` — drop `Modal presentationStyle:'pageSheet'`. Render as `<View style={[StyleSheet.absoluteFill, { zIndex: 50 }]}>` inside `MainNavigator`'s MobileFrame child. Backdrop blur + close affordance.
+   - `MainNavigator.tsx` — host Formation overlay above tabs but inside MobileFrame.
+4. **3D — `CreateChapterFlow.tsx` (in-frame FAB)**
+   - New screen at `src/screens/CreateChapterFlow.tsx`. Port from `lib/create-chapter.jsx`. FAB on `AssetScreen` (bottom-right above tab bar) → opens this overlay.
+   - Reuses Formation step 1-3 (chapter type → name → photo) but lighter UX (no full intake — that's Formation).
+
+**Hard rules carried over (no exceptions):**
+- TypeScript strict, `any` 금지, `interface` over `type`, `readonly` 기본.
+- Named exports only. kebab-case filenames. <200 LOC per file.
+- Mobile viewport 375-430px 우선 검증. `npx expo export --platform web` 통과 필수.
+- Reanimated mocks 이미 jest-setup 존재. 새 컴포넌트는 web에서도 mount 되어야 함 (BlurView fallback OK).
+- `accessibilityLabel`/`accessibilityHint` 모든 새 Pressable 에 필수 (CPO 2026-04-17).
+- Variation 3종 동일 `VariationProps` shape — 한 component 가 다른 component 의 internal 을 import 하지 않음.
+
+**Verification gates per sub-phase:**
+- Each sub-phase ends with: `npx tsc --noEmit` 0 errors → mobile-viewport spot-check → commit.
+- After 3A+3B: `npx expo export --platform web` 통과.
+- After 3C+3D: Formation/Create overlay 가 MobileFrame 경계 안에 머무는지 web 에서 확인.
+
+### Open questions (defer or accept now)
+- ~~v1 default variation~~ → **Bento** (decided above).
+- ~~`ar` locale v1 노출~~ → **ko + en only** (decided above; ar registry 는 invisible).
+- ~~Formation in-frame 구현 방식~~ → **(b) overlay portal** (decided above).
+- TPO `variationId` 가 user-pinned 인가, asset-per-pinned 인가? — 일단 user-global (`tpoStore.variationId`); 만약 asset 별로 다른 variation 가 더 잘 맞으면 v1.1 로 분리.
+
+---
+
 ## Latest session — 2026-04-18 PM (anti-slop pass after 2/10 user feedback)
 
 ### User feedback (verbatim, 2026-04-18 late)
