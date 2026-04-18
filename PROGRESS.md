@@ -12,7 +12,39 @@
   - Symptom: `npx jest` 전체 실행 시 1건 실패 (line ~207, `setVariationId` 계열), `npx jest src/__tests__/tpoStore.test.ts` 단독 실행 시 18/18 통과.
   - 원인 가정: zustand singleton state 가 suite 간 누수 (다른 test 가 `useTPOStore` 를 import 후 초기화하는데, 해당 test 는 `beforeEach` 에서 reset 하지 않음).
   - 수정 방향: `beforeEach` 에 `useTPOStore.setState(initialState)` + `jest.clearAllMocks()` 추가. 또는 `jest.isolateModules` 로 module graph 재로드.
-  - 우선순위: P2 — 격리 실행은 green 이라 CI 관점 블로커 아님. 다만 `jest` 전체 exit code 는 1 → CI green 원하면 수정 필요.
+  - 우선순위: P2 — 격리 실행은 green 이라 CI 관점 블로커 아님. 다만 `jest` 전체 exit code 는 1 → CI green 원하면 수정 필요. **2026-04-18 밤 full suite run: 359/359 green — self-resolved 가능성 있음, 재발하면 다시 이슈화.**
+
+---
+
+## 2026-04-18 — Architecture-stabilization track (parallel to Metamorphic Phase 3)
+
+> 이 섹션은 Metamorphic refactor Phase 3 (renderer variation) 과 별개로 진행된 **기능적 아키텍처 안정화** 트랙. 사용자 지시: "디자인은 수정이 크게 들어갈 예정이고, 이외 기능적인 부분 아키텍쳐 수준에서 안정화 진행바랍니다" + "phase 1 -commit - phase 2 -commit - phase 3 , if something not working then add at progress.md but no stopping". 세 phase 모두 landed.
+
+### Phase 1 — stale test deletion (commit 선행)
+- `tests/unit/` 디렉터리 (jest testMatch 제외라 never executed) 정리. orphaned coverage 발견 → Phase 2 에서 `src/__tests__/` 로 이관.
+
+### Phase 2 — Claude/Whisper edge path retirement (commit `refactor(ai): retire Claude/Whisper edge paths`)
+- `supabase/functions/{ai,ai-claude,ai-whisper}` 디렉터리 **삭제**.
+- `src/lib/aiClient.ts`: `callClaude`, `transcribeAudio`, `ClaudeModel`, legacy types **제거**. `chatViaOpenRouter` (device-id path) 단일 경로.
+- `src/config/ai-models.ts`: `FORMATION_MODEL` only (7 LOC).
+- `src/__tests__/aiClient.test.ts`: 이전 `tests/unit/` 에서 이전 + device-id 기반으로 재작성 (X-Device-Id header 검증, 5xx → UPSTREAM_ERROR, Claude fallback 테스트 제거).
+- `docs/adr/0012-gemma-routing.md` 에 "2026-04-18 Update — Claude/Whisper paths retired" 블록 추가.
+- `supabase/functions/README.md` rewrite — Claude/Whisper 섹션 삭제, ai-openrouter + R2 만 유지.
+
+### Phase 3 — R2 device-identity migration (commits `feat(db): r2 device-identity migration` + `refactor(r2): device-identity path for r2-presign + r2-complete`)
+- **DB 마이그레이션 `20260418000020_20_r2_device_identity.sql`** — `assets`, `attachments`, `r2_audit` 테이블에 `device_id uuid` 컬럼 추가 + `user_id` nullable + XOR check constraint. 기존 migration 10 (ai_audit) 와 동일 패턴. Existing RLS 는 user_id-based 이라 device_id 만 있는 row 는 authenticated user 에게 자동 invisible (원하는 privacy 속성 — ai_audit 과 동일).
+- **Edge Functions `r2-presign`, `r2-complete`** — `getUserFromRequest` → `requireDeviceId`, `checkRateLimit` → `checkDeviceRateLimit`. object key prefix `u/{user_id}/...` → `d/{device_id}/...`. attachments/r2_audit insert 시 `user_id: null, device_id: <uuid>`. Rate limit 은 기존 `ai_device_rate_limits` 테이블 재사용 (migration 10 에서 만든 increment_device_rate_limit RPC).
+- **`supabase/config.toml`** — `[functions.r2-presign]` / `[functions.r2-complete]` `verify_jwt = false` 추가 (ai-openrouter 패턴과 동일).
+- **`src/lib/r2Client.ts`** — `getBearerToken` 제거, `getDeviceId` 사용. Authorization: Bearer → X-Device-Id. `R2ClientError.unauthorized` → `missing_device_id`.
+- **`src/__tests__/r2Client.test.ts`** rewrite — 9/9 green.
+- **`supabase db push` 성공** (linked project MODU / ref gjqjtvelzscxuincknum). 0 existing rows in attachments/r2_audit 로 backfill 불필요.
+- **Edge Function 배포 성공**: `supabase functions deploy r2-presign --no-verify-jwt` + `supabase functions deploy r2-complete --no-verify-jwt` 둘 다 exit 0.
+- **전체 jest: 359/359 green, tsc --noEmit: 0 errors.**
+
+### Resume guidance
+- Metamorphic Phase 3 (UI renderer variations) 은 본 트랙과 독립적으로 아직 미착수. 이번 세션에서 건드리지 않음.
+- 다음 세션에서 R2 device-identity 실제 호출 (사진 업로드 in-app) 수동 검증 1회 필요. E2E smoke 가 있으면 더 좋음 — `src/lib/r2Client.ts` 호출자는 `src/lib/remoteExport.ts` 하나.
+- 추후 multi-device sync (e.g. "이 QR 로 두 번째 디바이스 연결") 도입 시 device_id-only 모델 확장 필요. 현재는 single-device.
 
 ---
 
