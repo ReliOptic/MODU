@@ -7,8 +7,9 @@ import { CinematicVariation } from './CinematicVariation';
 import { MorphVariation } from './MorphVariation';
 
 export { BentoVariation, CinematicVariation, MorphVariation };
-export type { VariationProps, VariationId, VariationComponent, VariationMeta } from './types';
-export { VARIATIONS, DEFAULT_VARIATION, proximityLabel } from './types';
+export type { VariationProps, VariationId, VariationComponent } from './types';
+export { proximityLabel } from './types';
+export { selectVariation } from './selectVariation';
 
 export const VARIATION_REGISTRY: Readonly<Record<VariationId, VariationComponent>> = {
   bento: BentoVariation,

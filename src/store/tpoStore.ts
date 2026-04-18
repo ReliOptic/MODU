@@ -8,17 +8,15 @@ import {
   isLocaleId,
   isRoleId,
   isValidIsoDate,
-  isVariationId,
   loadSnapshot,
   logWarn,
   persistSnapshot,
   type LocaleId,
   type PersistedTPO,
   type RoleId,
-  type VariationId,
 } from './tpo-persistence';
 
-export type { LocaleId, RoleId, VariationId, PersistedTPO } from './tpo-persistence';
+export type { LocaleId, RoleId, PersistedTPO } from './tpo-persistence';
 
 // ---------------------------------------------------------------------------
 // Store shape
@@ -29,8 +27,6 @@ export interface TPOState {
   readonly role: RoleId;
   /** Manual now-override for demos/previews. ISO string. null = use real time. */
   readonly nowOverride: string | null;
-  /** Active home renderer variation. Persisted across sessions. */
-  readonly variationId: VariationId;
   /** true after initTPOStore() resolves. */
   readonly initialized: boolean;
 
@@ -38,7 +34,6 @@ export interface TPOState {
   setPlaceId: (id: string) => Promise<void>;
   setRole: (id: RoleId) => Promise<void>;
   setNowOverride: (iso: string | null) => Promise<void>;
-  setVariationId: (id: VariationId) => Promise<void>;
   /** Reset to defaults + wipe persisted key. */
   reset: () => Promise<void>;
 }
@@ -49,7 +44,6 @@ function toSnapshot(state: TPOState): PersistedTPO {
     placeId: state.placeId,
     role: state.role,
     nowOverride: state.nowOverride,
-    variationId: state.variationId,
   };
 }
 
@@ -93,15 +87,6 @@ export const useTPOStore = create<TPOState>()((set, get) => ({
       return;
     }
     set({ nowOverride: iso });
-    await persistSnapshot(toSnapshot(get()));
-  },
-
-  setVariationId: async (id) => {
-    if (!isVariationId(id)) {
-      logWarn('setVariationId', { invalid: id });
-      return;
-    }
-    set({ variationId: id });
     await persistSnapshot(toSnapshot(get()));
   },
 

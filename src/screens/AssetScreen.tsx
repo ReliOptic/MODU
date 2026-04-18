@@ -20,7 +20,6 @@ import { AssetSwitcher } from '../components/AssetSwitcher';
 import { TabBar } from '../components/TabBar';
 import { ChapterRitualOverlay } from '../components/ChapterRitualOverlay';
 import { DemoControlPanel } from '../components/DemoControlPanel';
-import { VariationPicker } from '../components/VariationPicker';
 import { getPalette, widgetTokens } from '../theme';
 import { PlaceholderTab } from './PlaceholderTab';
 import { CalendarTab } from './tabs/CalendarTab';
@@ -30,7 +29,7 @@ import { ChecklistTab } from './tabs/ChecklistTab';
 import { InsightTab } from './tabs/InsightTab';
 import { ShareTab } from './tabs/ShareTab';
 import { ChapterGalleryScreen } from './ChapterGalleryScreen';
-import { VARIATION_REGISTRY } from './variations';
+import { VARIATION_REGISTRY, selectVariation } from './variations';
 
 export interface AssetScreenProps {
   onCreateNew: () => void;
@@ -45,8 +44,6 @@ export function AssetScreen({ onCreateNew }: AssetScreenProps) {
   const tpoPlaceId = useTPOStore((s) => s.placeId);
   const tpoRoleOverride = useTPOStore((s) => s.role);
   const tpoNowOverride = useTPOStore((s) => s.nowOverride);
-  const variationId = useTPOStore((s) => s.variationId);
-  const setVariationId = useTPOStore((s) => s.setVariationId);
 
   const moodEntriesByAsset = useMoodJournalStore((s) => s.entriesByAsset);
   const hydrateMood = useMoodJournalStore((s) => s.hydrate);
@@ -125,7 +122,8 @@ export function AssetScreen({ onCreateNew }: AssetScreenProps) {
     if (!current) return null;
     if (activeTabId === 'home') {
       if (!resolvedTPO) return null;
-      const Variation = VARIATION_REGISTRY[variationId];
+      // TPO funnel picks the renderer — never user toggle.
+      const Variation = VARIATION_REGISTRY[selectVariation(resolvedTPO)];
       return (
         <Variation
           tpo={resolvedTPO}
@@ -167,15 +165,6 @@ export function AssetScreen({ onCreateNew }: AssetScreenProps) {
           onArchive={archive}
           onOpenGallery={openGallery}
         />
-        {activeTabId === 'home' && (
-          <View style={styles.pickerSlot}>
-            <VariationPicker
-              value={variationId}
-              onChange={(id) => { void setVariationId(id); }}
-              palette={palette}
-            />
-          </View>
-        )}
       </View>
       <Animated.View style={[styles.body, outgoingStyle as unknown as object]}>
         {renderTabContent()}
@@ -218,14 +207,10 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingHorizontal: 20,
     paddingBottom: 12,
-    gap: 12,
     // Dropdown inside AssetSwitcher needs to paint on top of body + tab bar.
     position: 'relative',
     zIndex: 200,
     elevation: 200,
-  },
-  pickerSlot: {
-    paddingHorizontal: 4,
   },
   body: {
     flex: 1,

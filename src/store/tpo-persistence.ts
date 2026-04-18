@@ -17,17 +17,12 @@ export type RoleId =
   | 'guardian'
   | 'project_lead'
   | 'clinician';
-// Re-declared locally to keep this layer domain-agnostic. Renderer layer
-// (src/screens/variations/types.ts) holds the canonical VariationId; if the
-// two ever drift, isVariationId() narrows safely to the persisted set.
-export type VariationId = 'bento' | 'cinematic' | 'morph';
 
 export interface PersistedTPO {
   readonly locale: LocaleId;
   readonly placeId: string;
   readonly role: RoleId;
   readonly nowOverride: string | null;
-  readonly variationId: VariationId;
 }
 
 // ---------------------------------------------------------------------------
@@ -40,7 +35,6 @@ export const DEFAULTS: PersistedTPO = {
   placeId: 'kr_seoul',
   role: 'self',
   nowOverride: null,
-  variationId: 'bento',
 };
 
 export const VALID_LOCALES: ReadonlySet<LocaleId> = new Set<LocaleId>([
@@ -49,10 +43,6 @@ export const VALID_LOCALES: ReadonlySet<LocaleId> = new Set<LocaleId>([
 
 export const VALID_ROLES: ReadonlySet<RoleId> = new Set<RoleId>([
   'self', 'partner', 'parent', 'child', 'guardian', 'project_lead', 'clinician',
-]);
-
-export const VALID_VARIATIONS: ReadonlySet<VariationId> = new Set<VariationId>([
-  'bento', 'cinematic', 'morph',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -125,7 +115,6 @@ export async function loadSnapshot(): Promise<LoadResult> {
           typeof p.nowOverride === 'string' && isValidIsoDate(p.nowOverride)
             ? p.nowOverride
             : null,
-        variationId: isVariationId(p.variationId) ? p.variationId : DEFAULTS.variationId,
       },
     };
   } catch (err) {
@@ -143,10 +132,6 @@ export function isLocaleId(v: unknown): v is LocaleId {
 
 export function isRoleId(v: unknown): v is RoleId {
   return typeof v === 'string' && VALID_ROLES.has(v as RoleId);
-}
-
-export function isVariationId(v: unknown): v is VariationId {
-  return typeof v === 'string' && VALID_VARIATIONS.has(v as VariationId);
 }
 
 export { logWarn };
