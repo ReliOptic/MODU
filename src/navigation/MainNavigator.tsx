@@ -1,6 +1,10 @@
-// 최상위 컨테이너 — Formation 모달 ↔ AssetScreen 전환 + 웹 모바일 viewport
+// 최상위 컨테이너 — Formation 오버레이 ↔ AssetScreen 전환 + 웹 모바일 viewport.
+// Phase 3C: Formation 은 더 이상 RN <Modal> 이 아니라 MobileFrame 내부의
+// in-frame 오버레이다. 이로써 웹에서 430-px 컬럼을 보존하고, 네이티브에서는
+// presentationStyle:'pageSheet' 의 부분 스택 동작 (절반 sheet) 을 제거한다.
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { View, StyleSheet, Modal, Platform, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, Platform, useWindowDimensions } from 'react-native';
+import Animated, { SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -85,19 +89,21 @@ export function MainNavigator() {
       <GestureHandlerRootView style={styles.root}>
         <StatusBar style="dark" />
         <MobileFrame>
-          <AssetScreen onCreateNew={startFormation} />
+          <View style={styles.frameStack}>
+            <AssetScreen onCreateNew={startFormation} />
+            {formationOpen && (
+              <Animated.View
+                testID="formation-overlay"
+                accessibilityViewIsModal
+                entering={SlideInDown.duration(320)}
+                exiting={SlideOutDown.duration(240)}
+                style={styles.formationOverlay}
+              >
+                <FormationFlow onDone={finishFormation} />
+              </Animated.View>
+            )}
+          </View>
         </MobileFrame>
-        <Modal
-          visible={formationOpen}
-          animationType="slide"
-          presentationStyle={Platform.OS === 'web' ? 'overFullScreen' : 'pageSheet'}
-          transparent={Platform.OS === 'web'}
-          onRequestClose={finishFormation}
-        >
-          <MobileFrame>
-            <FormationFlow onDone={finishFormation} />
-          </MobileFrame>
-        </Modal>
       </GestureHandlerRootView>
     </SafeAreaProvider>
   );
@@ -136,6 +142,14 @@ function MobileFrame({ children }: { children: React.ReactNode }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  frameStack: { flex: 1, position: 'relative' },
+  formationOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 50,
+    // Background painted by FormationFlow's own LinearGradient. Solid white
+    // fallback prevents under-page bleed during the slide-in animation.
+    backgroundColor: '#FFFFFF',
+  },
   webOuter: {
     flex: 1,
     backgroundColor: '#E5E7EB', // 데스크톱 외곽 배경

@@ -1,7 +1,7 @@
-// MainNavigator — Formation auto-open regression tests
+// MainNavigator — Formation auto-open regression tests (Phase 3C: in-frame overlay)
 //
-// Test 1: Boot with 0 active assets → Formation auto-opens (firstBootRef guard: first boot)
-// Test 2: Archive last asset after initial boot with assets → Formation does NOT reopen
+// Test 1: Boot with 0 active assets → Formation overlay mounts (firstBootRef guard: first boot)
+// Test 2: Archive last asset after initial boot with assets → Formation overlay stays unmounted
 
 import React from 'react';
 import { render, waitFor, act } from '@testing-library/react-native';
@@ -72,7 +72,8 @@ jest.mock('../../store/formationStore', () => ({
 // Import after all mocks are set up
 // ---------------------------------------------------------------------------
 import { MainNavigator } from '../MainNavigator';
-import { Modal } from 'react-native';
+
+const OVERLAY_ID = 'formation-overlay';
 
 // ---------------------------------------------------------------------------
 
@@ -88,35 +89,33 @@ beforeEach(async () => {
 // ---------------------------------------------------------------------------
 
 describe('MainNavigator Formation auto-open', () => {
-  it('opens Formation on first boot when there are no active assets', async () => {
+  it('mounts Formation overlay on first boot when there are no active assets', async () => {
     mockStoreAssets = [];
     mockStoreInitialized = true;
 
     const utils = render(<MainNavigator />);
 
-    // Wait for readConsentRecord to resolve → consentDone=true, then auto-open effect fires
+    // Wait for readConsentRecord to resolve → consentDone=true, then auto-open effect fires.
     await waitFor(() => {
-      const modal = utils.UNSAFE_getByType(Modal);
-      expect(modal.props.visible).toBe(true);
+      expect(utils.queryByTestId(OVERLAY_ID)).not.toBeNull();
     });
 
     utils.unmount();
   });
 
-  it('does NOT reopen Formation after user archives their last asset (firstBootRef guard)', async () => {
-    // Boot with 1 active asset — auto-open condition not met (assets.length > 0)
+  it('does NOT remount Formation after user archives their last asset (firstBootRef guard)', async () => {
+    // Boot with 1 active asset — auto-open condition not met (assets.length > 0).
     mockStoreAssets = [{ status: 'active' }];
     mockStoreInitialized = true;
 
     const utils = render(<MainNavigator />);
 
-    // Wait for consent to resolve and component to settle
+    // Let consent resolve + component settle — overlay must remain absent.
     await waitFor(() => {
-      const modal = utils.UNSAFE_getByType(Modal);
-      expect(modal.props.visible).toBe(false);
+      expect(utils.queryByTestId(OVERLAY_ID)).toBeNull();
     });
 
-    // User archives the last asset → filtered list becomes empty
+    // User archives the last asset → filtered list becomes empty.
     mockStoreAssets = [{ status: 'archived' }];
 
     await act(async () => {
@@ -125,8 +124,7 @@ describe('MainNavigator Formation auto-open', () => {
 
     // Formation must remain closed — the effect deps are [consentDone, initialized],
     // not [assets], so archiving never retriggers the auto-open logic.
-    const modal = utils.UNSAFE_getByType(Modal);
-    expect(modal.props.visible).toBe(false);
+    expect(utils.queryByTestId(OVERLAY_ID)).toBeNull();
 
     utils.unmount();
   });
