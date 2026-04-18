@@ -3,6 +3,7 @@
 // always promoted to col-span 6; smaller blocks fill the grid by priority.
 import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, Layout } from 'react-native-reanimated';
 import type { RendererBlock, ResolvedTPO } from '../../adapters';
 import type { PaletteSwatch } from '../../theme';
@@ -68,6 +69,8 @@ function arrangeBlocks(
 export function BentoVariation({ tpo, blocks, palette }: VariationProps): React.JSX.Element {
   const arranged = useMemo(() => arrangeBlocks(blocks, tpo.proximity), [blocks, tpo.proximity]);
   const dim = tpo.visual.dim;
+  const meshTop = palette.bgMesh[0] ?? `${palette.accent}10`;
+  const meshBottom = palette.bgMesh[1] ?? `${palette.accent}05`;
 
   return (
     <ScrollView
@@ -75,6 +78,12 @@ export function BentoVariation({ tpo, blocks, palette }: VariationProps): React.
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
+      <LinearGradient
+        colors={[meshTop, meshBottom, 'transparent']}
+        locations={[0, 0.55, 1]}
+        style={styles.bgMesh}
+        pointerEvents="none"
+      />
       <BentoHeader palette={palette} tpo={tpo} />
       <View style={styles.grid}>
         {arranged.map(({ block, span }, idx) => (
@@ -120,6 +129,14 @@ function BentoHeader({ palette, tpo }: BentoHeaderProps): React.JSX.Element {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   scrollContent: { paddingBottom: 120 },
+  bgMesh: {
+    position: 'absolute',
+    top: -120,
+    left: -40,
+    right: -40,
+    height: 360,
+    opacity: 0.7,
+  },
   header: {
     paddingHorizontal: 20,
     paddingTop: 24,

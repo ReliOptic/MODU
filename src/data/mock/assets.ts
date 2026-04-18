@@ -1,10 +1,24 @@
 // 샘플 에셋 인스턴스 (Supabase 연동 전 개발용)
 // 각 에셋은 오늘 살아있는 일정(events) 을 포함 — LayoutEngine V2 가 시간에 따라 위젯을 재배치한다.
-import type { Asset } from '../../types';
+import type { Asset, WidgetConfig } from '../../types';
 import { assetTemplates } from '../assetTemplates';
 import { fertilityEvents, cancerEvents, petCareEvents } from './events';
+import { widgetMock } from './widgetData';
 
 const now = '2026-04-17T09:00:00.000Z';
+
+function withMockProps(
+  type: keyof typeof assetTemplates,
+  widgets: readonly WidgetConfig[],
+): WidgetConfig[] {
+  const mockForType = widgetMock[type] ?? {};
+  return widgets.map((w) => {
+    const mock = mockForType[w.type];
+    if (mock === undefined) return w;
+    // User-supplied props override mock defaults.
+    return { ...w, props: { ...(mock as Record<string, unknown>), ...(w.props ?? {}) } };
+  });
+}
 
 function fromTemplate(
   type: keyof typeof assetTemplates,
@@ -18,7 +32,7 @@ function fromTemplate(
     palette: t.palette,
     envelope: t.envelope,
     tabs: t.tabs,
-    widgets: t.widgets,
+    widgets: withMockProps(type, t.widgets),
     layoutRules: [],
     formationData: { responses: {} },
     status: 'active',
