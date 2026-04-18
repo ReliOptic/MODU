@@ -24,6 +24,7 @@ beforeEach(() => {
     placeId: 'kr_seoul',
     role: 'self',
     nowOverride: null,
+    variationId: 'bento',
     initialized: false,
   });
   _resetInitFlag();
@@ -46,6 +47,7 @@ describe('tpoStore', () => {
     expect(s.placeId).toBe('kr_seoul');
     expect(s.role).toBe('self');
     expect(s.nowOverride).toBeNull();
+    expect(s.variationId).toBe('bento');
     expect(s.initialized).toBe(false);
   });
 
@@ -188,9 +190,53 @@ describe('tpoStore', () => {
     );
   });
 
+  // --- setVariationId valid ---
+  it('setVariationId("cinematic") → state updates + persists', async () => {
+    await useTPOStore.getState().setVariationId('cinematic');
+
+    expect(useTPOStore.getState().variationId).toBe('cinematic');
+    expect(AsyncStorage.setItem).toHaveBeenCalledWith(
+      STORAGE_KEY,
+      expect.stringContaining('"variationId":"cinematic"')
+    );
+  });
+
+  // --- setVariationId invalid ---
+  it('setVariationId with invalid value → state unchanged, no setItem', async () => {
+    await useTPOStore.getState().setVariationId('grid' as 'bento');
+
+    expect(useTPOStore.getState().variationId).toBe('bento');
+    expect(AsyncStorage.setItem).not.toHaveBeenCalled();
+  });
+
+  // --- variationId persistence missing → falls back to default ---
+  it('initTPOStore with persisted snapshot missing variationId → defaults to bento', async () => {
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValue(
+      JSON.stringify({ locale: 'en', placeId: 'us_nyc', role: 'self', nowOverride: null })
+    );
+
+    await initTPOStore();
+
+    expect(useTPOStore.getState().variationId).toBe('bento');
+  });
+
+  // --- variationId persistence valid → restored ---
+  it('initTPOStore with persisted variationId="morph" → restored', async () => {
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValue(
+      JSON.stringify({
+        locale: 'ko', placeId: 'kr_seoul', role: 'self',
+        nowOverride: null, variationId: 'morph',
+      })
+    );
+
+    await initTPOStore();
+
+    expect(useTPOStore.getState().variationId).toBe('morph');
+  });
+
   // --- reset ---
   it('reset() → state back to defaults, AsyncStorage.removeItem called', async () => {
-    useTPOStore.setState({ locale: 'de', placeId: 'de_berlin', role: 'clinician' });
+    useTPOStore.setState({ locale: 'de', placeId: 'de_berlin', role: 'clinician', variationId: 'morph' });
 
     await useTPOStore.getState().reset();
 
@@ -199,6 +245,7 @@ describe('tpoStore', () => {
     expect(s.placeId).toBe('kr_seoul');
     expect(s.role).toBe('self');
     expect(s.nowOverride).toBeNull();
+    expect(s.variationId).toBe('bento');
     expect(AsyncStorage.removeItem).toHaveBeenCalledWith(STORAGE_KEY);
   });
 });

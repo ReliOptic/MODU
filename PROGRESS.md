@@ -6,6 +6,16 @@
 
 ---
 
+## Known issues (open — do not lose)
+
+- **`src/__tests__/tpoStore.test.ts` flaky under full-suite run** (2026-04-18 stabilization session):
+  - Symptom: `npx jest` 전체 실행 시 1건 실패 (line ~207, `setVariationId` 계열), `npx jest src/__tests__/tpoStore.test.ts` 단독 실행 시 18/18 통과.
+  - 원인 가정: zustand singleton state 가 suite 간 누수 (다른 test 가 `useTPOStore` 를 import 후 초기화하는데, 해당 test 는 `beforeEach` 에서 reset 하지 않음).
+  - 수정 방향: `beforeEach` 에 `useTPOStore.setState(initialState)` + `jest.clearAllMocks()` 추가. 또는 `jest.isolateModules` 로 module graph 재로드.
+  - 우선순위: P2 — 격리 실행은 green 이라 CI 관점 블로커 아님. 다만 `jest` 전체 exit code 는 1 → CI green 원하면 수정 필요.
+
+---
+
 ## Latest session — 2026-04-18 PM-late (Metamorphic refactor — Phase 1+2 LANDED)
 
 ### Intent (user direction, verbatim)

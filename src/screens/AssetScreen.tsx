@@ -1,17 +1,27 @@
-// §6 + §8 에셋별 라우팅 컨테이너
-// 그라데이션 배경 + 헤더(AssetSwitcher) + 동적 탭바 + 활성 탭 컨텐츠
+// §6 + §8 Asset routing container.
+// Phase 3B: home tab now routes through the renderer-agnostic VARIATION_REGISTRY
+// driven by ResolvedTPO + RendererBlock[] + TimelineDay[]. Other tabs unchanged.
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated from 'react-native-reanimated';
 import { useAssetStore } from '../store/assetStore';
+import { useTPOStore } from '../store/tpoStore';
+import { useMoodJournalStore } from '../store/moodJournalStore';
 import { useAssetTransition } from '../hooks/useAssetTransition';
+import {
+  fromMoodEntries,
+  groupByDay,
+  resolveTPO,
+  widgetsToBlocks,
+  type TPOInputState,
+} from '../adapters';
 import { AssetSwitcher } from '../components/AssetSwitcher';
 import { TabBar } from '../components/TabBar';
 import { ChapterRitualOverlay } from '../components/ChapterRitualOverlay';
 import { DemoControlPanel } from '../components/DemoControlPanel';
+import { VariationPicker } from '../components/VariationPicker';
 import { getPalette, widgetTokens } from '../theme';
-import { HomeTab } from './HomeTab';
 import { PlaceholderTab } from './PlaceholderTab';
 import { CalendarTab } from './tabs/CalendarTab';
 import { MoodTab } from './tabs/MoodTab';
@@ -20,6 +30,7 @@ import { ChecklistTab } from './tabs/ChecklistTab';
 import { InsightTab } from './tabs/InsightTab';
 import { ShareTab } from './tabs/ShareTab';
 import { ChapterGalleryScreen } from './ChapterGalleryScreen';
+import { VARIATION_REGISTRY } from './variations';
 
 export interface AssetScreenProps {
   onCreateNew: () => void;
@@ -29,6 +40,16 @@ export function AssetScreen({ onCreateNew }: AssetScreenProps) {
   const allAssets = useAssetStore((s) => s.assets);
   const currentAssetId = useAssetStore((s) => s.currentAssetId);
   const archive = useAssetStore((s) => s.archiveAsset);
+
+  const tpoLocale = useTPOStore((s) => s.locale);
+  const tpoPlaceId = useTPOStore((s) => s.placeId);
+  const tpoRoleOverride = useTPOStore((s) => s.role);
+  const tpoNowOverride = useTPOStore((s) => s.nowOverride);
+  const variationId = useTPOStore((s) => s.variationId);
+  const setVariationId = useTPOStore((s) => s.setVariationId);
+
+  const moodEntriesByAsset = useMoodJournalStore((s) => s.entriesByAsset);
+  const hydrateMood = useMoodJournalStore((s) => s.hydrate);
 
   const current = useMemo(
     () => allAssets.find((a) => a.id === currentAssetId) ?? null,
@@ -42,6 +63,10 @@ export function AssetScreen({ onCreateNew }: AssetScreenProps) {
   const { switchTo, outgoingStyle, phase, pending } = useAssetTransition();
   const [activeTabId, setActiveTabId] = useState<string>('home');
   const [galleryOpen, setGalleryOpen] = useState(false);
+
+  useEffect(() => {
+    if (currentAssetId) hydrateMood(currentAssetId);
+  }, [currentAssetId, hydrateMood]);
 
   const openGallery = useCallback(() => setGalleryOpen(true), []);
   const closeGallery = useCallback(() => setGalleryOpen(false), []);
@@ -57,9 +82,59 @@ export function AssetScreen({ onCreateNew }: AssetScreenProps) {
     setTimeout(() => onCreateNew(), 180);
   }, [onCreateNew]);
 
-  function renderTabContent() {
+  // Asset 전환 시 home 으로 리셋
+  useEffect(() => {
+    setActiveTabId('home');
+  }, [currentAssetId]);
+
+  const palette = useMemo(
+    () => (current ? getPalette(current.palette) : getPalette('dawn')),
+    [current]
+  );
+
+  // ---- Adapter pipeline (Phase 3B) -----------------------------------------
+  // Recompute resolved TPO whenever asset, TPO inputs, or wall-clock minute
+  // changes. We tick once on mount + on TPO field changes; not on every render.
+  const tpoState: TPOInputState = useMemo(
+    () => ({
+      locale: tpoLocale,
+      placeId: tpoPlaceId,
+      role: tpoRoleOverride,
+      nowOverride: tpoNowOverride,
+    }),
+    [tpoLocale, tpoPlaceId, tpoRoleOverride, tpoNowOverride]
+  );
+
+  const resolvedTPO = useMemo(
+    () => (current ? resolveTPO(current, tpoState, new Date()) : null),
+    [current, tpoState]
+  );
+
+  const blocks = useMemo(
+    () => (current ? widgetsToBlocks(current.widgets) : []),
+    [current]
+  );
+
+  const timeline = useMemo(() => {
+    if (!current) return [];
+    const entries = moodEntriesByAsset[current.id] ?? [];
+    return groupByDay(fromMoodEntries(entries), 'local');
+  }, [current, moodEntriesByAsset]);
+
+  function renderTabContent(): React.ReactNode {
     if (!current) return null;
-    if (activeTabId === 'home') return <HomeTab asset={current} />;
+    if (activeTabId === 'home') {
+      if (!resolvedTPO) return null;
+      const Variation = VARIATION_REGISTRY[variationId];
+      return (
+        <Variation
+          tpo={resolvedTPO}
+          blocks={blocks}
+          timeline={timeline}
+          palette={palette}
+        />
+      );
+    }
     switch (activeTabId) {
       case 'calendar': return <CalendarTab asset={current} />;
       case 'mood':     return <MoodTab asset={current} />;
@@ -75,17 +150,6 @@ export function AssetScreen({ onCreateNew }: AssetScreenProps) {
       }
     }
   }
-
-  // 에셋 전환 시 home 으로 리셋
-  useEffect(() => {
-    setActiveTabId('home');
-  }, [currentAssetId]);
-
-  const palette = useMemo(
-    () => (current ? getPalette(current.palette) : getPalette('dawn')),
-    [current]
-  );
-
 
   return (
     <View style={styles.root}>
@@ -103,6 +167,15 @@ export function AssetScreen({ onCreateNew }: AssetScreenProps) {
           onArchive={archive}
           onOpenGallery={openGallery}
         />
+        {activeTabId === 'home' && (
+          <View style={styles.pickerSlot}>
+            <VariationPicker
+              value={variationId}
+              onChange={(id) => { void setVariationId(id); }}
+              palette={palette}
+            />
+          </View>
+        )}
       </View>
       <Animated.View style={[styles.body, outgoingStyle as unknown as object]}>
         {renderTabContent()}
@@ -145,11 +218,14 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingHorizontal: 20,
     paddingBottom: 12,
+    gap: 12,
     // Dropdown inside AssetSwitcher needs to paint on top of body + tab bar.
-    // Without this, the absolute overlay gets covered by siblings rendered later.
     position: 'relative',
     zIndex: 200,
     elevation: 200,
+  },
+  pickerSlot: {
+    paddingHorizontal: 4,
   },
   body: {
     flex: 1,
