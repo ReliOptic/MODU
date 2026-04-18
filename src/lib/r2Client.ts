@@ -1,14 +1,15 @@
-// MODU R2 Client — Cloudflare R2 upload/download helpers (Task #20)
-// ADR-0002: all storage operations go through Supabase Edge Functions.
-// CLIENT NEVER references R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, or
-// R2_ACCOUNT_ID directly. Those secrets live in Supabase Edge Function env.
+// MODU R2 Client — Cloudflare R2 upload/download via Supabase Edge Functions.
+// ADR-0011 local-first: identity is a device-local UUID v4 sent as X-Device-Id.
+// ADR-0002: R2 credentials live only in Edge Functions; the client never
+// references R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, or R2_ACCOUNT_ID.
 
-import { supabase, isSupabaseConfigured } from './supabase';
+import { isSupabaseConfigured } from './supabase';
+import { getDeviceId } from './deviceId';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type R2ClientErrorCode =
-  | 'unauthorized'
+  | 'missing_device_id'
   | 'rate_limited'
   | 'too_large'
   | 'unsupported_type'
@@ -58,15 +59,10 @@ function edgeFunctionUrl(path: string): string {
   return `${base}/functions/v1/${path}`;
 }
 
-async function getBearerToken(): Promise<string> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  if (!token) throw new R2ClientError('unauthorized', '로그인이 필요해요.');
-  return token;
-}
-
 function handleHttpError(status: number, body: string): never {
-  if (status === 401) throw new R2ClientError('unauthorized', '세션이 만료됐어요.');
+  if (status === 400 && /device.?id/i.test(body)) {
+    throw new R2ClientError('missing_device_id', '기기 식별자를 읽을 수 없어요.');
+  }
   if (status === 413) throw new R2ClientError('too_large', '파일이 너무 커요. 최대 20MB.');
   if (status === 415) throw new R2ClientError('unsupported_type', '지원하지 않는 파일 형식이에요.');
   if (status === 429) throw new R2ClientError('rate_limited', '잠시 후 다시 시도해 주세요.');
@@ -85,7 +81,6 @@ async function fetchWithRetry(
     } catch (err) {
       lastErr = err;
       if (attempt < maxRetries) {
-        // brief back-off before retry
         await new Promise((r) => setTimeout(r, 500));
       }
     }
@@ -97,7 +92,7 @@ async function fetchWithRetry(
 
 /**
  * Three-step upload flow:
- *   1. POST r2-presign  → presigned PUT URL + object key
+ *   1. POST r2-presign  → presigned PUT URL + object key (device-scoped)
  *   2. PUT <presigned>  → upload bytes directly to R2
  *   3. POST r2-complete → insert `attachments` row, get attachment_id
  *
@@ -115,10 +110,10 @@ export async function uploadAttachment(
   const { assetId, file, mime, onProgress, signal } = params;
   const byteSize = file.size;
 
-  const token = await getBearerToken();
-  const authHeaders = { Authorization: `Bearer ${token}` };
+  const deviceId = await getDeviceId();
+  const authHeaders = { 'X-Device-Id': deviceId };
 
-  // Step 1: Get presigned PUT URL
+  // Step 1: presigned PUT URL
   let presignRes: Response;
   try {
     presignRes = await fetchWithRetry(edgeFunctionUrl('r2-presign'), {
@@ -146,7 +141,7 @@ export async function uploadAttachment(
 
   const { url: putUrl, key } = presignData;
 
-  // Step 2: PUT bytes to R2 presigned URL (no auth header — signed in URL)
+  // Step 2: PUT bytes to R2 (no auth header — signed in URL)
   let uploadRes: Response;
   try {
     uploadRes = await fetchWithRetry(putUrl, {
@@ -167,10 +162,9 @@ export async function uploadAttachment(
     throw new R2ClientError('upstream', `R2 PUT 실패 (${uploadRes.status})`);
   }
 
-  // Report progress (full size — streaming progress requires XHR/streams API)
   onProgress?.(byteSize);
 
-  // Step 3: Notify complete → insert attachments row
+  // Step 3: notify complete → insert attachments row
   let completeRes: Response;
   try {
     completeRes = await fetchWithRetry(edgeFunctionUrl('r2-complete'), {
@@ -197,7 +191,7 @@ export async function uploadAttachment(
 
 /**
  * Fetches a presigned GET URL for an existing attachment.
- * TTL is 5 minutes (300 s) — store the URL locally and reuse within that window.
+ * TTL is 5 minutes (inline) or 15 minutes (op_mode:'export').
  */
 export async function getAttachmentUrl(
   params: GetAttachmentUrlParams
@@ -207,7 +201,7 @@ export async function getAttachmentUrl(
   }
 
   const { attachmentId, assetId, mime, op_mode } = params;
-  const token = await getBearerToken();
+  const deviceId = await getDeviceId();
 
   let res: Response;
   try {
@@ -215,7 +209,7 @@ export async function getAttachmentUrl(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        'X-Device-Id': deviceId,
       },
       body: JSON.stringify({
         asset_id: assetId,

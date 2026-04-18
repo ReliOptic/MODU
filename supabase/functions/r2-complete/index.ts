@@ -1,19 +1,22 @@
 // MODU r2-complete Edge Function — finalise R2 upload by inserting attachment row
-// Task #20
+// ADR-0011 local-first + ADR-0005 privacy-as-moat + ADR-0018 horizontal platform.
 //
 // POST /functions/v1/r2-complete
-//   Authorization: Bearer <supabase user JWT>
+//   X-Device-Id: <uuid-v4 generated client-side>
 //   Body: { key: string, asset_id: string, mime: string, byte_size: number }
 //   Response: { attachment_id: string }
 //
 // Called by the client after a successful PUT to the presigned upload URL.
-// Inserts a row into `attachments` and writes an r2_audit 'complete' record.
+// Inserts a row into `attachments` (device-scoped) and writes an r2_audit
+// 'complete' record.
 //
-// Deploy: supabase functions deploy r2-complete --no-verify-jwt=false
+// Deploy: supabase functions deploy r2-complete --no-verify-jwt
+//   (See supabase/config.toml: [functions.r2-complete] verify_jwt = false.)
 // Secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (no R2 keys needed here)
 
 import { corsPreFlight, jsonResp } from '../_shared/cors.ts';
-import { getUserFromRequest } from '../_shared/auth.ts';
+import { requireDeviceId } from '../_shared/deviceAuth.ts';
+import { checkDeviceRateLimit } from '../_shared/rateLimit.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -30,6 +33,7 @@ const MIME_WHITELIST = new Set([
 ]);
 
 const MAX_BYTE_SIZE = 20 * 1024 * 1024; // 20 MB
+const RATE_LIMIT_PER_MINUTE = 20;
 
 // ─── Request shape ────────────────────────────────────────────────────────────
 
@@ -48,11 +52,11 @@ Deno.serve(async (req: Request) => {
 
   const t0 = Date.now();
 
-  // 1) Auth
-  let userId: string;
+  // 1) Device identity
+  let deviceId: string;
   try {
-    const auth = await getUserFromRequest(req);
-    userId = auth.userId;
+    const auth = requireDeviceId(req);
+    deviceId = auth.deviceId;
   } catch (resp) {
     return resp as Response;
   }
@@ -64,7 +68,19 @@ Deno.serve(async (req: Request) => {
     return jsonResp(500, { error: 'Server misconfiguration' });
   }
 
-  // 2) Parse body
+  // 2) Rate limit (per device)
+  const allowed = await checkDeviceRateLimit(
+    supabaseUrl,
+    serviceKey,
+    deviceId,
+    'r2-complete',
+    RATE_LIMIT_PER_MINUTE
+  );
+  if (!allowed) {
+    return jsonResp(429, { error: '잠시 후 다시 시도해 주세요.' });
+  }
+
+  // 3) Parse body
   let body: RequestBody;
   try {
     body = (await req.json()) as RequestBody;
@@ -78,13 +94,13 @@ Deno.serve(async (req: Request) => {
     return jsonResp(400, { error: 'key, asset_id, mime, and byte_size are required' });
   }
 
-  // 3) Validate key prefix — must be scoped to this user AND this asset
-  const expectedPrefix = `u/${userId}/a/${asset_id}/`;
+  // 4) Validate key prefix — must be scoped to this device AND this asset
+  const expectedPrefix = `d/${deviceId}/a/${asset_id}/`;
   if (!key.startsWith(expectedPrefix)) {
-    return jsonResp(400, { error: 'R2 key does not match expected prefix for this user and asset' });
+    return jsonResp(400, { error: 'R2 key does not match expected prefix for this device and asset' });
   }
 
-  // 4) Mime whitelist + size sanity
+  // 5) Mime whitelist + size sanity
   if (!MIME_WHITELIST.has(mime)) {
     return jsonResp(415, { error: `Unsupported media type: ${mime}` });
   }
@@ -96,23 +112,24 @@ Deno.serve(async (req: Request) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  // 5) Asset ownership check
+  // 6) Asset ownership check (device-scoped)
   const { data: asset, error: assetErr } = await serviceClient
     .from('assets')
-    .select('id, user_id')
+    .select('id, device_id')
     .eq('id', asset_id)
-    .eq('user_id', userId)
+    .eq('device_id', deviceId)
     .single();
 
   if (assetErr || !asset) {
     return jsonResp(403, { error: 'Asset not found or access denied' });
   }
 
-  // 6) Insert attachment row (idempotent: return existing row on duplicate key)
+  // 7) Insert attachment row (idempotent: return existing row on duplicate key)
   const { data: attachment, error: insertErr } = await serviceClient
     .from('attachments')
     .insert({
-      user_id: userId,
+      user_id: null,
+      device_id: deviceId,
       asset_id,
       r2_key: key,
       mime,
@@ -128,7 +145,7 @@ Deno.serve(async (req: Request) => {
         .from('attachments')
         .select('id')
         .eq('r2_key', key)
-        .eq('user_id', userId)
+        .eq('device_id', deviceId)
         .single();
       if (existing) {
         return jsonResp(200, { attachment_id: (existing as { id: string }).id, key });
@@ -144,10 +161,11 @@ Deno.serve(async (req: Request) => {
 
   const attachmentId = (attachment as { id: string }).id;
 
-  // 7) Audit log
+  // 8) Audit log (device-scoped)
   const latencyMs = Date.now() - t0;
   const { error: auditErr } = await serviceClient.from('r2_audit').insert({
-    user_id: userId,
+    user_id: null,
+    device_id: deviceId,
     op: 'complete',
     key,
     mime,

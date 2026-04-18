@@ -1,25 +1,29 @@
 // MODU r2-presign Edge Function — Cloudflare R2 presigned URL generator
-// Task #20
+// ADR-0011 local-first + ADR-0005 privacy-as-moat + ADR-0018 horizontal platform.
 //
 // POST /functions/v1/r2-presign
-//   Authorization: Bearer <supabase user JWT>
+//   X-Device-Id: <uuid-v4 generated client-side>
 //   Body: {
 //     asset_id: string,
 //     mime: string,
 //     byte_size: number,
 //     op: 'upload' | 'download',
-//     attachment_id?: string   // required for op='download'
+//     attachment_id?: string,   // required for op='download'
+//     op_mode?: 'inline' | 'export'  // download TTL selector
 //   }
 //
 // Upload response:  { url, key, headers, expires_in }
 // Download response: { url, expires_in }
 //
-// Deploy: supabase functions deploy r2-presign --no-verify-jwt=false
+// Deploy: supabase functions deploy r2-presign --no-verify-jwt
+//   (Supabase gateway JWT verification disabled — this function does its own
+//    device-id validation. See supabase/config.toml: verify_jwt = false.)
 // Secrets: R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME
 //          + SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 
 import { corsPreFlight, jsonResp } from '../_shared/cors.ts';
-import { getUserFromRequest } from '../_shared/auth.ts';
+import { requireDeviceId } from '../_shared/deviceAuth.ts';
+import { checkDeviceRateLimit } from '../_shared/rateLimit.ts';
 import { S3Client, PutObjectCommand, GetObjectCommand } from 'npm:@aws-sdk/client-s3';
 import { getSignedUrl } from 'npm:@aws-sdk/s3-request-presigner';
 import { createClient } from 'npm:@supabase/supabase-js@2';
@@ -30,6 +34,7 @@ const UPLOAD_TTL_SECONDS = 600;          // 10 minutes
 const DOWNLOAD_INLINE_TTL_SECONDS = 300; // 5 minutes — in-app preview
 const DOWNLOAD_EXPORT_TTL_SECONDS = 900; // 15 minutes — user export/download
 const MAX_BYTE_SIZE = 20 * 1024 * 1024; // 20 MB
+const RATE_LIMIT_PER_MINUTE = 20;
 
 const MIME_WHITELIST = new Set([
   'image/jpeg',
@@ -67,7 +72,7 @@ interface RequestBody {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function buildKey(userId: string, assetId: string, mime: string): string {
+function buildKey(deviceId: string, assetId: string, mime: string): string {
   const ext = MIME_TO_EXT[mime] ?? 'bin';
   const now = new Date();
   const yyyymmdd =
@@ -75,7 +80,7 @@ function buildKey(userId: string, assetId: string, mime: string): string {
     (now.getUTCMonth() + 1).toString().padStart(2, '0') +
     now.getUTCDate().toString().padStart(2, '0');
   const uuid = crypto.randomUUID();
-  return `u/${userId}/a/${assetId}/${yyyymmdd}/${uuid}.${ext}`;
+  return `d/${deviceId}/a/${assetId}/${yyyymmdd}/${uuid}.${ext}`;
 }
 
 function makeS3Client(): S3Client {
@@ -94,13 +99,14 @@ function makeS3Client(): S3Client {
 async function insertAudit(
   supabaseUrl: string,
   serviceKey: string,
-  params: { userId: string; op: string; key: string; mime: string; byteSize: number; latencyMs: number }
+  params: { deviceId: string; op: string; key: string; mime: string; byteSize: number; latencyMs: number }
 ): Promise<void> {
   const client = createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const { error } = await client.from('r2_audit').insert({
-    user_id: params.userId,
+    user_id: null,
+    device_id: params.deviceId,
     op: params.op,
     key: params.key,
     mime: params.mime,
@@ -120,11 +126,11 @@ Deno.serve(async (req: Request) => {
 
   const t0 = Date.now();
 
-  // 1) Auth
-  let userId: string;
+  // 1) Device identity (X-Device-Id header, UUID v4 validated)
+  let deviceId: string;
   try {
-    const auth = await getUserFromRequest(req);
-    userId = auth.userId;
+    const auth = requireDeviceId(req);
+    deviceId = auth.deviceId;
   } catch (resp) {
     return resp as Response;
   }
@@ -140,7 +146,19 @@ Deno.serve(async (req: Request) => {
     return jsonResp(500, { error: 'R2 not configured' });
   }
 
-  // 2) Parse body
+  // 2) Rate limit (per device, ADR-0011)
+  const allowed = await checkDeviceRateLimit(
+    supabaseUrl,
+    serviceKey,
+    deviceId,
+    'r2-presign',
+    RATE_LIMIT_PER_MINUTE
+  );
+  if (!allowed) {
+    return jsonResp(429, { error: '잠시 후 다시 시도해 주세요.' });
+  }
+
+  // 3) Parse body
   let body: RequestBody;
   try {
     body = (await req.json()) as RequestBody;
@@ -160,7 +178,7 @@ Deno.serve(async (req: Request) => {
     return jsonResp(400, { error: 'op must be "upload" or "download"' });
   }
 
-  // 3) Mime whitelist
+  // 4) Mime whitelist
   if (!MIME_WHITELIST.has(mime)) {
     return jsonResp(415, {
       error: `Unsupported media type: ${mime}`,
@@ -168,7 +186,7 @@ Deno.serve(async (req: Request) => {
     });
   }
 
-  // 4) Byte size limit (upload only)
+  // 5) Byte size limit (upload only)
   if (op === 'upload') {
     if (typeof byte_size !== 'number' || byte_size <= 0) {
       return jsonResp(400, { error: 'byte_size must be a positive number' });
@@ -181,23 +199,23 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  // 5) Asset ownership check (Supabase assets table)
+  // 6) Asset ownership check (device-scoped)
   const serviceClient = createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
   const { data: asset, error: assetErr } = await serviceClient
     .from('assets')
-    .select('id, user_id')
+    .select('id, device_id')
     .eq('id', asset_id)
-    .eq('user_id', userId)
+    .eq('device_id', deviceId)
     .single();
 
   if (assetErr || !asset) {
     return jsonResp(403, { error: 'Asset not found or access denied' });
   }
 
-  // 6) Download: attachment_id required + owner check
+  // 7) Download: attachment_id required + owner check
   let existingKey: string | undefined;
   if (op === 'download') {
     if (!attachment_id) {
@@ -205,9 +223,9 @@ Deno.serve(async (req: Request) => {
     }
     const { data: attachment, error: attachErr } = await serviceClient
       .from('attachments')
-      .select('id, user_id, r2_key')
+      .select('id, device_id, r2_key')
       .eq('id', attachment_id)
-      .eq('user_id', userId)
+      .eq('device_id', deviceId)
       .single();
 
     if (attachErr || !attachment) {
@@ -216,12 +234,12 @@ Deno.serve(async (req: Request) => {
     existingKey = (attachment as { r2_key: string }).r2_key;
   }
 
-  // 7) Build presigned URL
+  // 8) Build presigned URL
   const s3 = makeS3Client();
 
   try {
     if (op === 'upload') {
-      const key = buildKey(userId, asset_id, mime);
+      const key = buildKey(deviceId, asset_id, mime);
 
       const command = new PutObjectCommand({
         Bucket: bucketName,
@@ -234,7 +252,7 @@ Deno.serve(async (req: Request) => {
 
       const latencyMs = Date.now() - t0;
       await insertAudit(supabaseUrl, serviceKey, {
-        userId, op, key, mime, byteSize: byte_size, latencyMs,
+        deviceId, op, key, mime, byteSize: byte_size, latencyMs,
       });
 
       return jsonResp(200, {
@@ -260,7 +278,7 @@ Deno.serve(async (req: Request) => {
 
       const latencyMs = Date.now() - t0;
       await insertAudit(supabaseUrl, serviceKey, {
-        userId, op, key, mime, byteSize: 0, latencyMs,
+        deviceId, op, key, mime, byteSize: 0, latencyMs,
       });
 
       return jsonResp(200, { url, expires_in: downloadTtl });
