@@ -6,13 +6,13 @@ import {
   ChatResult,
   AIClientError,
   AIErrorCode,
-} from '../../src/types/ai.types';
-import { FORMATION_MODEL, SYNTHESIS_FALLBACK } from '../../src/config/ai-models';
+} from '../types/ai.types';
+import { FORMATION_MODEL } from '../config/ai-models';
 
 // ─── Minimal stubs ────────────────────────────────────────────────────────────
 
 // Stub isSupabaseConfigured = true and a mock session token
-jest.mock('../../src/lib/supabase', () => ({
+jest.mock('../lib/supabase', () => ({
   isSupabaseConfigured: true,
   supabase: {
     auth: {
@@ -26,7 +26,7 @@ jest.mock('../../src/lib/supabase', () => ({
 // Stub process.env for edge function URL resolution
 process.env.EXPO_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
 
-import { chatViaOpenRouter } from '../../src/lib/aiClient';
+import { chatViaOpenRouter } from '../lib/aiClient';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -69,10 +69,6 @@ describe('chatViaOpenRouter', () => {
     expect(FORMATION_MODEL).toBe('google/gemma-4-31b-it');
   });
 
-  it('SYNTHESIS_FALLBACK is claude-haiku-4-5', () => {
-    expect(SYNTHESIS_FALLBACK).toBe('claude-haiku-4-5');
-  });
-
   it('returns ok:true on successful OpenRouter response', async () => {
     mockFetch([{ status: 200, body: makeSuccessResponse() }]);
 
@@ -101,14 +97,17 @@ describe('chatViaOpenRouter', () => {
     expect(calledBody.model).toBe('google/gemma-3-27b-it');
   });
 
-  it('includes Authorization Bearer token in request', async () => {
+  it('includes X-Device-Id header (device-identity path, ADR-0011)', async () => {
     mockFetch([{ status: 200, body: makeSuccessResponse() }]);
 
     await chatViaOpenRouter({ messages: TEST_MESSAGES });
 
     const fetchMock = globalThis.fetch as jest.Mock;
     const headers = fetchMock.mock.calls[0][1].headers as Record<string, string>;
-    expect(headers.Authorization).toBe('Bearer test-token-abc');
+    expect(headers['X-Device-Id']).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    );
+    expect(headers.Authorization).toBeUndefined();
   });
 
   it('sets response_format when jsonMode is true', async () => {
@@ -141,45 +140,18 @@ describe('chatViaOpenRouter', () => {
     expect(result.code).toBe('VALIDATION_ERROR');
   });
 
-  it('falls back to Claude on 5xx from OpenRouter', async () => {
-    mockFetch([
-      { status: 502, body: { code: 'UPSTREAM_ERROR', message: 'bad gateway' } },
-      {
-        status: 200,
-        body: {
-          content: 'Hello from Claude fallback',
-          model: 'claude-haiku-4-5-20251001',
-          usage: { input_tokens: 5, output_tokens: 10, cache_read_tokens: 0 },
-          request_id: 'claude-req-xyz',
-        },
-      },
-    ]);
-
-    const result = await chatViaOpenRouter({ messages: TEST_MESSAGES });
-
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.content).toBe('Hello from Claude fallback');
-    expect(result.provider).toBe('anthropic');
-    expect(result.usedFallback).toBe(true);
-
-    // Two fetch calls should have been made
-    const fetchMock = globalThis.fetch as jest.Mock;
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    // Second call should hit ai-claude
-    const secondUrl = fetchMock.mock.calls[1][0] as string;
-    expect(secondUrl).toContain('ai-claude');
-  });
-
-  it('returns error if both OpenRouter and Claude fallback fail', async () => {
-    mockFetch([
-      { status: 502, body: { code: 'UPSTREAM_ERROR', message: 'bad gateway' } },
-      { status: 500, body: { code: 'UPSTREAM_ERROR', message: 'claude also down' } },
-    ]);
+  it('returns UPSTREAM_ERROR on 5xx (no Claude fallback — ADR-0012 2026-04-18)', async () => {
+    mockFetch([{ status: 502, body: { code: 'UPSTREAM_ERROR', message: 'bad gateway' } }]);
 
     const result = await chatViaOpenRouter({ messages: TEST_MESSAGES });
 
     expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.code).toBe('UPSTREAM_ERROR');
+
+    // Only one fetch — no fallback attempt.
+    const fetchMock = globalThis.fetch as jest.Mock;
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
 

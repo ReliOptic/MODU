@@ -1,8 +1,27 @@
 # ADR-0012: Gemma 3 Routing — Claude 최소화, Gemma 우선
 
-- Status: **Proposed**
-- Date: 2026-04-17
-- Related: ADR-0002 (AI Edge Function) · ADR-0011 (Local-First) · CTO Adaptive Engine plan
+- Status: **Accepted (2026-04-18: Claude/Whisper edge paths fully retired)**
+- Date: 2026-04-17 (revised 2026-04-18)
+- Related: ADR-0002 (AI Edge Function, superseded) · ADR-0011 (Local-First) · CTO Adaptive Engine plan
+
+## 2026-04-18 Update — Claude/Whisper paths retired
+
+Client never had a user-auth flow (ADR-0011), so the JWT-gated `ai-claude` /
+`ai-whisper` / deprecated `ai` edge functions were unreachable in practice.
+During stabilization:
+
+- `supabase/functions/{ai,ai-claude,ai-whisper}` directories **removed**.
+- `src/lib/aiClient.ts` legacy exports (`callClaude`, `transcribeAudio`,
+  `ClaudeModel`, `CallClaudeInput`, etc.) **removed**. Only `chatViaOpenRouter`
+  (device-id path) remains.
+- `src/config/ai-models.ts` slimmed to `FORMATION_MODEL` only.
+- `ChatResult.provider` / `usedFallback` fields preserved in `ai.types.ts`
+  for backward compat; both are effectively constant (`provider = 'openrouter'`,
+  `usedFallback = false`) until re-evaluated by a future synthesis-quality ADR.
+
+If a Claude path returns in the future it must follow the device-identity
+convention (see `supabase/functions/_shared/deviceAuth.ts`) — **never** the old
+Bearer-JWT shape that required a user account.
 
 ## Context
 
