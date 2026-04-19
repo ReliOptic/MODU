@@ -16,6 +16,58 @@
 
 ---
 
+## 2026-04-18 — Visual-language v2.1 Phase 4 LANDED (commit `d78a4e3`)
+
+### Intent
+- `docs/planning/2026-04-18-visual-v2-execution-brief.md` Phase 4 was the remaining gate after Phase 3 (hero dominance, commit `ee2d14d`).
+- Phase 4 = §2.A chevron-morph ChapterCarousel + grammar-check lint + v1 token reclamation.
+- User standing directive: "원리·원칙 우선 작업" — respect ADR/CLAUDE.md/North Star, no shortcuts. Phase was shipped as a single bundled commit rather than split 4a/4b.
+
+### What landed
+
+**§2.A ChapterCarousel (new `src/screens/ChapterCarousel.tsx`)**
+- Replaces legacy `ChapterGalleryScreen.tsx` (deleted). Gesture-revealed, never a nav destination (R12).
+- AssetSwitcher chevron long-press at **280 ms** (`Haptics.selection()` at 120 ms heads-up, `Haptics.impact('light')` at commit) triggers the carousel. Implemented via onPressIn timer + Pressable.delayLongPress=280 in `AssetSwitcher.tsx`.
+- Scene zooms out in `AssetScreen.tsx`: `scale 1.0 → 0.78`, `opacity 1 → 0.5`, 600 ms Macro, easing `cubic-bezier(0.32, 0.72, 0, 1)`. Scene wrapped in `Animated.View` via sharedValue.
+- Carousel surface animates in: `opacity 0 → 1` + `scale 1.06 → 1.0`, same 600 ms.
+- Each card composed per §9 recipe (primitive-aware, not a skin): palette.heroGradient 3-stop full-bleed + cover photo @0.92 + Fraunces title bleeding off right + §9 texture peek + 0→0.6 bottom scrim + phase label / active pill.
+- Texture peeks (baked SVG-like RN views, not real charts): `timeline-spine` (spine + 5 dots), `phase-rails` (4 staggered bars mid-card), `grid-collage` (4 rotated polaroids), `heatmap-canvas` (21-cell 3x7 intensity grid), `user-determined` (palette wash).
+- Commit switch → 920 ms Ritual (out-ease + `Haptics.impact('medium')` at 640 ms), then `onSelect` + `onClose`. Center-tap / cancel → 600 ms Macro.
+- Adjacent cards peek `scale 0.94 opacity 0.7` (active = 1.0 / 1.0).
+
+**Grammar lint (`tools/grammar-check.ts` + `src/__tests__/grammar-check.lint.test.ts`)**
+- `checkR14()` enforces distinct dominant primitives across `RECIPES` (custom excluded — it is the user-authored escape hatch).
+- `checkR9()` is a scaffold returning empty; will enforce per-widget hover/press/long-press grammar once Moment metadata lands.
+- `runGrammarChecks()` concatenates. Wired to jest via the lint test — `npm run lint:grammar` → `jest --testPathPattern=grammar-check.lint`.
+- `package.json` scripts added: `test` (jest), `typecheck` (tsc --noEmit), `lint:grammar`.
+
+**v1 token reclamation**
+- `widgetTokens.card` (legacy 14-radius 0.78-alpha) retired. All consumers migrated to `widgetTokens.cardV2` (r.md + s.lg + 0.82 alpha + hairline border): `Card.tsx`, `ExportScreen.tsx`, `ConsentScreen.tsx`, `theme.test.ts`.
+- Deprecated `palette.gradient { start, mid, end }` field removed from `PaletteSwatch` + all 5 palettes. Consumers (`PrimaryCard`, `ChapterRitualOverlay`, `WelcomeScreen`, `ConsentScreen` CTA, `ChapterGalleryScreen` before deletion) migrated to `palette.heroGradient { top, mid, bottom }` dense {500,600,700} stops.
+- `theme.test.ts` gradient-triad assertion updated to verify `heroGradient` triad instead.
+
+**DemoControlPanel removed**
+- Import + JSX removed from `AssetScreen.tsx`. `src/components/DemoControlPanel.tsx` deleted (318 LOC).
+- `src/lib/demo/useDemoMode.ts` + `scenarios.ts` retained — still used by `useWidgetOrder.ts` for TPO demo scenarios.
+
+### Verification
+- `npx tsc --noEmit` — 0 errors.
+- `npx jest` — **384/384 passing across 33 suites** (was 359/359 before Phase 3–4; +25 tests from recipe-divergence, variations.registry, hero-dominance, grammar-check.lint, theme.heroGradient).
+- `npx expo export --platform web` — bundles cleanly (3.2 MB web entry).
+
+### Resume guidance
+- Manual iOS / Android smoke test next session: long-press chevron → confirm 280 ms commit + haptic cadence feels right + zoom-out is smooth on real device (reanimated worklets run on UI thread).
+- Per-§9 texture peeks are illustrative (deliberately not real charts). If product wants them to reflect live data (e.g. actual injection dates for fertility), promote them to real Moment composers — but that's a §9.2 follow-up, not §2.A.
+- Reduce-motion fallback (§3.4 spec: chevron-morph zoom → opacity-only 200 ms) is **not yet implemented** — carousel currently animates regardless of `AccessibilityInfo.isReduceMotionEnabled()`. Tracked as Phase 4 follow-up.
+- Phase 3B Metamorphic renderer variations and Phase 4 visual-v2 are now both landed. Remaining ROADMAP items (Phase 5 onward) should resume per the main plan — **no open visual-v2 gates**.
+
+### Open follow-ups (not blockers)
+- (Phase 4.1) Reduce-motion fallback for chevron-morph + ritual commit.
+- (Phase 4.2) Promote texture peeks to live-data Moment composers once adaptive signals stabilize.
+- (Phase 4.3) R9 rule population — when Moment metadata (hover/press/long-press contract) lands, flesh out `checkR9()` in `tools/grammar-check.ts`.
+
+---
+
 ## 2026-04-18 — Architecture-stabilization track (parallel to Metamorphic Phase 3)
 
 > 이 섹션은 Metamorphic refactor Phase 3 (renderer variation) 과 별개로 진행된 **기능적 아키텍처 안정화** 트랙. 사용자 지시: "디자인은 수정이 크게 들어갈 예정이고, 이외 기능적인 부분 아키텍쳐 수준에서 안정화 진행바랍니다" + "phase 1 -commit - phase 2 -commit - phase 3 , if something not working then add at progress.md but no stopping". 세 phase 모두 landed.
