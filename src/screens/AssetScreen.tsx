@@ -35,6 +35,8 @@ import { ShareTab } from './tabs/ShareTab';
 import { ChapterCarousel } from './ChapterCarousel';
 import { VARIATION_REGISTRY, selectVariation, resolveRecipeKey } from './variations';
 
+const SCENE_EASE = Easing.bezier(0.32, 0.72, 0, 1);
+
 export interface AssetScreenProps {
   onCreateNew: () => void;
 }
@@ -72,7 +74,6 @@ export function AssetScreen({ onCreateNew }: AssetScreenProps) {
   // §2.A — scene recedes 1.0→0.78 opacity 1→0.5 when carousel opens.
   const sceneScale = useSharedValue(1);
   const sceneOpacity = useSharedValue(1);
-  const SCENE_EASE = Easing.bezier(0.32, 0.72, 0, 1);
 
   useEffect(() => {
     sceneScale.value = withTiming(galleryOpen ? 0.78 : 1, {
@@ -83,7 +84,7 @@ export function AssetScreen({ onCreateNew }: AssetScreenProps) {
       duration: 600,
       easing: SCENE_EASE,
     });
-  }, [galleryOpen, sceneScale, sceneOpacity, SCENE_EASE]);
+  }, [galleryOpen, sceneScale, sceneOpacity]);
 
   const sceneStyle = useAnimatedStyle(() => ({
     transform: [{ scale: sceneScale.value }],
@@ -94,6 +95,7 @@ export function AssetScreen({ onCreateNew }: AssetScreenProps) {
   const closeGallery = useCallback(() => setGalleryOpen(false), []);
   const handleGallerySelect = useCallback(
     (id: string) => {
+      setGalleryOpen(false);
       switchTo(id);
     },
     [switchTo]
@@ -234,6 +236,7 @@ const styles = StyleSheet.create({
   },
   scene: {
     flex: 1,
+    zIndex: 1,
   },
   header: {
     paddingTop: 60,

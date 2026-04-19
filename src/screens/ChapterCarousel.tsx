@@ -16,7 +16,9 @@ import {
   NativeScrollEvent,
 } from 'react-native';
 import Animated, {
+  cancelAnimation,
   Easing,
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -25,7 +27,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { getPalette, typography, r, s } from '../theme';
 import type { PaletteKey } from '../theme';
-import { resolveRecipeKey, type Primitive } from '../theme/recipes';
+import { resolveRecipeKey, RECIPES, type Primitive } from '../theme/recipes';
 import type { Asset } from '../types';
 
 let Haptics: {
@@ -43,7 +45,6 @@ const RITUAL_MS = 920;
 const RITUAL_HOLD_MS = 640;
 const ENTRY_EASE = Easing.bezier(0.32, 0.72, 0, 1);
 const EXIT_OUT_EASE = Easing.bezier(0.4, 0, 1, 1);
-const EXIT_IN_EASE = Easing.bezier(0, 0, 0.2, 1);
 
 export interface ChapterCarouselProps {
   readonly visible: boolean;
@@ -71,6 +72,14 @@ export function ChapterCarousel({
   const contentScale = useSharedValue(1.06);
   const contentOpacity = useSharedValue(0);
 
+  const [shouldRender, setShouldRender] = useState(visible);
+  const switchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hapticTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const onExitComplete = useCallback(() => {
+    setShouldRender(false);
+  }, []);
+
   const initialIndex = useMemo(() => {
     const idx = assets.findIndex((a) => a.id === currentAssetId);
     return idx < 0 ? 0 : idx;
@@ -82,15 +91,28 @@ export function ChapterCarousel({
 
   useEffect(() => {
     if (visible) {
+      cancelAnimation(overlayOpacity);
+      cancelAnimation(contentScale);
+      cancelAnimation(contentOpacity);
+      setShouldRender(true);
       overlayOpacity.value = withTiming(1, { duration: ZOOM_MS, easing: ENTRY_EASE });
       contentScale.value = withTiming(1, { duration: ZOOM_MS, easing: ENTRY_EASE });
       contentOpacity.value = withTiming(1, { duration: ZOOM_MS, easing: ENTRY_EASE });
     } else {
-      overlayOpacity.value = withTiming(0, { duration: ZOOM_MS, easing: ENTRY_EASE });
+      overlayOpacity.value = withTiming(0, { duration: ZOOM_MS, easing: ENTRY_EASE }, (finished) => {
+        if (finished) runOnJS(onExitComplete)();
+      });
       contentScale.value = withTiming(1.06, { duration: ZOOM_MS, easing: ENTRY_EASE });
       contentOpacity.value = withTiming(0, { duration: ZOOM_MS, easing: ENTRY_EASE });
     }
-  }, [visible, overlayOpacity, contentScale, contentOpacity]);
+  }, [visible, overlayOpacity, contentScale, contentOpacity, onExitComplete]);
+
+  useEffect(() => {
+    return () => {
+      if (hapticTimeoutRef.current) clearTimeout(hapticTimeoutRef.current);
+      if (switchTimeoutRef.current) clearTimeout(switchTimeoutRef.current);
+    };
+  }, []);
 
   const overlayStyle = useAnimatedStyle(() => ({ opacity: overlayOpacity.value }));
   const contentStyle = useAnimatedStyle(() => ({
@@ -116,8 +138,10 @@ export function ChapterCarousel({
         onClose();
         return;
       }
+      if (switchTimeoutRef.current !== null) return;
       if (Haptics) {
-        setTimeout(() => {
+        if (hapticTimeoutRef.current) clearTimeout(hapticTimeoutRef.current);
+        hapticTimeoutRef.current = setTimeout(() => {
           Haptics?.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
         }, RITUAL_HOLD_MS);
       }
@@ -129,7 +153,8 @@ export function ChapterCarousel({
         duration: RITUAL_MS,
         easing: EXIT_OUT_EASE,
       });
-      setTimeout(() => {
+      if (switchTimeoutRef.current) clearTimeout(switchTimeoutRef.current);
+      switchTimeoutRef.current = setTimeout(() => {
         onSelect(id);
         onClose();
       }, RITUAL_MS - 140);
@@ -178,7 +203,7 @@ export function ChapterCarousel({
 
   const data: (Asset | null)[] = useMemo(() => [...assets, null], [assets]);
 
-  if (!visible && overlayOpacity.value === 0 && contentOpacity.value === 0) return null;
+  if (!shouldRender) return null;
 
   return (
     <Animated.View
@@ -239,11 +264,7 @@ interface ChapterCardProps {
 function ChapterCard({ asset, active, cardWidth, cardHeight, onPress }: ChapterCardProps) {
   const palette = getPalette(asset.palette);
   const recipeKey = resolveRecipeKey(asset.type);
-  const primitive: Primitive = recipeKey === 'fertility' ? 'timeline-spine'
-    : recipeKey === 'cancer_caregiver' ? 'phase-rails'
-    : recipeKey === 'pet_care' ? 'grid-collage'
-    : recipeKey === 'chronic' ? 'heatmap-canvas'
-    : 'user-determined';
+  const primitive: Primitive = RECIPES[recipeKey].primitive;
 
   const scale = useSharedValue(active ? 1 : 0.94);
   const opacity = useSharedValue(active ? 1 : 0.7);
@@ -284,18 +305,19 @@ function ChapterCard({ asset, active, cardWidth, cardHeight, onPress }: ChapterC
 
         <TexturePeek primitive={primitive} palette={asset.palette} />
 
+        <LinearGradient
+          colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.6)']}
+          locations={[0.5, 1]}
+          style={styles.captionScrim}
+          pointerEvents="none"
+        />
+
         <View style={styles.titleBleed}>
           <Text style={styles.titleLine} numberOfLines={2}>
             {asset.displayName}
           </Text>
         </View>
 
-        <LinearGradient
-          colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.6)']}
-          locations={[0.5, 1]}
-          style={[StyleSheet.absoluteFillObject, styles.captionScrim]}
-          pointerEvents="none"
-        />
         <View style={styles.captionRow}>
           <Text style={styles.phaseLabel} numberOfLines={1}>
             {phaseLabel}
@@ -529,7 +551,13 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 6,
   },
-  captionScrim: {},
+  captionScrim: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '50%',
+  },
   captionRow: {
     position: 'absolute',
     left: s.lg,
