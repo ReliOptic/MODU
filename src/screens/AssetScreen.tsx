@@ -29,7 +29,7 @@ import { ChecklistTab } from './tabs/ChecklistTab';
 import { InsightTab } from './tabs/InsightTab';
 import { ShareTab } from './tabs/ShareTab';
 import { ChapterGalleryScreen } from './ChapterGalleryScreen';
-import { VARIATION_REGISTRY, selectVariation } from './variations';
+import { VARIATION_REGISTRY, selectVariation, resolveRecipeKey } from './variations';
 
 export interface AssetScreenProps {
   onCreateNew: () => void;
@@ -122,8 +122,11 @@ export function AssetScreen({ onCreateNew }: AssetScreenProps) {
     if (!current) return null;
     if (activeTabId === 'home') {
       if (!resolvedTPO) return null;
-      // TPO funnel picks the renderer — never user toggle.
-      const Variation = VARIATION_REGISTRY[selectVariation(resolvedTPO)];
+      // 2-axis dispatch: AssetType → primitive (R14), TPO funnel → mood.
+      // Both are system-driven; there is no user picker.
+      const recipeKey = resolveRecipeKey(current.type);
+      const variationId = selectVariation(resolvedTPO);
+      const Variation = VARIATION_REGISTRY[recipeKey][variationId];
       return (
         <Variation
           tpo={resolvedTPO}
