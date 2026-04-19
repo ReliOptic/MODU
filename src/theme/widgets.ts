@@ -1,5 +1,7 @@
 // §7.3 위젯 스타일 규칙 — 모든 카드/세퍼레이터/탭바의 시각적 단일 진실
 import { StyleSheet } from 'react-native';
+import { r } from './scales';
+import { s } from './scales';
 
 export const widgetTokens = {
   card: {
@@ -12,6 +14,22 @@ export const widgetTokens = {
     /** BlurView intensity prop 와 매칭 (expo-blur) */
     blurIntensity: 20,
     blurTint: 'light' as const,
+  },
+  /** v2.1 §3.1 L2 surface — replaces `card` after Phase 4 migration. */
+  cardV2: {
+    backgroundColor: 'rgba(255,255,255,0.82)',
+    borderRadius: r.md,
+    borderColor: 'rgba(60,60,67,0.08)',
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: s.lg,
+    paddingVertical: s.lg,
+    blurIntensity: 12,
+    blurTint: 'light' as const,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 0,
+    elevation: 2,
   },
   primaryCard: {
     borderRadius: 14,
