@@ -4,7 +4,12 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated from 'react-native-reanimated';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useAssetStore } from '../store/assetStore';
 import { useTPOStore } from '../store/tpoStore';
 import { useMoodJournalStore } from '../store/moodJournalStore';
@@ -19,7 +24,6 @@ import {
 import { AssetSwitcher } from '../components/AssetSwitcher';
 import { TabBar } from '../components/TabBar';
 import { ChapterRitualOverlay } from '../components/ChapterRitualOverlay';
-import { DemoControlPanel } from '../components/DemoControlPanel';
 import { getPalette, widgetTokens } from '../theme';
 import { PlaceholderTab } from './PlaceholderTab';
 import { CalendarTab } from './tabs/CalendarTab';
@@ -28,7 +32,7 @@ import { PartnerTab } from './tabs/PartnerTab';
 import { ChecklistTab } from './tabs/ChecklistTab';
 import { InsightTab } from './tabs/InsightTab';
 import { ShareTab } from './tabs/ShareTab';
-import { ChapterGalleryScreen } from './ChapterGalleryScreen';
+import { ChapterCarousel } from './ChapterCarousel';
 import { VARIATION_REGISTRY, selectVariation, resolveRecipeKey } from './variations';
 
 export interface AssetScreenProps {
@@ -65,12 +69,32 @@ export function AssetScreen({ onCreateNew }: AssetScreenProps) {
     if (currentAssetId) hydrateMood(currentAssetId);
   }, [currentAssetId, hydrateMood]);
 
+  // §2.A — scene recedes 1.0→0.78 opacity 1→0.5 when carousel opens.
+  const sceneScale = useSharedValue(1);
+  const sceneOpacity = useSharedValue(1);
+  const SCENE_EASE = Easing.bezier(0.32, 0.72, 0, 1);
+
+  useEffect(() => {
+    sceneScale.value = withTiming(galleryOpen ? 0.78 : 1, {
+      duration: 600,
+      easing: SCENE_EASE,
+    });
+    sceneOpacity.value = withTiming(galleryOpen ? 0.5 : 1, {
+      duration: 600,
+      easing: SCENE_EASE,
+    });
+  }, [galleryOpen, sceneScale, sceneOpacity, SCENE_EASE]);
+
+  const sceneStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: sceneScale.value }],
+    opacity: sceneOpacity.value,
+  }));
+
   const openGallery = useCallback(() => setGalleryOpen(true), []);
   const closeGallery = useCallback(() => setGalleryOpen(false), []);
   const handleGallerySelect = useCallback(
     (id: string) => {
-      setGalleryOpen(false);
-      setTimeout(() => switchTo(id), 180);
+      switchTo(id);
     },
     [switchTo]
   );
@@ -162,27 +186,29 @@ export function AssetScreen({ onCreateNew }: AssetScreenProps) {
         style={StyleSheet.absoluteFillObject}
         pointerEvents="none"
       />
-      <View style={styles.header}>
-        <AssetSwitcher
-          currentAsset={current}
-          allAssets={assets}
-          onSwitch={switchTo}
-          onCreateNew={onCreateNew}
-          onArchive={archive}
-          onOpenGallery={openGallery}
-        />
-      </View>
-      <Animated.View style={[styles.body, outgoingStyle as unknown as object]}>
-        {renderTabContent()}
+      <Animated.View style={[styles.scene, sceneStyle]} pointerEvents={galleryOpen ? 'none' : 'auto'}>
+        <View style={styles.header}>
+          <AssetSwitcher
+            currentAsset={current}
+            allAssets={assets}
+            onSwitch={switchTo}
+            onCreateNew={onCreateNew}
+            onArchive={archive}
+            onOpenGallery={openGallery}
+          />
+        </View>
+        <Animated.View style={[styles.body, outgoingStyle as unknown as object]}>
+          {renderTabContent()}
+        </Animated.View>
+        {current && (
+          <TabBar
+            tabs={current.tabs}
+            activeTabId={activeTabId}
+            onSelect={setActiveTabId}
+            palette={current.palette}
+          />
+        )}
       </Animated.View>
-      {current && (
-        <TabBar
-          tabs={current.tabs}
-          activeTabId={activeTabId}
-          onSelect={setActiveTabId}
-          palette={current.palette}
-        />
-      )}
       {pending && (
         <ChapterRitualOverlay
           visible={phase === 'ritual'}
@@ -190,7 +216,7 @@ export function AssetScreen({ onCreateNew }: AssetScreenProps) {
           label={pending.label}
         />
       )}
-      <ChapterGalleryScreen
+      <ChapterCarousel
         visible={galleryOpen}
         assets={assets}
         currentAssetId={currentAssetId}
@@ -198,14 +224,15 @@ export function AssetScreen({ onCreateNew }: AssetScreenProps) {
         onSelect={handleGallerySelect}
         onCreateNew={handleGalleryCreateNew}
       />
-      {/* Demo mode floating panel — investor 시연용 */}
-      <DemoControlPanel />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
+    flex: 1,
+  },
+  scene: {
     flex: 1,
   },
   header: {

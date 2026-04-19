@@ -14,8 +14,6 @@ export interface PaletteSwatch {
   700: string;
   800: string;
   900: string;
-  /** @deprecated v1 soft wash — kept for backward compat. Use `heroGradient` for L3 hero fills per §3.1.A. */
-  gradient: { start: string; mid: string; end: string };
   /** §3.1.A dense 3-stop hero fill. Drives L3 hero surfaces. */
   heroGradient: { top: string; mid: string; bottom: string };
   /** 배경 mesh — radial gradient 색상 (RN에서는 overlay로 표현) */
@@ -36,7 +34,6 @@ export const palettes: Record<PaletteKey, PaletteSwatch> = {
     700: '#8E3528',
     800: '#6B251B',
     900: '#491710',
-    gradient: { start: '#D4634F', mid: '#E89580', end: '#EEB3A0' },
     heroGradient: { top: '#D4634F', mid: '#B84A3A', bottom: '#8E3528' },
     bgMesh: ['rgba(253,231,217,0.6)', 'rgba(250,201,184,0.4)'],
     accent: '#D4634F',
@@ -52,7 +49,6 @@ export const palettes: Record<PaletteKey, PaletteSwatch> = {
     700: '#172D44',
     800: '#0F1F30',
     900: '#07121C',
-    gradient: { start: '#56789A', mid: '#819DB8', end: '#B1C4D6' },
     heroGradient: { top: '#2E547B', mid: '#223F5E', bottom: '#172D44' },
     bgMesh: ['rgba(214,224,234,0.6)', 'rgba(177,196,214,0.4)'],
     accent: '#2E547B',
@@ -68,7 +64,6 @@ export const palettes: Record<PaletteKey, PaletteSwatch> = {
     700: '#7C2646',
     800: '#591830',
     900: '#380D1C',
-    gradient: { start: '#C14B73', mid: '#E06F92', end: '#F29CB5' },
     heroGradient: { top: '#F29CB5', mid: '#C14B73', bottom: '#7C2646' },
     bgMesh: ['rgba(253,226,232,0.6)', 'rgba(250,196,209,0.4)'],
     accent: '#C14B73',
@@ -84,7 +79,6 @@ export const palettes: Record<PaletteKey, PaletteSwatch> = {
     700: '#2C4129',
     800: '#1E2E1C',
     900: '#121C10',
-    gradient: { start: '#4E7049', mid: '#6D8F68', end: '#91AE8B' },
     heroGradient: { top: '#4E7049', mid: '#3B5738', bottom: '#2C4129' },
     bgMesh: ['rgba(220,230,216,0.6)', 'rgba(184,203,178,0.4)'],
     accent: '#4E7049',
@@ -101,7 +95,6 @@ export const palettes: Record<PaletteKey, PaletteSwatch> = {
     700: '#352757',
     800: '#241A3F',
     900: '#160F29',
-    gradient: { start: '#5E4A85', mid: '#7C68A2', end: '#A294C2' },
     heroGradient: { top: '#5E4A85', mid: '#493770', bottom: '#352757' },
     bgMesh: ['rgba(229,224,238,0.6)', 'rgba(201,192,221,0.4)'],
     accent: '#5E4A85',

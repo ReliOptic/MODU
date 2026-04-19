@@ -25,8 +25,8 @@ export function Card({ children, style, disableBlur, ...rest }: CardProps) {
   return (
     <View style={[styles.card, style]} {...rest}>
       <BlurView
-        intensity={widgetTokens.card.blurIntensity}
-        tint={widgetTokens.card.blurTint}
+        intensity={widgetTokens.cardV2.blurIntensity}
+        tint={widgetTokens.cardV2.blurTint}
         style={StyleSheet.absoluteFillObject}
       />
       <View style={styles.inner}>{children}</View>
@@ -36,18 +36,18 @@ export function Card({ children, style, disableBlur, ...rest }: CardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: widgetTokens.card.borderRadius,
-    borderWidth: widgetTokens.card.borderWidth,
-    borderColor: widgetTokens.card.borderColor,
+    borderRadius: widgetTokens.cardV2.borderRadius,
+    borderWidth: widgetTokens.cardV2.borderWidth,
+    borderColor: widgetTokens.cardV2.borderColor,
     overflow: 'hidden',
-    backgroundColor: widgetTokens.card.backgroundColor,
+    backgroundColor: widgetTokens.cardV2.backgroundColor,
   },
   cardSolid: {
-    paddingHorizontal: widgetTokens.card.paddingHorizontal,
-    paddingVertical: widgetTokens.card.paddingVertical,
+    paddingHorizontal: widgetTokens.cardV2.paddingHorizontal,
+    paddingVertical: widgetTokens.cardV2.paddingVertical,
   },
   inner: {
-    paddingHorizontal: widgetTokens.card.paddingHorizontal,
-    paddingVertical: widgetTokens.card.paddingVertical,
+    paddingHorizontal: widgetTokens.cardV2.paddingHorizontal,
+    paddingVertical: widgetTokens.cardV2.paddingVertical,
   },
 });

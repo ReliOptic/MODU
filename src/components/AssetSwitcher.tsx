@@ -10,6 +10,17 @@ import {
   ScrollView,
   Platform,
 } from 'react-native';
+
+// expo-haptics: native-only. Web resolves to a no-op shim.
+let Haptics: {
+  selectionAsync: () => Promise<void>;
+  impactAsync: (style: string) => Promise<void>;
+  ImpactFeedbackStyle: { Light: string };
+} | null = null;
+if (Platform.OS !== 'web') {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  Haptics = require('expo-haptics');
+}
 import BottomSheet, { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import type { Asset } from '../types';
 import { getPalette, typography, widgetTokens } from '../theme';
@@ -174,14 +185,45 @@ function TriggerButton({
   onPress: () => void;
   onLongPress?: () => void;
 }) {
+  // §2.A gesture grammar: tap → dropdown, long-press (≥280ms) → carousel.
+  // Selection haptic at 120ms tells the user "we heard the hold"; impact('light')
+  // fires at commit (onLongPress). Timers cancel on release/out so a brief tap
+  // never feels a hold.
+  const earlyHapticRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearEarly = useCallback(() => {
+    if (earlyHapticRef.current) {
+      clearTimeout(earlyHapticRef.current);
+      earlyHapticRef.current = null;
+    }
+  }, []);
+
+  const handlePressIn = useCallback(() => {
+    if (!onLongPress) return;
+    clearEarly();
+    earlyHapticRef.current = setTimeout(() => {
+      Haptics?.selectionAsync().catch(() => undefined);
+    }, 120);
+  }, [onLongPress, clearEarly]);
+
+  const handleLongPress = useCallback(() => {
+    clearEarly();
+    if (onLongPress) {
+      Haptics?.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
+      onLongPress();
+    }
+  }, [onLongPress, clearEarly]);
+
   return (
     <Pressable
       onPress={onPress}
-      onLongPress={onLongPress}
-      delayLongPress={600}
+      onPressIn={handlePressIn}
+      onPressOut={clearEarly}
+      onLongPress={onLongPress ? handleLongPress : undefined}
+      delayLongPress={280}
       accessibilityRole="button"
       accessibilityLabel="에셋 전환"
-      accessibilityHint="길게 눌러 갤러리 열기"
+      accessibilityHint="길게 눌러 챕터 캐러셀 열기"
       style={styles.trigger}
     >
       <Text style={styles.triggerLabel} numberOfLines={1}>

@@ -60,7 +60,7 @@ export function ChapterRitualOverlay({ visible, palette, label }: ChapterRitualO
       <View style={styles.center}>
         <Animated.View style={[styles.dotWrap, dotStyle]}>
           <LinearGradient
-            colors={[p.gradient.start, p.gradient.mid, p.gradient.end]}
+            colors={[p.heroGradient.top, p.heroGradient.mid, p.heroGradient.bottom]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.dot}

@@ -8,12 +8,12 @@ describe('palettes', () => {
     keys.forEach((k) => expect(palettes[k]).toBeDefined());
   });
 
-  it('every palette has gradient triad + accent + bgMesh', () => {
+  it('every palette has heroGradient triad + accent + bgMesh', () => {
     keys.forEach((k) => {
       const p = palettes[k];
-      expect(p.gradient.start).toMatch(/^#[0-9A-F]{6}$/i);
-      expect(p.gradient.mid).toMatch(/^#[0-9A-F]{6}$/i);
-      expect(p.gradient.end).toMatch(/^#[0-9A-F]{6}$/i);
+      expect(p.heroGradient.top).toMatch(/^#[0-9A-F]{6}$/i);
+      expect(p.heroGradient.mid).toMatch(/^#[0-9A-F]{6}$/i);
+      expect(p.heroGradient.bottom).toMatch(/^#[0-9A-F]{6}$/i);
       expect(p.accent).toMatch(/^#[0-9A-F]{6}$/i);
       expect(p.bgMesh.length).toBeGreaterThanOrEqual(2);
     });
@@ -40,9 +40,9 @@ describe('typography', () => {
 });
 
 describe('widgetTokens', () => {
-  it('card has 14 radius and 0.78 alpha bg (§7.3)', () => {
-    expect(widgetTokens.card.borderRadius).toBe(14);
-    expect(widgetTokens.card.backgroundColor).toContain('0.78');
+  it('cardV2 is the v2.1 surface (replaces legacy card)', () => {
+    expect(widgetTokens.cardV2.borderRadius).toBeGreaterThan(0);
+    expect(widgetTokens.cardV2.backgroundColor).toContain('0.82');
   });
   it('separator uses hairline width', () => {
     expect(widgetTokens.separator.height).toBeLessThanOrEqual(1);

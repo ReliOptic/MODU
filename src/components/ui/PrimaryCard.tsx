@@ -14,7 +14,7 @@ export function PrimaryCard({ palette, children, style, ...rest }: PrimaryCardPr
   return (
     <View style={[styles.wrap, style]} {...rest}>
       <LinearGradient
-        colors={[p.gradient.start, p.gradient.mid, p.gradient.end]}
+        colors={[p.heroGradient.top, p.heroGradient.mid, p.heroGradient.bottom]}
         locations={[0, 0.55, 1]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}

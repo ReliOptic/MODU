@@ -84,7 +84,7 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
             style={({ pressed }) => [styles.cta, pressed && { opacity: 0.85 }]}
           >
             <LinearGradient
-              colors={[palettes.dawn.gradient.start, palettes.dawn.gradient.mid]}
+              colors={[palettes.dawn.heroGradient.top, palettes.dawn.heroGradient.mid]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={StyleSheet.absoluteFillObject}

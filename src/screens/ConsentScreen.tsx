@@ -221,7 +221,7 @@ export function ConsentScreen({ onAccepted }: ConsentScreenProps) {
         >
           {allChecked ? (
             <LinearGradient
-              colors={[palettes.mist.gradient.start, palettes.mist.gradient.mid]}
+              colors={[palettes.mist.heroGradient.top, palettes.mist.heroGradient.mid]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={[StyleSheet.absoluteFillObject, styles.ctaRadius]}
@@ -320,10 +320,10 @@ const styles = StyleSheet.create({
   },
   itemRow: {
     flexDirection: 'row',
-    backgroundColor: widgetTokens.card.backgroundColor,
-    borderRadius: widgetTokens.card.borderRadius,
-    borderColor: widgetTokens.card.borderColor,
-    borderWidth: widgetTokens.card.borderWidth,
+    backgroundColor: widgetTokens.cardV2.backgroundColor,
+    borderRadius: widgetTokens.cardV2.borderRadius,
+    borderColor: widgetTokens.cardV2.borderColor,
+    borderWidth: widgetTokens.cardV2.borderWidth,
     padding: 16,
     gap: 12,
     alignItems: 'flex-start',

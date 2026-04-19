@@ -4,18 +4,7 @@ import { r } from './scales';
 import { s } from './scales';
 
 export const widgetTokens = {
-  card: {
-    backgroundColor: 'rgba(255,255,255,0.78)',
-    borderRadius: 14,
-    borderColor: 'rgba(60,60,67,0.06)',
-    borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    /** BlurView intensity prop 와 매칭 (expo-blur) */
-    blurIntensity: 20,
-    blurTint: 'light' as const,
-  },
-  /** v2.1 §3.1 L2 surface — replaces `card` after Phase 4 migration. */
+  /** v2.1 §3.1 L2 surface. */
   cardV2: {
     backgroundColor: 'rgba(255,255,255,0.82)',
     borderRadius: r.md,
