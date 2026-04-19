@@ -132,7 +132,7 @@ function PrimaryEventTile({
   return (
     <View style={[styles.tileWrap, wrapperStyle]}>
       <LinearGradient
-        colors={[palette.gradient.start, palette.gradient.mid, palette.gradient.end]}
+        colors={[palette.heroGradient.top, palette.heroGradient.mid, palette.heroGradient.bottom]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.heroFill}

@@ -153,11 +153,14 @@ export function AssetScreen({ onCreateNew }: AssetScreenProps) {
   }
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: widgetTokens.baseBackground }]}>
+      {/* v2.1 §3.1 L0 skin — subtle bgMesh over iOS systemBackground.
+          Replaces the pastel {50,100,50} wash that flattened hero dominance. */}
       <LinearGradient
-        colors={[palette[50], palette[100], palette[50]]}
-        locations={[0, 0.5, 1]}
+        colors={[palette.bgMesh[0] ?? 'transparent', palette.bgMesh[1] ?? 'transparent', 'transparent']}
+        locations={[0, 0.6, 1]}
         style={StyleSheet.absoluteFillObject}
+        pointerEvents="none"
       />
       <View style={styles.header}>
         <AssetSwitcher
@@ -204,7 +207,6 @@ export function AssetScreen({ onCreateNew }: AssetScreenProps) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: widgetTokens.baseBackground,
   },
   header: {
     paddingTop: 60,
