@@ -1,34 +1,27 @@
-// v2.1 §9 — fertility · bento mood. Vertical timeline-spine with dense rows.
-// Mood='bento' → high accent density, multiple rows, less hero bonus.
+// v2.1 §9 — fertility · bento mood (Phase 5B production port).
+// Grid-based editorial system: per-proximity structures table drives tile order + spans.
+// Reference: variation-bento.jsx BentoAsset + useMemoBlocks.
+// R1: hero ≥ 56% via tileMinHeight(5) on dayof. Reduce-motion via useReduceMotion.
 import React, { useMemo } from 'react';
 import { ScrollView, View, Text, StyleSheet } from 'react-native';
 import Animated, { FadeIn, Layout } from 'react-native-reanimated';
 import type { VariationProps } from '../types';
-import {
-  HeroFrame,
-  MetaStrip,
-  BleedingTitle,
-  SectionLabel,
-  densityFor,
-} from '../_primitives';
-import { BentoBlock } from '../bento-blocks';
+import { MetaStrip, SectionLabel } from '../_primitives';
 import { s } from '../../../theme';
+import { useReduceMotion } from '../../../hooks/useReduceMotion';
+import { BENTO_STRUCTURES } from './bentoData';
+import { renderBentoSection } from './bentoSections';
 
 export function TimelineSpineBento({
   tpo,
-  blocks,
   palette,
 }: VariationProps): React.JSX.Element {
-  const density = useMemo(
-    () => densityFor(tpo.proximity, 'bento'),
+  const reduceMotion = useReduceMotion();
+  const structure = useMemo(
+    () => BENTO_STRUCTURES[tpo.proximity],
     [tpo.proximity],
   );
   const dim = tpo.visual.dim;
-
-  const spineBlocks = useMemo(
-    () => blocks.filter((b) => b.variant !== 'hero').slice(0, density.rowSlots + 1),
-    [blocks, density.rowSlots],
-  );
 
   return (
     <ScrollView
@@ -36,51 +29,49 @@ export function TimelineSpineBento({
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
-      <HeroFrame
-        palette={palette}
-        heroBonus={density.heroBonus}
-        minScale={density.heroMinScale}
-        insetHorizontal={s.lg}
-        insetTop={s.md}
-      >
+      {/* Page header — eyebrow + headline + whisper */}
+      <View style={[styles.header, { backgroundColor: palette[50] }]}>
         <MetaStrip palette={palette} tpo={tpo} />
-        <View style={styles.heroBody}>
-          <BleedingTitle
-            palette={palette}
-            text={tpo.copy.headline}
-            italicWord={tpo.copy.heroWord}
-            size={density.accentDensity === 'punch' ? 'mega' : 'display'}
-            bleed
-            tone="light"
-          />
-          <Text style={styles.whisper} numberOfLines={3}>
-            {tpo.copy.whisper}
-          </Text>
-        </View>
-      </HeroFrame>
-
-      <SectionLabel palette={palette}>흐름의 척추</SectionLabel>
-      <View style={styles.spine}>
-        <View style={[styles.spineLine, { backgroundColor: palette[300] }]} />
-        {spineBlocks.map((b, i) => (
-          <Animated.View
-            key={b.id}
-            entering={FadeIn.delay(i * 50).duration(320)}
-            layout={Layout.duration(360)}
-            style={styles.spineRow}
-          >
-            <View
-              style={[
-                styles.spineDot,
-                { backgroundColor: palette.accent, borderColor: '#FFFFFF' },
-              ]}
-            />
-            <View style={styles.spineTile}>
-              <BentoBlock block={b} palette={palette} tpo={tpo} span={[6, 3]} />
-            </View>
-          </Animated.View>
-        ))}
+        <Text style={[styles.headline, { color: palette[900] }]} numberOfLines={2}>
+          {tpo.copy.headline}
+        </Text>
+        <Text style={[styles.whisper, { color: palette[700] }]} numberOfLines={2}>
+          {tpo.copy.whisper}
+        </Text>
       </View>
+
+      {/* Bento grid section */}
+      <SectionLabel palette={palette}>지금의 조각들</SectionLabel>
+      <View style={styles.grid}>
+        {structure.tiles.map((cfg, idx) => {
+          const [colSpan, rowSpan] = cfg.span;
+          const widthPct = `${Math.round((colSpan / 6) * 100)}%` as const;
+          const tile = renderBentoSection({
+            id: cfg.id,
+            rowSpan,
+            palette,
+            tpo,
+          });
+          if (tile === null) return null;
+          const AnimWrapper = reduceMotion ? View : Animated.View;
+          const animProps = reduceMotion
+            ? {}
+            : {
+                entering: FadeIn.delay(idx * 50).duration(320),
+                layout: Layout.duration(360),
+              };
+          return (
+            <AnimWrapper
+              key={cfg.id}
+              {...animProps}
+              style={[styles.cell, { width: widthPct }]}
+            >
+              {tile}
+            </AnimWrapper>
+          );
+        })}
+      </View>
+
       <View style={styles.tail} />
     </ScrollView>
   );
@@ -88,42 +79,33 @@ export function TimelineSpineBento({
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  scrollContent: { paddingBottom: 100 },
-  heroBody: {
+  scrollContent: { paddingBottom: 120 },
+  header: {
     paddingHorizontal: s.lg,
-    paddingBottom: s['2xl'],
-    paddingTop: s.xl,
-    gap: s.md,
+    paddingTop: s.md,
+    paddingBottom: s.xl,
+  },
+  headline: {
+    fontFamily: 'Fraunces_400Regular',
+    fontSize: 28,
+    lineHeight: 32,
+    letterSpacing: -0.8,
+    marginTop: s.sm,
   },
   whisper: {
     fontFamily: 'Pretendard_400Regular',
-    fontSize: 14,
-    lineHeight: 20,
-    color: 'rgba(255,255,255,0.92)',
-    paddingHorizontal: s.lg,
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: s.xs,
   },
-  spine: { paddingHorizontal: s.lg, paddingVertical: s.lg, position: 'relative' },
-  spineLine: {
-    position: 'absolute',
-    left: 27,
-    top: 28,
-    bottom: 28,
-    width: 1.5,
-  },
-  spineRow: {
+  grid: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: s.md,
-    gap: s.md,
+    flexWrap: 'wrap',
+    paddingHorizontal: s.lg,
+    gap: 0,
   },
-  spineDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    marginTop: 18,
-    marginLeft: 20,
-    borderWidth: 3,
+  cell: {
+    padding: 5,
   },
-  spineTile: { flex: 1 },
   tail: { height: 60 },
 });

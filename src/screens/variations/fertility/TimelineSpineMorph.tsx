@@ -1,143 +1,67 @@
-// v2.1 §9 — fertility · morph mood. Soft spine, ambient breathing.
-// Mood='morph' → reduced hero, muted dots, generous breathing multiplier.
-import React, { useMemo } from 'react';
-import { ScrollView, View, Text, StyleSheet } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+// v2.1 §9 fertility · morph — TPO-reactive morphing canvas.
+// Blob size, section set, pod mode all change with proximity.
+// Reduce-motion via useReduceMotion: freezes FadeIn entering animations.
+import React, { useMemo, useState } from 'react';
+import { ScrollView, View, StyleSheet } from 'react-native';
 import type { VariationProps } from '../types';
+import { useReduceMotion } from '../../../hooks/useReduceMotion';
 import {
-  HeroFrame,
-  MetaStrip,
-  BleedingTitle,
-  SectionLabel,
-  densityFor,
-} from '../_primitives';
-import { BentoBlock } from '../bento-blocks';
-import { s } from '../../../theme';
+  MORPH_SHAPES,
+  MORPH_SECTION_ORDER,
+  MORPH_TIMELINE_SETS,
+} from './morphData';
+import { renderMorphSection } from './morphSectionRenderer';
 
 export function TimelineSpineMorph({
   tpo,
-  blocks,
   palette,
 }: VariationProps): React.JSX.Element {
-  const density = useMemo(
-    () => densityFor(tpo.proximity, 'morph'),
+  const reduceMotion = useReduceMotion();
+  const [tapped, setTapped] = useState<string | null>(null);
+
+  const shape = useMemo(() => MORPH_SHAPES[tpo.proximity], [tpo.proximity]);
+  const sections = useMemo(
+    () => MORPH_SECTION_ORDER[tpo.proximity],
     [tpo.proximity],
   );
-  const dim = tpo.visual.dim;
-  const breath = density.breathingMultiplier;
-
-  const restingBlocks = useMemo(
-    () => blocks.filter((b) => b.variant !== 'hero').slice(0, density.rowSlots),
-    [blocks, density.rowSlots],
+  const timelineItems = useMemo(
+    () => MORPH_TIMELINE_SETS[tpo.proximity] ?? [],
+    [tpo.proximity],
   );
 
   return (
-    <ScrollView
-      style={[styles.root, { opacity: dim }]}
-      contentContainerStyle={[
-        styles.scrollContent,
-        { paddingTop: s.lg * breath },
-      ]}
-      showsVerticalScrollIndicator={false}
-    >
-      <HeroFrame
-        palette={palette}
-        heroBonus={density.heroBonus}
-        minScale={density.heroMinScale}
-        cornerRadius={36}
-        insetHorizontal={s.lg}
-      >
-        <MetaStrip palette={palette} tpo={tpo} />
-        <View style={[styles.heroBody, { paddingBottom: s['2xl'] * breath }]}>
-          <BleedingTitle
-            palette={palette}
-            text={tpo.copy.heroWord}
-            size="display"
-            tone="light"
-          />
-          <Text style={styles.whisper} numberOfLines={4}>
-            {tpo.copy.whisper}
-          </Text>
-        </View>
-      </HeroFrame>
-
-      <SectionLabel palette={palette}>오늘은, 호흡</SectionLabel>
-      <View
-        style={[
-          styles.softSpine,
-          { paddingVertical: s.lg * breath, gap: s.lg * breath },
-        ]}
-      >
-        {restingBlocks.map((b, i) => (
-          <Animated.View
-            key={b.id}
-            entering={FadeIn.delay(i * 80).duration(420)}
-            style={styles.softRow}
-          >
-            <View style={[styles.softDot, { backgroundColor: palette[300] }]} />
-            <View style={styles.softTile}>
-              <BentoBlock block={b} palette={palette} tpo={tpo} span={[6, 2]} />
-            </View>
-          </Animated.View>
-        ))}
+    <View style={styles.root}>
+      {/* P1.7: ambient mesh canvas — palette[200] at 0.3 opacity */}
+      <View style={StyleSheet.absoluteFillObject}>
+        <View style={[styles.meshBackdrop, { backgroundColor: palette[200] }]} />
       </View>
-
-      <View
-        style={[
-          styles.closing,
-          { backgroundColor: palette[100], borderColor: palette[200] },
-        ]}
+      <ScrollView
+        style={styles.fill}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.closingEyebrow, { color: palette[700] }]}>
-          오늘의 닫는 말
-        </Text>
-        <Text style={[styles.closingText, { color: palette[900] }]}>
-          {tpo.proximity === 'after' ? '몸이 기억해요. 쉬어요.' : '당신의 속도로.'}
-        </Text>
-      </View>
-      <View style={styles.tail} />
-    </ScrollView>
+        {sections.map((id) =>
+          renderMorphSection({
+            id,
+            tpo,
+            palette,
+            shape,
+            timelineItems,
+            tapped,
+            setTapped,
+            reduceMotion,
+          }),
+        )}
+        <View style={styles.tail} />
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  scrollContent: { paddingBottom: 120 },
-  heroBody: {
-    paddingHorizontal: s.lg,
-    paddingTop: s['2xl'],
-    gap: s.md,
-    alignItems: 'flex-start',
-  },
-  whisper: {
-    fontFamily: 'Pretendard_400Regular',
-    fontSize: 14,
-    lineHeight: 22,
-    color: 'rgba(255,255,255,0.88)',
-    paddingHorizontal: s.lg,
-  },
-  softSpine: { paddingHorizontal: s.lg },
-  softRow: { flexDirection: 'row', alignItems: 'flex-start', gap: s.md },
-  softDot: { width: 8, height: 8, borderRadius: 4, marginTop: 22, marginLeft: 6 },
-  softTile: { flex: 1 },
-  closing: {
-    marginHorizontal: s.lg,
-    marginTop: s.lg,
-    padding: s.xl,
-    borderRadius: 28,
-    borderWidth: 1,
-    gap: s.sm,
-  },
-  closingEyebrow: {
-    fontSize: 10,
-    letterSpacing: 2.5,
-    fontFamily: 'JetBrainsMono_400Regular',
-  },
-  closingText: {
-    fontFamily: 'Fraunces_400Regular',
-    fontSize: 22,
-    lineHeight: 28,
-    letterSpacing: -0.4,
-  },
+  meshBackdrop: { flex: 1, opacity: 0.3 },
+  fill: { flex: 1 },
+  content: { paddingBottom: 60, gap: 16 },
   tail: { height: 60 },
 });

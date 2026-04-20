@@ -16,7 +16,70 @@
 
 ---
 
-## 2026-04-20 — Visual-language v2.1 Phase 5 LANDED (Cinematic editorial port)
+## 2026-04-20 — Visual-language v2.1 Phase 5B + 5C LANDED (Bento + Morph editorial ports)
+
+### Intent
+- Phase 5 (commit `d231ae0`) shipped Cinematic editorial fidelity. User requested full parity for Bento + Morph via the same multi-agent pipeline (Sonnet W3/W4 → Opus critic → Sonnet W5 fix pass). Motivation: all three variations must be deployment-quality since TPO funnel picks one — not a user-facing picker per memory `feedback_variation_tpo_driven.md`.
+- Scope locked to Bento + Morph (fertility + custom surfaces); Cinematic untouched.
+
+### What landed — Bento (W3 + W5)
+
+**9 bento tile primitives** (new `src/screens/variations/_primitives/bento/`)
+- `BentoHeroTile` (gradient hero with per-proximity eyebrow copy + §3.1.A heroGradient triad + outer shadow / inner clipped View to dodge iOS LinearGradient shadow bug), `BentoClockTile` (D-count stat), `BentoMoodTile` (4-swatch quicklog), `BentoInjectionTile` (7-day bar chart), `BentoCalendarTile` (4-week dot grid, label hardcoded "5월"), `BentoPartnerTile` (accent-fill partner), `BentoWhisperTile` (serif quote), `BentoBodyTile` (7-col condition bars), `BentoSleepTile` (sleep stat). All tiles borderRadius 20 (matched to reference; was 18).
+
+**Proximity-driven grid** (`TimelineSpineBento.tsx` fertility + `UserAuthoredBento.tsx` custom)
+- `BENTO_STRUCTURES` table maps proximity → tile list with spans:
+  - dayof: hero[6×5] / partner / mood / clock / body (hero ≥ 56% viewport enforced via `Math.max(455, height*0.56)` — R1 fix, was 352pt)
+  - near: hero[6×4] / clock / partner / injection / calendar / whisper
+  - week: calendar[6×3] / injection / clock / partner / whisper / body
+  - far: mood[6×2] / body / sleep / calendar / whisper / injection
+  - after: whisper[6×3] / body / sleep / hero / mood / partner (hero de-emphasized post-event)
+- Grid gutters: outer `paddingHorizontal: s.lg (16)`, cell padding 5 → 10px inter-tile gap (matched to reference).
+- Reduce-motion: FadeIn entering disabled via `useReduceMotion`.
+
+### What landed — Morph (W4 + W5)
+
+**12 morph primitives** (new `src/screens/variations/_primitives/morph/`)
+- `MorphHeroBlob` (proximity-driven hero — `minHeight = 400 + heroHeightBonus`, reverted from W4's overshoot math; outer-shadow / inner-clipped wrap), `MorphWhisper` (shape-reactive card: organic/tight/pill per proximity), `MorphPod` (stat pod with organic asymmetric radius untapped → flat 28 tapped), `MorphPodGrid` (grid4/grid2/singleBig/resting dispatch), `MorphBigPod` (dayof fullscreen breathing), `MorphRestingPod` (after proximity), `MorphTimeline` (vertical spine with gradient rail + Ionicons per row from `iconName` field), `MorphRecovery` (3-col metrics), `MorphPartner` (role-aware pill, 3-stop heroGradient), `MorphResources` (hairline divider list, KR-label `kind` values — no enum leaks), `MorphTapDetail` (expand panel), **`MorphClosing`** (new primitive wired into SECTION_ORDER).
+- Mesh backdrop layer (`palette[200]` @ 0.3 opacity) added to both fertility + custom Morph surfaces — ambient Morph "canvas" (RN has no CSS blur, this approximates the reference mesh + blur).
+
+**Proximity-driven section order**
+- `MORPH_SECTION_ORDER` all 5 proximities end with `closing` (MorphClosing now renders it — no dead sections):
+  - far: heroblob → whisper → pods(grid4) → resources → partner → closing
+  - week: heroblob → whisper → pods(grid2) → timeline → resources → partner → closing
+  - near: heroblob → whisper → pods(grid2) → timeline → partner → closing
+  - dayof: heroblob → pods(singleBig) → timeline → partner → closing
+  - after: heroblob → whisper → pods(resting) → recovery → resources → partner → closing
+
+### Opus critic P0/P1 applied
+- 5 P0 fidelity fixes (Bento R1 dayof hero, Bento grid gutters, Morph hero minHeight overshoot, Morph R9 kind-enum leak, Morph dead closing section) + 9 P1 (Bento shadow wrap, tile radius 20, hero eyebrow per proximity, calendar label, Morph partner 3-stop gradient, timeline icons, mesh backdrop, pod organic radius) — all landed.
+- Deferred: Morph TOD quiet-hours modifier (blob shrink 0.92× + accent desaturation) — depends on adaptive-engine TOD signal wiring.
+
+### Verification (Phase 5B+5C)
+- `npx tsc --noEmit` — 0 errors.
+- `npx jest --ci` — **518/518 passing** (+94 from Phase 5A: bento-section-order, bento-primitives, morph-section-order, morph-primitives).
+- `npx expo export --platform web` — exit 0.
+- LOC audit: all 30+ new/edited files ≤200. Largest MorphTimeline 176, MorphHeroBlob 173, TimelineSpineMorph 191, UserAuthoredMorph 200 (trimmed from 201).
+
+### RN limitations accepted (per spec + critic ack)
+- No CSS `filter: blur/brightness/saturate` → `opacity` approximation for TOD dim.
+- No `backdrop-filter` / CSS animation `@keyframes` / SVG path interp → idle blob/particle animations omitted; proximity changes snap via parent-ritual.
+- No `position: sticky` → no sticky mesh header; layered View approximation instead.
+
+### Resume guidance
+- **Expo Go visual check pending** — key moments: (Bento) dayof 6×5 hero at 56% viewport, after proximity hero de-emphasis; (Morph) dayof MorphBigPod + MorphHeroBlob stacked, after proximity pill-shape whisper transition.
+- Visual-v2 Phase 5 track now complete across all 3 variations. TPO engine runtime integration (parallel track) can proceed — `VariationProps` shape stable.
+- Follow-up `feedback_variation_tpo_driven.md` memory still applies: no user-facing variation picker.
+
+### Open follow-ups (not blockers)
+- (5B.1) Morph TOD quiet modifier (blob shrink + accent desaturate) — wait for adaptive-engine TOD wiring.
+- (5B.2) R14 pattern-distinctness lint check across Bento/Morph/Cinematic — grammar-check scaffolded in Phase 4 but not extended to cover new primitives.
+- (5B.3) Snapshot test for `TimelineSpineBento` at each proximity to catch R1 regressions going forward.
+- (5B.4) Custom variation (UserAuthoredMorph/Bento) still uses coarse proximity collapse — acceptable v1, revisit when custom seed data expands.
+
+---
+
+## 2026-04-20 — Visual-language v2.1 Phase 5A LANDED (Cinematic editorial port, commit `d231ae0`)
 
 ### Intent
 - Phase 4 (`d78a4e3`) landed chevron-morph + grammar lint, but the Cinematic variation was a 165 LOC skeleton vs reference JSX `/tmp/modu_design/modu/project/lib/variation-cinematic.jsx` (630 LOC). User diagnosed ~6/10 quality as "AI slop" — project-shutdown-scale risk.

@@ -1,11 +1,13 @@
 // v2.1 §9 — custom · bento mood. User-authored escape hatch.
 // 'custom' assets have no canonical primitive; the user defines composition.
 // We fall back to the proximity-driven bento grid arrangement.
+// Phase 5B: reduce-motion via useReduceMotion (disables FadeIn/Layout animations).
 import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, Layout } from 'react-native-reanimated';
 import type { RendererBlock, ResolvedTPO } from '../../../adapters';
 import type { VariationProps } from '../types';
+import { useReduceMotion } from '../../../hooks/useReduceMotion';
 import {
   HeroFrame,
   MetaStrip,
@@ -63,6 +65,7 @@ export function UserAuthoredBento({
   blocks,
   palette,
 }: VariationProps): React.JSX.Element {
+  const reduceMotion = useReduceMotion();
   const density = useMemo(
     () => densityFor(tpo.proximity, 'bento'),
     [tpo.proximity],
@@ -100,16 +103,24 @@ export function UserAuthoredBento({
 
       <SectionLabel palette={palette}>나의 챕터</SectionLabel>
       <View style={styles.grid}>
-        {arranged.map(({ block, span }, idx) => (
-          <Animated.View
-            key={block.id}
-            entering={FadeIn.delay(idx * 40).duration(360)}
-            layout={Layout.duration(420)}
-            style={styles.cell}
-          >
-            <BentoBlock block={block} palette={palette} tpo={tpo} span={span} />
-          </Animated.View>
-        ))}
+        {arranged.map(({ block, span }, idx) => {
+          const AnimWrapper = reduceMotion ? View : Animated.View;
+          const animProps = reduceMotion
+            ? {}
+            : {
+                entering: FadeIn.delay(idx * 40).duration(360),
+                layout: Layout.duration(420),
+              };
+          return (
+            <AnimWrapper
+              key={block.id}
+              {...animProps}
+              style={styles.cell}
+            >
+              <BentoBlock block={block} palette={palette} tpo={tpo} span={span} />
+            </AnimWrapper>
+          );
+        })}
       </View>
       <View style={styles.tail} />
     </ScrollView>
