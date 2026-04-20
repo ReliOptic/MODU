@@ -16,6 +16,62 @@
 
 ---
 
+## 2026-04-20 — Visual-language v2.1 Phase 5 LANDED (Cinematic editorial port)
+
+### Intent
+- Phase 4 (`d78a4e3`) landed chevron-morph + grammar lint, but the Cinematic variation was a 165 LOC skeleton vs reference JSX `/tmp/modu_design/modu/project/lib/variation-cinematic.jsx` (630 LOC). User diagnosed ~6/10 quality as "AI slop" — project-shutdown-scale risk.
+- User approved **Plan A** (survival-mode multi-agent pipeline): Sonnet W1 executor → Opus critic → Sonnet W2 fix pass. Scope locked to **Cinematic only, fertility + custom only**. Bento/Morph intentionally untouched.
+- North Star gate: every section pushes TPO-driven editorial density, not "RN list with gradients".
+
+### What landed
+
+**9 editorial primitives** (new `src/screens/variations/_primitives/editorial/`)
+- `CinematicHero.tsx` + `cinematicHeroStyles.ts` — scroll-parallax hero with per-proximity `titleFontSize` (5-value map: far=56, week=76, near=84, dayof=120, after=56) and `chapterNum '01'..'05'` mono marker. Bottom scrim `LinearGradient → palette[50]` dissolves hero into next section (no hard edge). `lineHeight: round(fontSize * 0.88)` Fraunces-editorial. Reduce-motion freezes shared-value-driven transforms.
+- `EditorialEventPanel.tsx` — gradient event card, `fontSize: 52 / lineHeight: 50`, parent `View` shadow wrapper (`shadowColor: palette.accent, shadowOpacity: 0.20, shadowRadius: 40, offset y:20`) to dodge iOS LinearGradient shadow bug. Gutter `marginHorizontal: 20`.
+- `EditorialTimeline.tsx` — vertical spine. Primary (D-DAY) rows now wrap the 32×32 accent circle in a 44×44 `palette[100]` halo ring to preserve editorial hierarchy. `FadeIn` entering disabled under reduce-motion.
+- `EditorialMoodPalette.tsx` — 4-chip mood selector, grid wrapped in `LinearGradient(palette[50] → palette[100])` with 50%-opacity `palette[300]` borders.
+- `EditorialResources.tsx` — place-resource list. `RESOURCE_KIND_LABEL` localizes `clinic/subsidy/community/pharmacy` to 병원/지원/커뮤니티/약국 (R9 anti-lexicon: was `.toUpperCase()` enum leak).
+- `EditorialRecoveryMetrics.tsx`, `EditorialPartner.tsx` — recovery stats table + partner gradient card with matching accent shadow.
+- `PullQuote.tsx` — Fraunces pull quote, editorial gutter `72/28/32` hardcoded (not s.* tokens).
+- `ClosingCard.tsx` — full-bleed closing, `56/28/100` padding, `placeLabel` prop gracefully omits attribution when empty.
+- `index.ts` — barrel.
+
+**TPO-driven dispatch** (`TimelineSpineCinematic.tsx` fertility + `UserAuthoredCinematic.tsx` custom)
+- `SECTION_ORDER` table maps proximity → section sequence. Fertility restored with `resources` in `far/week/after` per reference JSX:
+  - far: hero / pullquote / mood / resources / closing
+  - week: hero / pullquote / timeline / resources / mood / closing
+  - near: hero / event / timeline / pullquote / mood / closing
+  - dayof: hero / event / partner / closing
+  - after: hero / recovery / resources / partner / mood / closing
+- Scroll parallax wired via Reanimated `useSharedValue` + `useAnimatedScrollHandler` (UI thread).
+- Hero receives `brandLabel` (was `tpo.assetKey.toUpperCase()` R9 violation) and `placeLabel` (was `placeId.replace(/_/g,' ').toUpperCase()` debug string). Fertility passes `brandLabel=palette.name, placeLabel="서울"`.
+- Fertility file refactored under 200 LOC by extracting `cinematicSections.tsx` (section switch renderer) + `cinematicTypes.ts` (shared types) + `cinematicData.ts` (timeline items + recovery rows + `FERTILITY_RESOURCES` 3-item seed).
+
+**Reduce-motion fallback (§3.4)**
+- New `src/hooks/useReduceMotion.ts` — `AccessibilityInfo.isReduceMotionEnabled()` + live `reduceMotionChanged` listener.
+- Applied in `CinematicHero` (freezes parallax) and `EditorialTimeline` (disables `FadeIn`).
+
+**Opus critic ACCEPT-WITH-FIXES → W2 applied all 7 P0 + 8 P1 fixes** (hero title 5-value scale, chapter mono digits, R9 anti-lexicon, place label, halo ring, hero bottom scrim, gradient-card shadows, editorial paddings, mood palette gradient, resources KR labels, resources re-added to fertility far/week/after).
+
+### Verification
+- `npx tsc --noEmit` — 0 errors.
+- `npx jest --ci` — **424/424 passing** (+40 from Phase 4: editorial-primitives, cinematic-section-order, reduceMotion).
+- `npx expo export --platform web` — exit 0, 3.3 MB bundle.
+- LOC audit: all new/edited files ≤200. Largest EditorialTimeline.tsx 191, EditorialEventPanel.tsx 147.
+
+### Resume guidance
+- **Expo Go visual check pending** — 3 moments worth inspecting: (1) `dayof` 760px hero with 120pt Fraunces title, (2) `near` timeline primary-row halo ring on "배아 이식", (3) `far` hero-scrim dissolve into pull-quote bg.
+- Bento / Morph not touched this phase — if user wants them brought to Cinematic fidelity later, same W1→critic→W2 pipeline works (~2-3M tokens per variation).
+- TPO engine runtime being built in parallel track — Phase 5 variations read `ResolvedTPO` shape, so integration should be drop-in.
+
+### Open follow-ups (not blockers)
+- (5.1) Bento + Morph editorial parity pass (same pipeline).
+- (5.2) `UserAuthoredCinematic` still collapses 5 proximities to 2 visual states (`blocks2` / `blocks3`). R14 marginal, acceptable for v1 custom. File follow-up when custom data seeds exist.
+- (5.3) Hero `visual.dim` (timeOfDay-based brightness) not wired — RN has no `filter: brightness`, use `Animated.View` `rgba(0,0,0, dim)` overlay when `ResolvedTPO.visual.dim` lands.
+- (5.4) R9 audit on remaining variations (Bento/Morph) for `assetKey`/`placeId` leaks — critic caught them in Cinematic, may exist elsewhere.
+
+---
+
 ## 2026-04-18 — Visual-language v2.1 Phase 4 LANDED (commit `d78a4e3`)
 
 ### Intent

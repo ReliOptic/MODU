@@ -7,13 +7,17 @@ import { s } from '../../../theme';
 export interface SectionLabelProps {
   readonly palette: PaletteSwatch;
   readonly children: React.ReactNode;
+  /** When true, renders with white line + white@0.85 text (for use on dark gradient cards). */
+  readonly light?: boolean;
 }
 
-export function SectionLabel({ palette, children }: SectionLabelProps): React.JSX.Element {
+export function SectionLabel({ palette, children, light = false }: SectionLabelProps): React.JSX.Element {
+  const lineColor = light ? 'rgba(255,255,255,0.6)' : palette.accent;
+  const textColor = light ? 'rgba(255,255,255,0.85)' : palette.accent;
   return (
     <View style={styles.row}>
-      <View style={[styles.line, { backgroundColor: palette.accent }]} />
-      <Text style={[styles.text, { color: palette.accent }]}>{children}</Text>
+      <View style={[styles.line, { backgroundColor: lineColor }]} />
+      <Text style={[styles.text, { color: textColor }]}>{children}</Text>
     </View>
   );
 }
