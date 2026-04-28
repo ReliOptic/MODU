@@ -198,7 +198,7 @@ function evaluate(context: TPOContext, options: EvalOptions): TPOResult {
 
   return {
     locked, selected, suppressed, abstentions, riskTier, trace,
-    meta: { evaluateMs: clock() - t0, ruleCount: options.rules.rules.length, matchedRuleCount: allMatchedIds.size, traceVersion: 'v1', deterministic: true },
+    meta: { evaluateMs: clock() - t0, ruleCount: options.rules.rules.length, matchedRuleCount: allMatchedIds.size, rulePackVersion: options.rules.version, traceVersion: 'v1', deterministic: true },
   };
 }
 
