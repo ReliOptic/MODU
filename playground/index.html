@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TPO Playground — why didn't it render?</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #58a6ff;
+      --green: #3fb950;
+      --yellow: #d29922;
+      --orange: #f0883e;
+      --blue: #388bfd;
+      --red: #f85149;
+      --gray: #484f58;
+      --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.5;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      flex-shrink: 0;
+      background: var(--surface);
+    }
+
+    header h1 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+
+    header h1 span {
+      color: var(--accent);
+    }
+
+    header p {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* ─── Quick Setup bar ───────────────────────────────────────────────────────── */
+
+    .quick-setup {
+      padding: 10px 20px;
+      border-bottom: 1px solid var(--border);
+      background: #0d1117;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .quick-setup-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .quick-setup select {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.15s;
+      min-width: 260px;
+    }
+
+    .quick-setup select:hover,
+    .quick-setup select:focus {
+      border-color: var(--accent);
+    }
+
+    .quick-setup select option {
+      background: var(--surface);
+      color: var(--text);
+    }
+
+    .load-example-btn {
+      padding: 5px 14px;
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .load-example-btn:hover {
+      background: var(--accent);
+      color: #0d1117;
+    }
+
+    .quick-setup-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      flex: 1;
+    }
+
+    .quick-setup-hint strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* ─── Main layout ───────────────────────────────────────────────────────────── */
+
+    main {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .editors {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .editor-block {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .editor-block:last-of-type {
+      border-bottom: none;
+    }
+
+    .editor-label {
+      padding: 8px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .editor-label .badge {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 10px;
+      background: #21262d;
+      color: var(--text-muted);
+      font-weight: 500;
+      letter-spacing: 0;
+    }
+
+    textarea {
+      flex: 1;
+      background: var(--bg);
+      color: var(--text);
+      border: none;
+      outline: none;
+      padding: 12px 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.6;
+      resize: none;
+      tab-size: 2;
+      width: 100%;
+    }
+
+    textarea:focus {
+      background: #0d1117;
+    }
+
+    .footer-bar {
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+      background: var(--surface);
+    }
+
+    button#evaluate-btn {
+      padding: 5px 14px;
+      background: var(--accent);
+      color: #0d1117;
+      border: none;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    button#evaluate-btn:hover { opacity: 0.85; }
+    button#evaluate-btn:active { opacity: 0.7; }
+
+    #error {
+      font-size: 11px;
+      color: var(--red);
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    #status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--gray);
+      transition: background 0.2s;
+    }
+
+    #status-dot.ok { background: var(--green); }
+    #status-dot.err { background: var(--red); }
+
+    /* ─── Output panel ──────────────────────────────────────────────────────────── */
+
+    .output-wrapper {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    .output {
+      overflow-y: auto;
+      padding: 16px 20px;
+      background: var(--bg);
+      flex: 1;
+      min-height: 0;
+    }
+
+    .output::-webkit-scrollbar { width: 6px; }
+    .output::-webkit-scrollbar-track { background: transparent; }
+    .output::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ─── Copy code footer ──────────────────────────────────────────────────────── */
+
+    .copy-footer {
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+      background: var(--surface);
+    }
+
+    .copy-btn {
+      padding: 5px 14px;
+      background: transparent;
+      color: var(--green);
+      border: 1px solid rgba(63, 185, 80, 0.4);
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+
+    .copy-btn:hover {
+      background: rgba(63, 185, 80, 0.1);
+      border-color: var(--green);
+    }
+
+    .copy-btn.copied {
+      color: var(--text-muted);
+      border-color: var(--border);
+    }
+
+    .copy-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .trace-empty {
+      color: var(--text-muted);
+      font-size: 12px;
+      padding: 20px 0;
+    }
+
+    /* ─── Trace sections ────────────────────────────────────────────────────────── */
+
+    .trace-section {
+      margin-bottom: 20px;
+    }
+
+    .trace-section-header {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      display: inline-block;
+    }
+
+    .section-selected .trace-section-header {
+      color: var(--green);
+      background: rgba(63, 185, 80, 0.1);
+      border: 1px solid rgba(63, 185, 80, 0.25);
+    }
+
+    .section-suppressed .trace-section-header {
+      color: var(--orange);
+      background: rgba(240, 136, 62, 0.12);
+      border: 1px solid rgba(240, 136, 62, 0.3);
+    }
+
+    .section-locked .trace-section-header {
+      color: var(--blue);
+      background: rgba(56, 139, 253, 0.1);
+      border: 1px solid rgba(56, 139, 253, 0.25);
+    }
+
+    .section-abstention .trace-section-header {
+      color: var(--text-muted);
+      background: rgba(72, 79, 88, 0.3);
+      border: 1px solid rgba(72, 79, 88, 0.5);
+    }
+
+    .section-risk .trace-section-header {
+      color: var(--yellow);
+      background: rgba(210, 153, 34, 0.1);
+      border: 1px solid rgba(210, 153, 34, 0.25);
+    }
+
+    .section-meta .trace-section-header {
+      color: var(--text-muted);
+      background: rgba(72, 79, 88, 0.2);
+      border: 1px solid rgba(72, 79, 88, 0.35);
+    }
+
+    .trace-card {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin-bottom: 6px;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .section-selected .trace-card {
+      border-left: 3px solid var(--green);
+      background: rgba(63, 185, 80, 0.04);
+    }
+
+    .section-suppressed .trace-card {
+      border-left: 3px solid var(--orange);
+      background: rgba(240, 136, 62, 0.06);
+    }
+
+    .section-locked .trace-card {
+      border-left: 3px solid var(--blue);
+      background: rgba(56, 139, 253, 0.06);
+    }
+
+    .section-abstention .trace-card {
+      border-left: 3px solid var(--gray);
+      background: rgba(72, 79, 88, 0.08);
+    }
+
+    .trace-key {
+      color: var(--text-muted);
+      user-select: none;
+    }
+
+    .trace-value {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .trace-value.component-name {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .trace-value.why-not {
+      color: var(--orange);
+    }
+
+    .trace-value.slot-name {
+      color: #79c0ff;
+    }
+
+    .trace-value.confidence-low {
+      color: var(--gray);
+    }
+
+    .trace-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    .trace-row .trace-key {
+      min-width: 110px;
+      flex-shrink: 0;
+    }
+
+    .risk-badge {
+      display: inline-block;
+      padding: 1px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .risk-low { background: rgba(63, 185, 80, 0.15); color: var(--green); }
+    .risk-medium { background: rgba(210, 153, 34, 0.15); color: var(--yellow); }
+    .risk-high { background: rgba(248, 81, 73, 0.15); color: var(--red); }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 16px;
+      font-size: 11px;
+      color: var(--text-muted);
+      padding: 8px 0 0;
+    }
+
+    .meta-grid span { color: var(--text); }
+
+    .empty-section {
+      font-size: 11px;
+      color: var(--gray);
+      padding: 4px 2px;
+      font-style: italic;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 16px 0;
+    }
+
+    /* ─── Tab bar ───────────────────────────────────────────────────────────────── */
+
+    .tab-bar {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+
+    .tab-btn {
+      padding: 8px 18px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+
+    .tab-btn:hover {
+      color: var(--text);
+    }
+
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    .tab-panel {
+      display: none;
+      overflow-y: auto;
+      padding: 16px 20px;
+      background: var(--bg);
+      flex: 1;
+      min-height: 0;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    .tab-panel::-webkit-scrollbar { width: 6px; }
+    .tab-panel::-webkit-scrollbar-track { background: transparent; }
+    .tab-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>TPO <span>Playground</span></h1>
+  <p>Edit context or rules — see exactly why components were suppressed, locked, or abstained.</p>
+</header>
+
+<!-- ─── Quick Setup bar ──────────────────────────────────────────────────────── -->
+<div class="quick-setup">
+  <span class="quick-setup-label">Quick Setup</span>
+  <select id="domain-select">
+    <option value="">-- 서비스 유형 선택 --</option>
+    <option value="bank">🏦 국내 은행앱 (금융상품 추천 + 규제 의무 슬롯)</option>
+    <option value="ecommerce">🛍️ 이커머스 (장바구니 → 결제 퍼널)</option>
+    <option value="event">🎟️ 이벤트/컨퍼런스 (KCD Korea 예제)</option>
+    <option value="fintech">📱 핀테크 (대출/투자 권유 policy gate)</option>
+  </select>
+  <button class="load-example-btn" id="load-example-btn">예제 로드</button>
+  <span class="quick-setup-hint" id="setup-hint">도메인을 선택한 뒤 <strong>예제 로드</strong>를 누르면 에디터에 샘플 데이터가 채워집니다.</span>
+</div>
+
+<main>
+  <section class="editors">
+    <div class="editor-block" style="flex: 0.9;">
+      <div class="editor-label">
+        Context
+        <span class="badge">TPOContext</span>
+      </div>
+      <textarea id="ctx-input" spellcheck="false"></textarea>
+    </div>
+
+    <div class="editor-block" style="flex: 1.1;">
+      <div class="editor-label">
+        Rules
+        <span class="badge">RulePack + lockedSlots + policy</span>
+      </div>
+      <textarea id="rules-input" spellcheck="false"></textarea>
+    </div>
+
+    <div class="footer-bar">
+      <div id="status-dot"></div>
+      <button id="evaluate-btn">&#9654; Evaluate</button>
+      <div id="error"></div>
+    </div>
+  </section>
+
+  <div class="output-wrapper">
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tab-dev" data-tab="dev">Developer Trace</button>
+      <button class="tab-btn" id="tab-gov" data-tab="gov">Governance Report</button>
+    </div>
+
+    <section class="tab-panel active" id="panel-dev">
+      <div class="trace-empty">Edit context or rules on the left — trace output appears here.</div>
+    </section>
+
+    <section class="tab-panel" id="panel-gov">
+      <div class="trace-empty">Edit context or rules on the left — governance report appears here.</div>
+    </section>
+
+    <div class="copy-footer">
+      <button class="copy-btn" id="copy-btn">&#10066; evaluate() 코드 복사</button>
+      <span class="copy-hint" id="copy-hint">현재 context + rules를 TypeScript 스니펫으로 복사합니다.</span>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+  import { evaluate, formatTrace } from '../dist/index.js';
+
+  // ─── Domain sample data ───────────────────────────────────────────────────────
+
+  const DOMAIN_HINTS = {
+    bank: '국내 은행앱 — ISA 계좌 전환, 연금저축 세액공제, 신용대출 권유 + DSR 규제 게이트',
+    ecommerce: '이커머스 — 장바구니 이탈 복구, 유사상품 추천, 플래시세일 쿠폰',
+    event: '이벤트/컨퍼런스 — KCD Korea 2026 참석자 체크인, 세션 스케줄, 교통 안내',
+    fintech: '핀테크 — 온보딩 완료 후 계좌이체 유도, 투자 배너 (KYC 미완료시 policy suppression)',
+  };
+
+  const SAMPLES = {
+    bank: {
+      context: {
+        stage: 'pre-maturity',
+        role: 'premier',
+        time: { phase: 'year-end', offsetDays: -7 },
+        place: { type: 'mobile-app' },
+        meta: { dsrTier: 'under-40pct', taxBracket: 'high' },
+      },
+      rules: {
+        version: '1.0.0',
+        rules: [
+          {
+            id: 'r-isa',
+            componentKey: 'ISA계좌전환안내',
+            slot: 'primary_cta',
+            conditions: [
+              { field: 'stage', op: 'eq', value: 'pre-maturity' },
+              { field: 'meta.taxBracket', op: 'eq', value: 'high' },
+            ],
+            priority: 1,
+            confidenceHint: 0.88,
+          },
+          {
+            id: 'r-pension',
+            componentKey: '연금저축세액공제',
+            slot: 'nudge',
+            conditions: [
+              { field: 'time.phase', op: 'eq', value: 'year-end' },
+              { field: 'role', op: 'eq', value: 'premier' },
+            ],
+            priority: 2,
+            confidenceHint: 0.75,
+          },
+          {
+            id: 'r-loan',
+            componentKey: '신용대출권유',
+            slot: 'loan_cta',
+            conditions: [{ field: 'role', op: 'eq', value: 'premier' }],
+            priority: 3,
+          },
+        ],
+      },
+      lockedSlots: [
+        { slot: 'risk-disclosure', componentKey: '투자위험등급고지', reason: 'compliance' },
+      ],
+      policy: [
+        {
+          id: 'P-DSR-040',
+          componentKey: '신용대출권유',
+          action: 'suppress',
+          condition: { field: 'meta.dsrTier', op: 'eq', value: 'over-40pct' },
+        },
+      ],
+      confidenceThreshold: 0.60,
+    },
+
+    ecommerce: {
+      context: {
+        stage: 'cart-abandonment',
+        role: 'returning-buyer',
+        time: { phase: 'flash-sale', offsetDays: 0 },
+        device: 'mobile',
+      },
+      rules: {
+        version: '1.0.0',
+        rules: [
+          {
+            id: 'r-coupon',
+            componentKey: '장바구니할인쿠폰',
+            slot: 'primary_cta',
+            conditions: [
+              { field: 'stage', op: 'eq', value: 'cart-abandonment' },
+              { field: 'time.phase', op: 'eq', value: 'flash-sale' },
+            ],
+            priority: 1,
+            confidenceHint: 0.92,
+          },
+          {
+            id: 'r-similar',
+            componentKey: '유사상품추천',
+            slot: 'contextual',
+            conditions: [
+              { field: 'role', op: 'eq', value: 'returning-buyer' },
+              { field: 'device', op: 'eq', value: 'mobile' },
+            ],
+            priority: 2,
+          },
+          {
+            id: 'r-review',
+            componentKey: '리뷰작성유도',
+            slot: 'nudge',
+            conditions: [{ field: 'stage', op: 'eq', value: 'post-purchase' }],
+            priority: 3,
+          },
+        ],
+      },
+      lockedSlots: [],
+      policy: [],
+      confidenceThreshold: 0.60,
+    },
+
+    event: {
+      context: {
+        event: 'KCD Korea 2026',
+        stage: 'registered',
+        role: 'attendee',
+        time: { phase: 'D-3', offsetDays: -3 },
+        place: { type: 'conference-venue' },
+        locale: 'ko-KR',
+        device: 'mobile',
+      },
+      rules: {
+        version: '1.0.0',
+        rules: [
+          {
+            id: 'r-042',
+            componentKey: 'SessionCheckInPrompt',
+            slot: 'primary_action',
+            conditions: [
+              { field: 'time.phase', op: 'eq', value: 'D-3' },
+              { field: 'stage', op: 'eq', value: 'registered' },
+              { field: 'role', op: 'eq', value: 'attendee' },
+            ],
+            priority: 1,
+            confidenceHint: 0.91,
+          },
+          {
+            id: 'r-031',
+            componentKey: 'ScheduleAtAGlanceCard',
+            slot: 'contextual_cards',
+            conditions: [
+              { field: 'device', op: 'eq', value: 'mobile' },
+              { field: 'locale', op: 'eq', value: 'ko-KR' },
+            ],
+            priority: 2,
+            confidenceHint: 0.78,
+          },
+          {
+            id: 'r-067',
+            componentKey: 'VenueDirectionsAlert',
+            slot: 'alerts',
+            conditions: [
+              { field: 'place.type', op: 'eq', value: 'conference-venue' },
+              { field: 'time.phase', op: 'in', value: ['D-3', 'D-2', 'D-1', 'D-day'] },
+            ],
+            priority: 3,
+            confidenceHint: 0.82,
+          },
+          {
+            id: 'r-019',
+            componentKey: 'AttendeePreDayChecklist',
+            slot: 'checklist',
+            conditions: [
+              { field: 'stage', op: 'eq', value: 'registered' },
+              { field: 'time.phase', op: 'in', value: ['D-3', 'D-2', 'D-1'] },
+              { field: 'role', op: 'eq', value: 'attendee' },
+            ],
+            priority: 4,
+            confidenceHint: 0.88,
+          },
+          {
+            id: 'r-011',
+            componentKey: 'NetworkingMatchCard',
+            slot: 'contextual_cards',
+            conditions: [{ field: 'time.phase', op: 'in', value: ['D-day', 'D+1'] }],
+            priority: 3,
+          },
+          {
+            id: 'r-088',
+            componentKey: 'AfterPartyInviteCard',
+            slot: 'social',
+            conditions: [{ field: 'stage', op: 'in', value: ['attended', 'checked-in'] }],
+            priority: 5,
+          },
+          {
+            id: 'r-003',
+            componentKey: 'HotelBookingPrompt',
+            slot: 'accommodation',
+            conditions: [{ field: 'time.offsetDays', op: 'lte', value: -7 }],
+            priority: 6,
+          },
+          {
+            id: 'r-077',
+            componentKey: 'SpeakerFeedbackForm',
+            slot: 'feedback',
+            conditions: [{ field: 'role', op: 'eq', value: 'attendee' }],
+            priority: 9,
+            confidenceHint: 0.85,
+          },
+          {
+            id: 'r-044',
+            componentKey: 'LocalDiningRecommendation',
+            slot: 'dining',
+            conditions: [{ field: 'place.type', op: 'eq', value: 'conference-venue' }],
+            priority: 7,
+            confidenceHint: 0.41,
+          },
+          {
+            id: 'r-062',
+            componentKey: 'TransportRouteCard',
+            slot: 'transport',
+            conditions: [{ field: 'device', op: 'eq', value: 'mobile' }],
+            priority: 8,
+            confidenceHint: 0.54,
+          },
+        ],
+      },
+      lockedSlots: [
+        { slot: 'hero', componentKey: 'SponsorBannerKCD2026', reason: 'promotion' },
+      ],
+      policy: [
+        {
+          id: 'policy-p-007',
+          componentKey: 'SpeakerFeedbackForm',
+          action: 'suppress',
+          condition: { field: 'stage', op: 'not-in', value: ['post-session', 'attended'] },
+        },
+      ],
+      confidenceThreshold: 0.60,
+    },
+
+    fintech: {
+      context: {
+        stage: 'onboarding-complete',
+        role: 'new-user',
+        time: { phase: 'first-week', offsetDays: -3 },
+        device: 'mobile',
+        locale: 'ko-KR',
+      },
+      rules: {
+        version: '1.0.0',
+        rules: [
+          {
+            id: 'r-transfer',
+            componentKey: '계좌이체유도',
+            slot: 'primary_cta',
+            conditions: [{ field: 'stage', op: 'eq', value: 'onboarding-complete' }],
+            priority: 1,
+            confidenceHint: 0.85,
+          },
+          {
+            id: 'r-invest',
+            componentKey: '투자시작배너',
+            slot: 'hero',
+            conditions: [
+              { field: 'role', op: 'eq', value: 'new-user' },
+              { field: 'time.phase', op: 'eq', value: 'first-week' },
+            ],
+            priority: 2,
+            confidenceHint: 0.45,
+          },
+          {
+            id: 'r-loan-new',
+            componentKey: '비상금대출안내',
+            slot: 'nudge',
+            conditions: [{ field: 'role', op: 'eq', value: 'new-user' }],
+            priority: 3,
+          },
+        ],
+      },
+      lockedSlots: [],
+      policy: [
+        {
+          id: 'P-INVEST-001',
+          componentKey: '투자시작배너',
+          action: 'suppress',
+          condition: { field: 'stage', op: 'not-in', value: ['kyc-verified', 'invested'] },
+        },
+      ],
+      confidenceThreshold: 0.60,
+    },
+  };
+
+  // ─── DOM refs ─────────────────────────────────────────────────────────────────
+
+  const ctxInput = document.getElementById('ctx-input');
+  const rulesInput = document.getElementById('rules-input');
+  const errorEl = document.getElementById('error');
+  const statusDot = document.getElementById('status-dot');
+  const panelDev = document.getElementById('panel-dev');
+  const panelGov = document.getElementById('panel-gov');
+  const evaluateBtn = document.getElementById('evaluate-btn');
+  const domainSelect = document.getElementById('domain-select');
+  const loadExampleBtn = document.getElementById('load-example-btn');
+  const setupHint = document.getElementById('setup-hint');
+  const copyBtn = document.getElementById('copy-btn');
+  const copyHint = document.getElementById('copy-hint');
+
+  // ─── Tab switching ────────────────────────────────────────────────────────────
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      const target = btn.dataset.tab === 'gov' ? panelGov : panelDev;
+      target.classList.add('active');
+    });
+  });
+
+  // ─── Populate initial values (event/KCD Korea default) ───────────────────────
+
+  function loadSample(key) {
+    const sample = SAMPLES[key];
+    if (!sample) { return; }
+    const { context, rules, lockedSlots, policy, confidenceThreshold } = sample;
+    ctxInput.value = JSON.stringify(context, null, 2);
+    rulesInput.value = JSON.stringify({ rules, lockedSlots, policy, confidenceThreshold }, null, 2);
+    scheduleEvaluate();
+  }
+
+  loadSample('event');
+  domainSelect.value = 'event';
+  setupHint.innerHTML = DOMAIN_HINTS['event'];
+
+  // ─── Quick Setup interactions ─────────────────────────────────────────────────
+
+  domainSelect.addEventListener('change', () => {
+    const key = domainSelect.value;
+    if (key && DOMAIN_HINTS[key]) {
+      setupHint.innerHTML = DOMAIN_HINTS[key];
+    } else {
+      setupHint.innerHTML = '도메인을 선택한 뒤 <strong>예제 로드</strong>를 누르면 에디터에 샘플 데이터가 채워집니다.';
+    }
+  });
+
+  loadExampleBtn.addEventListener('click', () => {
+    const key = domainSelect.value;
+    if (!key) {
+      setupHint.textContent = '서비스 유형을 먼저 선택하세요.';
+      return;
+    }
+    loadSample(key);
+  });
+
+  // ─── Evaluation ───────────────────────────────────────────────────────────────
+
+  function runEvaluate() {
+    let ctx, opts;
+
+    try {
+      ctx = JSON.parse(ctxInput.value);
+    } catch (e) {
+      setError('Context JSON: ' + e.message);
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(rulesInput.value);
+      opts = {
+        rules: parsed.rules ?? { version: '1.0.0', rules: [] },
+        lockedSlots: parsed.lockedSlots,
+        policy: parsed.policy,
+        confidenceThreshold: parsed.confidenceThreshold ?? 0.60,
+      };
+    } catch (e) {
+      setError('Rules JSON: ' + e.message);
+      return;
+    }
+
+    try {
+      const result = evaluate(ctx, opts);
+      clearError();
+      renderTrace(result, ctx);
+      renderGovernanceTrace(result, ctx);
+    } catch (e) {
+      setError(e.message ?? String(e));
+    }
+  }
+
+  // ─── Error state ──────────────────────────────────────────────────────────────
+
+  function setError(msg) {
+    errorEl.textContent = msg;
+    statusDot.className = 'err';
+  }
+
+  function clearError() {
+    errorEl.textContent = '';
+    statusDot.className = 'ok';
+  }
+
+  // ─── Copy code ────────────────────────────────────────────────────────────────
+
+  function buildSnippet() {
+    let ctx, opts;
+    try { ctx = JSON.parse(ctxInput.value); } catch { ctx = {}; }
+    try {
+      const parsed = JSON.parse(rulesInput.value);
+      opts = {
+        rules: parsed.rules ?? { version: '1.0.0', rules: [] },
+        lockedSlots: parsed.lockedSlots ?? [],
+        policy: parsed.policy ?? [],
+        confidenceThreshold: parsed.confidenceThreshold ?? 0.60,
+      };
+    } catch {
+      opts = { rules: { version: '1.0.0', rules: [] }, lockedSlots: [], policy: [], confidenceThreshold: 0.60 };
+    }
+
+    return `import { evaluate } from '@tpo/runtime';
+
+const context = ${JSON.stringify(ctx, null, 2)};
+
+const options = ${JSON.stringify(opts, null, 2)};
+
+const result = evaluate(context, options);
+
+console.log('selected:', result.selected);
+console.log('suppressed:', result.suppressed);
+console.log('locked:', result.locked);
+console.log('abstentions:', result.abstentions);
+console.log('riskTier:', result.riskTier);
+`;
+  }
+
+  let copyResetTimer = null;
+
+  copyBtn.addEventListener('click', () => {
+    const snippet = buildSnippet();
+    navigator.clipboard.writeText(snippet).then(() => {
+      copyBtn.textContent = '✓ 복사 완료';
+      copyBtn.classList.add('copied');
+      copyHint.textContent = '클립보드에 복사되었습니다. 프로젝트에 붙여넣기 하세요.';
+      clearTimeout(copyResetTimer);
+      copyResetTimer = setTimeout(() => {
+        copyBtn.innerHTML = '&#10066; evaluate() 코드 복사';
+        copyBtn.classList.remove('copied');
+        copyHint.textContent = '현재 context + rules를 TypeScript 스니펫으로 복사합니다.';
+      }, 2500);
+    }).catch(() => {
+      copyHint.textContent = '클립보드 접근 실패 — 브라우저 권한을 확인하세요.';
+    });
+  });
+
+  // ─── Render helpers ───────────────────────────────────────────────────────────
+
+  function esc(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function row(key, valueHtml) {
+    return `<div class="trace-row"><span class="trace-key">${esc(key)}</span><span class="trace-value">${valueHtml}</span></div>`;
+  }
+
+  function card(inner) {
+    return `<div class="trace-card">${inner}</div>`;
+  }
+
+  function sectionHeader(label) {
+    return `<div class="trace-section-header">--- ${label} ---</div>`;
+  }
+
+  // ─── Main render ─────────────────────────────────────────────────────────────
+
+  function renderTrace(result, ctx) {
+    let html = '';
+
+    // LOCKED
+    html += `<div class="trace-section section-locked">`;
+    html += sectionHeader('LOCKED');
+    if (result.locked.length === 0) {
+      html += `<div class="empty-section">No locked slots.</div>`;
+    } else {
+      for (const item of result.locked) {
+        html += card(
+          row('slot', `<span class="trace-value slot-name">${esc(item.slot)}</span>`) +
+          row('componentKey', `<span class="trace-value component-name">${esc(item.componentKey)}</span>`) +
+          row('reason', esc(item.reason ?? '—')) +
+          row('note', 'Operator-locked. Policy suppress does NOT apply (locked wins).')
+        );
+      }
+    }
+    html += `</div>`;
+
+    // SELECTED
+    html += `<div class="trace-section section-selected">`;
+    html += sectionHeader('SELECTED');
+    if (result.selected.length === 0) {
+      html += `<div class="empty-section">No components selected.</div>`;
+    } else {
+      result.selected.forEach((item, i) => {
+        const rules = item.matchedRules?.map(r => r.id ?? r).join(', ') ?? '—';
+        html += card(
+          row(`#${i + 1}  slot`, `<span class="trace-value slot-name">${esc(item.slot)}</span>`) +
+          row('componentKey', `<span class="trace-value component-name">${esc(item.componentKey)}</span>`) +
+          (item.specificity != null ? row('specificity', esc(item.specificity.toFixed(2))) : '') +
+          row('priority', esc(String(item.priority ?? '—'))) +
+          row('matched_rules', `[${esc(rules)}]`)
+        );
+      });
+    }
+    html += `</div>`;
+
+    // SUPPRESSED
+    html += `<div class="trace-section section-suppressed">`;
+    html += sectionHeader('SUPPRESSED');
+    if (result.suppressed.length === 0) {
+      html += `<div class="empty-section">No suppressed components.</div>`;
+    } else {
+      for (const item of result.suppressed) {
+        let inner = row('componentKey', `<span class="trace-value component-name">${esc(item.componentKey)}</span>`);
+        inner += row('why-not', `<span class="trace-value why-not">${esc(item.whyNot)}</span>`);
+        if (item.policyId) {
+          inner += row('policy_id', esc(item.policyId));
+        }
+        html += card(inner);
+      }
+    }
+    html += `</div>`;
+
+    // ABSTENTION
+    html += `<div class="trace-section section-abstention">`;
+    html += sectionHeader('ABSTENTION');
+    if (result.abstentions.length === 0) {
+      html += `<div class="empty-section">No abstentions.</div>`;
+    } else {
+      for (const item of result.abstentions) {
+        html += card(
+          row('componentKey', `<span class="trace-value component-name">${esc(item.componentKey)}</span>`) +
+          row('confidence', `<span class="trace-value confidence-low">${esc(String(item.confidence))}</span>`) +
+          row('threshold', esc(String(item.threshold))) +
+          row('reason', esc(item.reason))
+        );
+      }
+    }
+    html += `</div>`;
+
+    // RISK
+    const rt = result.riskTier;
+    const riskClass = rt === 'low' ? 'risk-low' : rt === 'high' ? 'risk-high' : 'risk-medium';
+    html += `<div class="trace-section section-risk">`;
+    html += sectionHeader('RISK');
+    html += card(
+      row('tier', `<span class="risk-badge ${riskClass}">${esc(rt)}</span>`) +
+      row('policy_hits', esc(String(result.meta?.policyHits ?? 0))) +
+      row('abstentions', esc(String(result.abstentions.length))) +
+      row('locked_wins', esc(String(result.locked.length)))
+    );
+    html += `</div>`;
+
+    // META
+    html += `<div class="trace-section section-meta">`;
+    html += sectionHeader('META');
+    const meta = result.meta ?? {};
+    const matchedRuleIds = result.selected.flatMap(s => (s.matchedRules ?? []).map(r => r.id ?? r));
+    html += card(
+      row('evaluate_ms', esc(String(meta.evaluateMs ?? 0))) +
+      row('rule_count', esc(String(meta.ruleCount ?? '—'))) +
+      row('matched_rules', esc(String(matchedRuleIds.length)) + '   (' + esc(matchedRuleIds.join(', ')) + ')') +
+      row('trace_version', esc(meta.traceVersion ?? 'v1')) +
+      row('deterministic', esc(String(meta.deterministic ?? true)))
+    );
+    html += `</div>`;
+
+    panelDev.innerHTML = html;
+  }
+
+  // ─── Governance render ────────────────────────────────────────────────────────
+
+  function renderGovernanceTrace(result, ctx) {
+    const raw = formatTrace(result, ctx, { mode: 'governance' });
+
+    // Escape for HTML injection, then apply color coding via span replacements
+    let text = raw
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+    // Section headers → colored spans
+    text = text
+      .replace(/(COMMITMENTS HONORED[^\n]*)/g,
+        '<span style="color:var(--blue);font-weight:700;">$1</span>')
+      .replace(/(ALGORITHM SELECTED[^\n]*)/g,
+        '<span style="color:var(--green);font-weight:700;">$1</span>')
+      .replace(/(EXCLUDED WITH REASON[^\n]*)/g,
+        '<span style="color:var(--orange);font-weight:700;">$1</span>')
+      .replace(/\b(DEFERRED[^\n]*)/g,
+        '<span style="color:var(--gray);font-weight:700;">$1</span>')
+      .replace(/(ACCOUNTABILITY SUMMARY[^\n]*)/g,
+        '<span style="color:var(--text);font-weight:700;">$1</span>');
+
+    panelGov.innerHTML = `<pre style="margin:0;white-space:pre-wrap;word-break:break-word;font-family:var(--font-mono);font-size:12px;line-height:1.7;color:var(--text-muted);">${text}</pre>`;
+  }
+
+  // ─── Debounce ─────────────────────────────────────────────────────────────────
+
+  let debounceTimer = null;
+
+  function scheduleEvaluate() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(runEvaluate, 300);
+  }
+
+  ctxInput.addEventListener('input', scheduleEvaluate);
+  rulesInput.addEventListener('input', scheduleEvaluate);
+  evaluateBtn.addEventListener('click', runEvaluate);
+
+  // ─── Initial run ──────────────────────────────────────────────────────────────
+
+  runEvaluate();
+</script>
+
+</body>
+</html>

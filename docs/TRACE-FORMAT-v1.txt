@@ -1,0 +1,126 @@
+TPO Funnel Runtime — Decision Trace v1
+======================================================================
+Generated: 2026-06-14T09:42:11.308Z
+Trace ID:  tpo-7f3a2c1d-kcd26-0614-0942
+
+
+--- Input context ---
+
+  event        : KCD Korea 2026
+  stage        : registered
+  role         : attendee
+  time.phase   : D-3
+  place.type   : conference-venue
+  locale       : ko-KR
+  device       : mobile
+
+
+--- LOCKED ---
+
+  slot             : hero
+  componentKey     : SponsorBannerKCD2026
+  reason           : business-fixed / promotion
+  note             : Operator-locked sponsor placement.
+                     Overrides all rule-driven hero candidates.
+                     Policy suppress does NOT apply (locked wins).
+
+
+--- SELECTED ---
+
+  #1  slot            : primary_action
+      componentKey    : SessionCheckInPrompt
+      specificity     : 0.91
+      priority        : 1
+      matched_rules   : [r-042, r-055]
+      note            : D-3 phase + registered stage exact match.
+
+  #2  slot            : contextual_cards
+      componentKey    : ScheduleAtAGlanceCard
+      specificity     : 0.78
+      priority        : 2
+      matched_rules   : [r-031]
+      note            : Mobile + ko-KR locale boosted.
+
+  #3  slot            : alerts
+      componentKey    : VenueDirectionsAlert
+      specificity     : 0.72
+      priority        : 3
+      matched_rules   : [r-067]
+      note            : place.type=conference-venue triggered
+                        48-hour window proximity alert.
+
+  #4  slot            : checklist
+      componentKey    : AttendeePreDayChecklist
+      specificity     : 0.68
+      priority        : 4
+      matched_rules   : [r-019, r-024]
+      note            : Stage=registered + D-3 phase combined.
+
+
+--- SUPPRESSED ---
+
+  componentKey    : NetworkingMatchCard
+  why-not         : time.phase condition not met —
+                    rule r-011 requires phase IN [D-day, D+1].
+                    Current phase is D-3. Card suppressed.
+
+  componentKey    : SpeakerFeedbackForm
+  why-not         : stage policy violation —
+                    role=attendee may not submit feedback before
+                    event execution (stage must be post-session).
+                    Policy gate: suppress (policy-p-007).
+
+  componentKey    : AfterPartyInviteCard
+  why-not         : stage condition not met —
+                    rule r-088 requires stage IN
+                    [attended, checked-in].
+                    Current stage is registered. Card suppressed.
+
+  componentKey    : HotelBookingPrompt
+  why-not         : time.phase condition not met —
+                    rule r-003 requires phase <= D-7.
+                    Current phase D-3 is past booking window.
+                    Card suppressed to avoid stale CTA confusion.
+
+
+--- ABSTENTION ---
+
+  componentKey    : LocalDiningRecommendation
+  confidence      : 0.41
+  threshold       : 0.60
+  reason          : place.type=conference-venue is known but
+                    place.city is absent. Specificity insufficient
+                    to select a locale-safe dining card.
+  fallback        : GenericVenueAreaInfoCard applied (tier-1 safe).
+
+  componentKey    : TransportRouteCard
+  confidence      : 0.54
+  threshold       : 0.60
+  reason          : device=mobile confirmed but place.region missing.
+                    Route card requires region for transit API match.
+                    Confidence below threshold; abstaining.
+  fallback        : VenueDirectionsAlert already covers slot
+                    (no duplicate fallback needed).
+
+
+--- RISK ---
+
+  tier            : low (1)
+  policy_hits     : 1   (policy-p-007 on SpeakerFeedbackForm)
+  abstentions     : 2   (LocalDiningRecommendation,
+                         TransportRouteCard)
+  fallbacks       : 1   (GenericVenueAreaInfoCard)
+  locked_wins     : 1   (SponsorBannerKCD2026 overrode hero slot)
+  override_flags  : none
+
+
+--- META ---
+
+  evaluate_ms     : 4
+  rule_count      : 94
+  matched_rules   : 7   (r-019, r-024, r-031, r-042,
+                         r-055, r-067, r-088)
+  trace_version   : v1
+  deterministic   : true
+
+======================================================================

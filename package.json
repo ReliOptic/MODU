@@ -1,0 +1,50 @@
+{
+  "name": "@tpo/runtime",
+  "version": "0.1.0",
+  "description": "Event-relative, app-native, policy-bounded journey runtime",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./starters/banking": {
+      "types": "./dist/starters/banking.d.ts",
+      "import": "./dist/starters/banking.js",
+      "require": "./dist/starters/banking.cjs"
+    },
+    "./starters/ecommerce": {
+      "types": "./dist/starters/ecommerce.d.ts",
+      "import": "./dist/starters/ecommerce.js",
+      "require": "./dist/starters/ecommerce.cjs"
+    },
+    "./starters/fintech": {
+      "types": "./dist/starters/fintech.d.ts",
+      "import": "./dist/starters/fintech.js",
+      "require": "./dist/starters/fintech.cjs"
+    }
+  },
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "dev": "vitest",
+    "playground": "npx serve . --listen 3333"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^3.2.4"
+  }
+}
