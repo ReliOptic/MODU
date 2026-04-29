@@ -1,0 +1,2368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@tpo/runtime — Decision Accountability Runtime</title>
+  <meta name="description" content="Every suppressed component carries a structured reason. Every locked slot is a named primitive. Every abstention is an explicit trace entry. @tpo/runtime makes the full decision surface auditable.">
+  <meta name="keywords" content="rule engine, decision trace, governance, typescript, feature flags, UI accountability">
+
+  <!-- Theme + color scheme -->
+  <meta name="theme-color" content="#0A0A0A">
+  <meta name="color-scheme" content="dark">
+
+  <!-- Favicon (inline SVG data URI — no external dependency) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230A0A0A'/%3E%3Ctext x='4' y='22' font-family='monospace' font-size='13' font-weight='700' fill='%23EDEDED'%3ETPO%3C/text%3E%3C/svg%3E">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="@tpo/runtime — Decision Accountability Runtime">
+  <meta property="og:description" content="You passed the right context. Something still didn't render. TPO tells you exactly which component was suppressed, which slot was locked, and why.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://tpo-runtime.dev">
+  <!-- TODO: replace with actual hosted image path before launch -->
+  <meta property="og:image" content="https://tpo-runtime.dev/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="TPO Runtime governance trace output">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="@tpo/runtime — Decision Accountability Runtime">
+  <meta name="twitter:description" content="The hardest debugging question in a rule-driven UI: why didn't this render? TPO gives you a structured answer.">
+  <!-- TODO: replace with actual hosted image path before launch -->
+  <meta name="twitter:image" content="https://tpo-runtime.dev/og-image.png">
+
+  <!-- Canonical -->
+  <link rel="canonical" href="https://tpo-runtime.dev">
+
+  <!-- Fonts — preconnect + preload critical weight to prevent Times New Roman fallback flash -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <!-- Pretendard — Korean + Latin body font (§4.3 requirement) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+
+  <style>
+    /* ─────────────────────────────────────────────────────────────────────────
+       DESIGN TOKENS
+    ───────────────────────────────────────────────────────────────────────── */
+    :root {
+      /* Backgrounds */
+      --bg-base:        #0A0A0A;
+      --bg-surface:     #111111;
+      --bg-elevated:    #161616;
+      --bg-highlight:   #1A1A1A;
+
+      /* Text */
+      --text-primary:   #EDEDED;
+      --text-secondary: #A8A8A8;
+      --text-muted:     #666666;
+      --text-dim:       #707070;
+
+      /* Borders */
+      --border-subtle:  rgba(255, 255, 255, 0.06);
+      --border-default: rgba(255, 255, 255, 0.09);
+      --border-strong:  rgba(255, 255, 255, 0.14);
+
+      /* Semantic — risk tier only */
+      --risk-low:        #3D9E5F;
+      --risk-low-bg:     rgba(61, 158, 95, 0.10);
+      --risk-low-border: rgba(61, 158, 95, 0.22);
+
+      --risk-med:        #C4883A;
+      --risk-med-bg:     rgba(196, 136, 58, 0.10);
+      --risk-med-border: rgba(196, 136, 58, 0.22);
+
+      --risk-high:       #B85454;
+      --risk-high-bg:    rgba(184, 84, 84, 0.10);
+      --risk-high-border:rgba(184, 84, 84, 0.22);
+
+      /* Trace section colors — all desaturated intentionally */
+      --section-commit:  #6B9FCC;
+      --section-algo:    #5A9E70;
+      --section-excl:    #B07040;
+      --section-deferred:#9A9A9A;
+      --section-summary: #A0A0A0;
+
+      /* Code accent */
+      --code-slot:       #7AACCC;
+      --code-component:  #EDEDED;
+      --code-policy:     #A8855A;
+      --code-rule:       #888888;
+      --code-arrow:      #4A7A52;
+      --code-dash:       #8C5C32;
+
+      /* Typography */
+      --font-sans:   'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      --font-mono:   'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+
+      /* Spacing scale */
+      --space-1:  4px;
+      --space-2:  8px;
+      --space-3:  12px;
+      --space-4:  16px;
+      --space-5:  20px;
+      --space-6:  24px;
+      --space-8:  32px;
+      --space-10: 40px;
+      --space-12: 48px;
+      --space-16: 64px;
+      --space-20: 80px;
+      --space-24: 96px;
+
+      /* Layout */
+      --content-max:  1160px;
+      --content-wide: 1400px;
+      --radius-sm:    4px;
+      --radius:       6px;
+      --radius-lg:    10px;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────────
+       RESET + BASE
+    ───────────────────────────────────────────────────────────────────────── */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      font-size: 16px;
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      background: var(--bg-base);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    a:focus-visible {
+      outline: 2px solid rgba(255,255,255,0.4);
+      outline-offset: 2px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────────
+       LAYOUT UTILITIES
+    ───────────────────────────────────────────────────────────────────────── */
+    .container {
+      max-width: var(--content-max);
+      margin: 0 auto;
+      padding: 0 var(--space-6);
+    }
+
+    .container--wide {
+      max-width: var(--content-wide);
+      margin: 0 auto;
+      padding: 0 var(--space-6);
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border-width: 0;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────────
+       NAV
+    ───────────────────────────────────────────────────────────────────────── */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(10, 10, 10, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .nav__inner {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      height: 52px;
+    }
+
+    .nav__wordmark {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 44px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+      flex-shrink: 0;
+    }
+
+    .nav__logo-icon {
+      width: 22px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+
+    .nav__scope {
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .nav__pkg {
+      color: var(--text-primary);
+    }
+
+    .nav__badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 1px 7px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-default);
+      border-radius: 20px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 0;
+    }
+
+    .nav__spacer { flex: 1; }
+
+    .nav__links {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+    }
+
+    .nav__link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 10px;
+      min-height: 44px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      border-radius: var(--radius);
+      transition: color 0.15s, background 0.15s;
+    }
+
+    .nav__link:hover {
+      color: var(--text-primary);
+      background: var(--bg-elevated);
+    }
+
+    .nav__link--cta {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-default);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 10px 12px;
+      min-height: 44px;
+    }
+
+    .nav__link--cta:hover {
+      border-color: var(--border-strong);
+      background: var(--bg-highlight);
+    }
+
+    @media (max-width: 640px) {
+      .nav__link:not(.nav__link--cta) { display: none; }
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────────
+       HERO
+    ───────────────────────────────────────────────────────────────────────── */
+    .hero {
+      padding: var(--space-24) 0 var(--space-20);
+      border-bottom: 1px solid var(--border-subtle);
+      animation: fadeUp 0.5s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero__inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-16);
+      align-items: start;
+    }
+
+    .hero__label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: var(--space-5);
+    }
+
+    .hero__label-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--risk-low);
+    }
+
+    .hero__title {
+      font-family: var(--font-mono);
+      font-size: clamp(28px, 3.5vw, 44px);
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      color: var(--text-primary);
+      margin-bottom: var(--space-5);
+    }
+
+    .hero__title em {
+      font-style: normal;
+      color: var(--text-secondary);
+    }
+
+    .hero__sub {
+      font-size: 16px;
+      color: var(--text-secondary);
+      line-height: 1.65;
+      max-width: 440px;
+      margin-bottom: var(--space-8);
+    }
+
+    .hero__actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 18px;
+      min-height: 44px;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: var(--radius);
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s, background 0.15s, border-color 0.15s;
+      text-decoration: none;
+      font-family: var(--font-mono);
+      letter-spacing: -0.01em;
+    }
+
+    .btn--primary {
+      background: var(--text-primary);
+      color: var(--bg-base);
+    }
+
+    .btn--primary:hover { opacity: 0.88; }
+
+    .btn--ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-default);
+    }
+
+    .btn--ghost:hover {
+      color: var(--text-primary);
+      border-color: var(--border-strong);
+      background: var(--bg-elevated);
+    }
+
+    .hero__trace-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .hero__trace-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .hero__trace-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+    }
+
+    .hero__trace-mode-badge {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: var(--bg-highlight);
+      border: 1px solid var(--border-default);
+      color: var(--text-muted);
+    }
+
+    @media (max-width: 900px) {
+      .hero__inner {
+        grid-template-columns: 1fr;
+      }
+      .hero__sub { max-width: 100%; }
+    }
+
+    @media (max-width: 640px) {
+      .hero {
+        padding: var(--space-16) 0 var(--space-12);
+      }
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────────
+       GOVERNANCE TRACE COMPONENT (reused in hero + domain examples)
+    ───────────────────────────────────────────────────────────────────────── */
+    .gov-trace {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.8;
+      color: var(--text-muted);
+      padding: var(--space-5) var(--space-5);
+    }
+
+    .gov-trace__report-title {
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 11px;
+      letter-spacing: 0.02em;
+      margin-bottom: 2px;
+    }
+
+    .gov-trace__rule {
+      border-top: 1px solid var(--border-subtle);
+      margin: var(--space-2) 0;
+    }
+
+    .gov-trace__section {
+      margin-top: var(--space-3);
+      margin-bottom: var(--space-2);
+    }
+
+    .gov-trace__section-header {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.11em;
+    }
+
+    .gov-trace__count {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 0 5px;
+      border-radius: 3px;
+      letter-spacing: 0;
+    }
+
+    .gov-trace__row {
+      padding-left: var(--space-4);
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      line-height: 1.9;
+    }
+
+    .gov-trace__slot {
+      color: var(--code-slot);
+      font-weight: 500;
+      min-width: 80px;
+      max-width: 140px;
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 480px) {
+      .gov-trace__slot {
+        min-width: 0;
+        max-width: none;
+        flex-shrink: 1;
+      }
+      .gov-trace__row {
+        flex-wrap: wrap;
+        gap: 2px 4px;
+      }
+      .gov-trace {
+        font-size: 11px;
+      }
+    }
+
+    .gov-trace__arrow {
+      color: var(--code-arrow);
+      flex-shrink: 0;
+    }
+
+    .gov-trace__dash {
+      color: var(--code-dash);
+      flex-shrink: 0;
+    }
+
+    .gov-trace__component {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .gov-trace__tag {
+      color: var(--text-dim);
+      font-size: 11px;
+    }
+
+    .gov-trace__reason {
+      color: var(--section-excl);
+      font-size: 11.5px;
+    }
+
+    .gov-trace__policy-id {
+      font-size: 10.5px;
+      padding: 0px 5px;
+      border: 1px solid rgba(176, 112, 64, 0.25);
+      border-radius: var(--radius-sm);
+      background: rgba(176, 112, 64, 0.06);
+      color: var(--code-policy);
+      letter-spacing: 0.01em;
+    }
+
+    .gov-trace__confidence {
+      color: var(--text-dim);
+      font-size: 11.5px;
+    }
+
+    .gov-trace__summary-row {
+      display: flex;
+      padding-left: var(--space-4);
+      gap: 4px;
+      line-height: 1.9;
+      font-size: 11.5px;
+    }
+
+    .gov-trace__summary-key {
+      color: var(--text-muted);
+      min-width: 88px;
+    }
+
+    .gov-trace__summary-colon {
+      color: var(--text-dim);
+    }
+
+    .gov-trace__summary-val {
+      color: var(--text-secondary);
+    }
+
+    /* Section header colors */
+    .gov-trace__sh--commit  { color: var(--section-commit);  }
+    .gov-trace__sh--algo    { color: var(--section-algo);    }
+    .gov-trace__sh--excl    { color: var(--section-excl);    }
+    .gov-trace__sh--deferred{ color: var(--section-deferred);}
+    .gov-trace__sh--summary { color: var(--section-summary); }
+
+    /* Count badge colors */
+    .gov-trace__cnt--commit  { background: rgba(107, 159, 204, 0.10); color: var(--section-commit);  border: 1px solid rgba(107,159,204,0.18); }
+    .gov-trace__cnt--algo    { background: rgba(90, 158, 112, 0.10); color: var(--section-algo);    border: 1px solid rgba(90,158,112,0.18); }
+    .gov-trace__cnt--excl    { background: rgba(176, 112, 64, 0.10); color: var(--section-excl);    border: 1px solid rgba(176,112,64,0.18); }
+    .gov-trace__cnt--deferred{ background: rgba(122, 122, 122, 0.10); color: var(--section-deferred);border: 1px solid rgba(122,122,122,0.18); }
+
+    /* Risk tier badges */
+    .risk-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 1px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      font-family: var(--font-mono);
+    }
+
+    .risk-badge--low  { background: var(--risk-low-bg);  color: var(--risk-low);  border: 1px solid var(--risk-low-border);  }
+    .risk-badge--med  { background: var(--risk-med-bg);  color: var(--risk-med);  border: 1px solid var(--risk-med-border);  }
+    .risk-badge--high { background: var(--risk-high-bg); color: var(--risk-high); border: 1px solid var(--risk-high-border); }
+
+    /* ─────────────────────────────────────────────────────────────────────────
+       SECTION WRAPPERS
+    ───────────────────────────────────────────────────────────────────────── */
+    .section {
+      padding: var(--space-24) 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .section--tight {
+      padding: var(--space-16) 0;
+    }
+
+    .section__eyebrow {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin-bottom: var(--space-3);
+    }
+
+    .section__title {
+      font-family: var(--font-mono);
+      font-size: clamp(22px, 2.8vw, 32px);
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      color: var(--text-primary);
+      margin-bottom: var(--space-4);
+    }
+
+    .section__body {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      max-width: 600px;
+    }
+
+    .section__body + .section__body {
+      margin-top: var(--space-3);
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────────
+       THE HARDEST QUESTION
+    ───────────────────────────────────────────────────────────────────────── */
+    .hardest-q {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-16);
+      align-items: start;
+    }
+
+    .hardest-q__aside {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-5);
+      padding-top: var(--space-2);
+    }
+
+    .hardest-q__step {
+      display: flex;
+      gap: var(--space-4);
+      align-items: flex-start;
+    }
+
+    .hardest-q__step-num {
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-default);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 2px;
+    }
+
+    .hardest-q__step-text {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.65;
+    }
+
+    .hardest-q__step-text strong {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .hardest-q__callout {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      margin-top: var(--space-4);
+    }
+
+    .hardest-q__callout-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-dim);
+      margin-bottom: var(--space-3);
+    }
+
+    .hardest-q__callout-text {
+      font-size: 17px;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+      line-height: 1.45;
+      color: var(--text-primary);
+    }
+
+    @media (max-width: 768px) {
+      .hardest-q {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────────
+       COMPARISON TABLE
+    ───────────────────────────────────────────────────────────────────────── */
+    .compare-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-lg);
+      margin-top: var(--space-8);
+      /* Scroll-shadow affordance on mobile — signals horizontal scrollability */
+      background:
+        linear-gradient(to right, var(--bg-base) 0%, transparent 40px) left center / 40px 100% no-repeat,
+        linear-gradient(to left,  var(--bg-base) 0%, transparent 40px) right center / 40px 100% no-repeat;
+      background-attachment: local, local;
+    }
+
+    @media (max-width: 640px) {
+      .compare-table th,
+      .compare-table td {
+        padding: 10px 12px;
+        font-size: 12px;
+      }
+    }
+
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      font-family: var(--font-sans);
+    }
+
+    .compare-table th {
+      padding: 12px 20px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border-default);
+      white-space: nowrap;
+    }
+
+    .compare-table th:not(:last-child) {
+      border-right: 1px solid var(--border-subtle);
+    }
+
+    .compare-table th.col-tpo {
+      color: var(--text-secondary);
+      background: var(--bg-highlight);
+    }
+
+    .compare-table td {
+      padding: 12px 20px;
+      vertical-align: top;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      line-height: 1.55;
+    }
+
+    .compare-table td:not(:last-child) {
+      border-right: 1px solid var(--border-subtle);
+    }
+
+    .compare-table td.col-tpo {
+      background: rgba(255,255,255,0.04);
+    }
+
+    .compare-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .compare-table td.row-label {
+      font-weight: 500;
+      color: var(--text-primary);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .check {
+      color: var(--risk-low);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .cross {
+      color: var(--text-dim);
+      font-size: 12px;
+    }
+
+    .partial {
+      color: var(--risk-med);
+      font-size: 12px;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────────
+       HOW IT WORKS
+    ───────────────────────────────────────────────────────────────────────── */
+    .how-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-12);
+      margin-top: var(--space-10);
+      align-items: start;
+    }
+
+    .how-io {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .how-io__label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin-bottom: var(--space-1);
+    }
+
+    .io-field {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-3);
+      padding: 10px 14px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+    }
+
+    .io-field__key {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--code-slot);
+      flex-shrink: 0;
+      min-width: 110px;
+    }
+
+    .io-field__type {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .io-field__desc {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .how-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-3);
+      padding: var(--space-4) 0;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-dim);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .how-arrow::before,
+    .how-arrow::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border-subtle);
+    }
+
+    .code-block {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      margin-top: var(--space-8);
+    }
+
+    .code-block__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .code-block__filename {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.01em;
+    }
+
+    .code-block__lang {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+    }
+
+    .code-block pre {
+      padding: var(--space-5);
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      line-height: 1.75;
+      color: var(--text-secondary);
+      margin: 0;
+    }
+
+    .code-block pre::-webkit-scrollbar { height: 4px; }
+    .code-block pre::-webkit-scrollbar-track { background: transparent; }
+    .code-block pre::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 2px; }
+
+    /* Syntax highlight tokens */
+    .tok-kw   { color: #8BA5C4; }
+    .tok-fn   { color: #9DBBB5; }
+    .tok-str  { color: #8FA880; }
+    .tok-type { color: #B09080; }
+    .tok-cmt  { color: var(--text-dim); font-style: italic; }
+    .tok-num  { color: #A8956A; }
+    .tok-prop { color: var(--code-slot); }
+
+    @media (max-width: 768px) {
+      .how-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────────
+       DOMAIN EXAMPLES
+    ───────────────────────────────────────────────────────────────────────── */
+    .domain-tabs {
+      display: flex;
+      gap: var(--space-1);
+      padding: var(--space-1);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius);
+      width: fit-content;
+      margin-bottom: var(--space-6);
+    }
+
+    .domain-tab {
+      padding: 10px 16px;
+      min-height: 44px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-radius: 4px;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      transition: background 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+
+    .domain-tab:hover { color: var(--text-secondary); }
+
+    .domain-tab.active {
+      background: var(--bg-highlight);
+      color: var(--text-primary);
+      border: 1px solid var(--border-default);
+    }
+
+    .domain-panel {
+      display: none;
+    }
+
+    .domain-panel.active {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-8);
+      align-items: start;
+    }
+
+    .domain-panel__info {}
+
+    .domain-panel__scenario {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      margin-bottom: var(--space-3);
+    }
+
+    .domain-panel__title {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.3;
+      color: var(--text-primary);
+      margin-bottom: var(--space-3);
+    }
+
+    .domain-panel__desc {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-bottom: var(--space-5);
+    }
+
+    .domain-panel__bullets {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .domain-panel__bullet {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .domain-panel__bullet-marker {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      flex-shrink: 0;
+    }
+
+    .domain-panel__trace {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .domain-panel__trace-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 14px;
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .domain-panel__trace-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+    }
+
+    @media (max-width: 768px) {
+      .domain-panel.active {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────────
+       RISK TIER SECTION
+    ───────────────────────────────────────────────────────────────────────── */
+    .risk-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-5);
+      margin-top: var(--space-8);
+    }
+
+    .risk-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+    }
+
+    .risk-card--low  { border-top: 2px solid var(--risk-low);  }
+    .risk-card--med  { border-top: 2px solid var(--risk-med);  }
+    .risk-card--high { border-top: 2px solid var(--risk-high); }
+
+    .risk-card__tier {
+      margin-bottom: var(--space-4);
+    }
+
+    .risk-card__conditions {
+      margin-top: var(--space-4);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .risk-card__condition {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      padding: 5px 10px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+    }
+
+    .risk-card__desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    @media (max-width: 768px) {
+      .risk-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────────
+       GET STARTED
+    ───────────────────────────────────────────────────────────────────────── */
+    .getstarted-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-12);
+      margin-top: var(--space-10);
+      align-items: start;
+    }
+
+    .getstarted__install {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .getstarted__install-header {
+      padding: 10px 16px;
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border-subtle);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+    }
+
+    .getstarted__install pre {
+      padding: var(--space-4) var(--space-5);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text-secondary);
+      margin: 0;
+    }
+
+    .npm-cmd::before {
+      content: '$ ';
+      color: var(--text-dim);
+    }
+
+    .getstarted__links {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+      padding-top: var(--space-2);
+    }
+
+    .getstarted__link-item {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-3);
+      padding: var(--space-4);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .getstarted__link-item:hover {
+      border-color: var(--border-strong);
+      background: var(--bg-elevated);
+    }
+
+    .getstarted__link-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .getstarted__link-content {}
+
+    .getstarted__link-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 2px;
+    }
+
+    .getstarted__link-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    @media (max-width: 768px) {
+      .getstarted-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────────
+       FOOTER
+    ───────────────────────────────────────────────────────────────────────── */
+    .footer {
+      padding: var(--space-12) 0 var(--space-16);
+    }
+
+    .footer__inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-6);
+      flex-wrap: wrap;
+    }
+
+    .footer__brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .footer__license {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    .footer__links {
+      display: flex;
+      align-items: center;
+      gap: var(--space-6);
+    }
+
+    .footer__link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      font-size: 13px;
+      color: var(--text-muted);
+      transition: color 0.15s;
+    }
+
+    .footer__link:hover {
+      color: var(--text-secondary);
+    }
+
+    @media (max-width: 640px) {
+      .footer__inner {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────────
+       INLINE SVG ICON SYSTEM
+    ───────────────────────────────────────────────────────────────────────── */
+    .icon {
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────────
+       INLINE CODE UTILITY
+    ───────────────────────────────────────────────────────────────────────── */
+    .inline-code {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────────
+       SECTION FIRST-OF-TYPE SPACING
+    ───────────────────────────────────────────────────────────────────────── */
+    .gov-trace__section:first-of-type { margin-top: var(--space-1); }
+
+    /* ─────────────────────────────────────────────────────────────────────────
+       ACCESSIBILITY — WCAG 2.3.3 prefers-reduced-motion
+    ───────────────────────────────────────────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .hero, *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     NAV
+════════════════════════════════════════════════════════════════════════════ -->
+<header role="banner">
+  <nav class="nav" aria-label="Primary navigation">
+    <div class="container">
+      <div class="nav__inner">
+        <a href="/" class="nav__wordmark" aria-label="TPO Runtime home">
+          <!-- Logo: stylized T·P·O mark -->
+          <svg class="nav__logo-icon" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+            <rect width="22" height="22" rx="4" fill="#1A1A1A" stroke="rgba(255,255,255,0.09)" stroke-width="1"/>
+            <text x="3" y="15" font-family="'JetBrains Mono', monospace" font-size="9" font-weight="700" fill="#EDEDED" letter-spacing="-0.5">TPO</text>
+          </svg>
+          <span><span class="nav__scope">@tpo/</span><span class="nav__pkg">runtime</span></span>
+          <span class="nav__badge">v0.1.0</span>
+        </a>
+        <div class="nav__spacer"></div>
+        <div class="nav__links">
+          <a href="#how-it-works" class="nav__link">How it works</a>
+          <a href="#domain-examples" class="nav__link">Examples</a>
+          <a href="https://github.com/reliqbit/tpo-funnel-runtime" class="nav__link" rel="noopener noreferrer" target="_blank">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+            GitHub
+          </a>
+          <a href="/docs" class="nav__link nav__link--cta">Docs</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<main>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     HERO
+════════════════════════════════════════════════════════════════════════════ -->
+<section class="hero" aria-labelledby="hero-title">
+  <div class="container">
+    <div class="hero__inner">
+
+      <!-- Left: copy -->
+      <div class="hero__copy">
+        <p class="hero__label" aria-hidden="true">
+          <span class="hero__label-dot"></span>
+          Decision Accountability Runtime
+        </p>
+        <h1 class="hero__title" id="hero-title">
+          You passed the right context.<br>
+          <em>Something still didn't render.</em>
+        </h1>
+        <p class="hero__sub">
+          TPO tells you exactly which component was suppressed, which slot was locked, and why — before you open a single log file.
+        </p>
+        <div class="hero__actions">
+          <a href="#get-started" class="btn btn--primary">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M2 3.5A1.5 1.5 0 013.5 2h9A1.5 1.5 0 0114 3.5v9a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 012 12.5v-9zm5.5 8.5a.5.5 0 01-.5-.5V5.707L5.354 7.354a.5.5 0 01-.708-.708l3-3a.5.5 0 01.708 0l3 3a.5.5 0 01-.708.708L9 5.707V11.5a.5.5 0 01-.5.5z"/></svg>
+            npm install
+          </a>
+          <a href="https://github.com/reliqbit/tpo-funnel-runtime" class="btn btn--ghost" rel="noopener noreferrer" target="_blank">View on GitHub</a>
+          <a href="/playground" class="btn btn--ghost">Try Playground</a>
+        </div>
+      </div>
+
+      <!-- Right: governance trace -->
+      <div class="hero__trace-panel" role="figure" aria-label="Sample governance trace output from @tpo/runtime">
+        <div class="hero__trace-header">
+          <span class="hero__trace-title">formatTrace(result, ctx, { mode: 'governance' })</span>
+          <span class="hero__trace-mode-badge">governance</span>
+        </div>
+        <div class="gov-trace">
+          <div class="gov-trace__report-title">TPO Decision Governance Report</div>
+          <div class="gov-trace__rule"></div>
+
+          <div class="gov-trace__section">
+            <span class="gov-trace__section-header gov-trace__sh--commit">
+              COMMITMENTS HONORED
+              <span class="gov-trace__count gov-trace__cnt--commit">&thinsp;1&thinsp;</span>
+            </span>
+            <div class="gov-trace__row">
+              <span class="gov-trace__slot">hero</span>
+              <span class="gov-trace__arrow">&#8594;</span>
+              <span class="gov-trace__component">SponsorBannerKCD2026</span>
+              <span class="gov-trace__tag">&nbsp;[promotion]</span>
+            </div>
+          </div>
+
+          <div class="gov-trace__section">
+            <span class="gov-trace__section-header gov-trace__sh--algo">
+              ALGORITHM SELECTED
+              <span class="gov-trace__count gov-trace__cnt--algo">&thinsp;4&thinsp;</span>
+            </span>
+            <div class="gov-trace__row">
+              <span class="gov-trace__slot">primary_action</span>
+              <span class="gov-trace__arrow">&#8594;</span>
+              <span class="gov-trace__component">SessionCheckInPrompt</span>
+            </div>
+            <div class="gov-trace__row">
+              <span class="gov-trace__slot">contextual_cards</span>
+              <span class="gov-trace__arrow">&#8594;</span>
+              <span class="gov-trace__component">ScheduleAtAGlanceCard</span>
+            </div>
+            <div class="gov-trace__row">
+              <span class="gov-trace__slot">alerts</span>
+              <span class="gov-trace__arrow">&#8594;</span>
+              <span class="gov-trace__component">VenueDirectionsAlert</span>
+            </div>
+            <div class="gov-trace__row">
+              <span class="gov-trace__slot">checklist</span>
+              <span class="gov-trace__arrow">&#8594;</span>
+              <span class="gov-trace__component">AttendeePreDayChecklist</span>
+            </div>
+          </div>
+
+          <div class="gov-trace__section">
+            <span class="gov-trace__section-header gov-trace__sh--excl">
+              EXCLUDED WITH REASON
+              <span class="gov-trace__count gov-trace__cnt--excl">&thinsp;4&thinsp;</span>
+            </span>
+            <div class="gov-trace__row" style="flex-wrap:wrap; gap:4px 6px;">
+              <span class="gov-trace__component">NetworkingMatchCard</span>
+              <span class="gov-trace__dash">&mdash;</span>
+              <span class="gov-trace__reason">time.phase in ["D-day","D+1"] &mdash; got "D-3"</span>
+            </div>
+            <div class="gov-trace__row" style="flex-wrap:wrap; gap:4px 6px;">
+              <span class="gov-trace__component">AfterPartyInviteCard</span>
+              <span class="gov-trace__dash">&mdash;</span>
+              <span class="gov-trace__reason">stage in ["attended","checked-in"] &mdash; got "registered"</span>
+            </div>
+            <div class="gov-trace__row" style="flex-wrap:wrap; gap:4px 6px;">
+              <span class="gov-trace__component">HotelBookingPrompt</span>
+              <span class="gov-trace__dash">&mdash;</span>
+              <span class="gov-trace__reason">time.offsetDays lte -7 &mdash; got -3</span>
+            </div>
+            <div class="gov-trace__row" style="flex-wrap:wrap; gap:4px 6px; align-items:center;">
+              <span class="gov-trace__component">SpeakerFeedbackForm</span>
+              <span class="gov-trace__dash">&mdash;</span>
+              <span class="gov-trace__reason">policy gate:</span>
+              <span class="gov-trace__policy-id">P-007</span>
+            </div>
+          </div>
+
+          <div class="gov-trace__section">
+            <span class="gov-trace__section-header gov-trace__sh--deferred">
+              DEFERRED
+              <span class="gov-trace__count gov-trace__cnt--deferred">&thinsp;2&thinsp;</span>
+            </span>
+            <div class="gov-trace__row" style="flex-wrap:wrap; gap:4px 6px;">
+              <span class="gov-trace__component">LocalDiningRecommendation</span>
+              <span class="gov-trace__dash">&mdash;</span>
+              <span class="gov-trace__confidence">confidence 0.41 (threshold 0.60)</span>
+            </div>
+            <div class="gov-trace__row" style="flex-wrap:wrap; gap:4px 6px;">
+              <span class="gov-trace__component">TransportRouteCard</span>
+              <span class="gov-trace__dash">&mdash;</span>
+              <span class="gov-trace__confidence">confidence 0.54 (threshold 0.60)</span>
+            </div>
+          </div>
+
+          <div class="gov-trace__section">
+            <span class="gov-trace__section-header gov-trace__sh--summary">ACCOUNTABILITY SUMMARY</span>
+            <div class="gov-trace__summary-row">
+              <span class="gov-trace__summary-key">commitments</span>
+              <span class="gov-trace__summary-colon">&thinsp;:&thinsp;</span>
+              <span class="gov-trace__summary-val">1</span>
+            </div>
+            <div class="gov-trace__summary-row">
+              <span class="gov-trace__summary-key">algorithm</span>
+              <span class="gov-trace__summary-colon">&thinsp;:&thinsp;</span>
+              <span class="gov-trace__summary-val">4</span>
+            </div>
+            <div class="gov-trace__summary-row">
+              <span class="gov-trace__summary-key">excluded</span>
+              <span class="gov-trace__summary-colon">&thinsp;:&thinsp;</span>
+              <span class="gov-trace__summary-val">4 &nbsp;<span style="color:var(--text-dim)">(3 condition, 1 policy)</span></span>
+            </div>
+            <div class="gov-trace__summary-row">
+              <span class="gov-trace__summary-key">deferred</span>
+              <span class="gov-trace__summary-colon">&thinsp;:&thinsp;</span>
+              <span class="gov-trace__summary-val">2</span>
+            </div>
+            <div class="gov-trace__summary-row" style="margin-top:2px;">
+              <span class="gov-trace__summary-key">risk level</span>
+              <span class="gov-trace__summary-colon">&thinsp;:&thinsp;</span>
+              <span class="gov-trace__summary-val"><span class="risk-badge risk-badge--med">medium</span></span>
+            </div>
+          </div>
+          <div class="gov-trace__rule" style="margin-top:var(--space-3)"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     THE HARDEST QUESTION
+════════════════════════════════════════════════════════════════════════════ -->
+<section class="section" id="why-different" aria-labelledby="hardest-q-title">
+  <div class="container">
+    <p class="section__eyebrow">The hardest question</p>
+    <div class="hardest-q">
+      <div>
+        <h2 class="section__title" id="hardest-q-title">
+          Why didn't this render?
+        </h2>
+        <p class="section__body">
+          A PM asks why a campaign banner isn't showing. A QA engineer can't reproduce a missing CTA. You add a <code class="inline-code">console.log</code>, check the feature flag dashboard, re-read the condition logic — and still can't point to one authoritative answer.
+        </p>
+        <p class="section__body" style="margin-top: var(--space-3)">
+          The rules ran. The output came back. But the trace only tells you what was selected.
+        </p>
+
+        <div class="hardest-q__callout">
+          <p class="hardest-q__callout-label">The gap</p>
+          <p class="hardest-q__callout-text">
+            LaunchDarkly, OpenFeature, and XState are built around the selected path. They return a winner. They don't output a structured record of what was excluded, what was outcompeted, or what the runtime decided it lacked enough context to resolve.
+          </p>
+        </div>
+      </div>
+
+      <div class="hardest-q__aside">
+        <div class="hardest-q__step">
+          <div class="hardest-q__step-num" aria-hidden="true">1</div>
+          <p class="hardest-q__step-text">
+            Every suppressed component carries a <strong>whyNot</strong> reason code — condition mismatch, policy gate, or confidence shortfall. Nothing is silently dropped.
+          </p>
+        </div>
+        <div class="hardest-q__step">
+          <div class="hardest-q__step-num" aria-hidden="true">2</div>
+          <p class="hardest-q__step-text">
+            Locked slots are <strong>named primitives</strong>, not inferred from priority ties. A locked slot carries an explicit reason field and wins against policy suppress.
+          </p>
+        </div>
+        <div class="hardest-q__step">
+          <div class="hardest-q__step-num" aria-hidden="true">3</div>
+          <p class="hardest-q__step-text">
+            Abstentions — cases where context fell below a confidence threshold — are <strong>explicit trace entries</strong>, not silent drops. The gap is named, not ignored.
+          </p>
+        </div>
+        <div class="hardest-q__step">
+          <div class="hardest-q__step-num" aria-hidden="true">4</div>
+          <p class="hardest-q__step-text">
+            The result is a single output that a developer can <strong>diff</strong>, a QA engineer can <strong>assert against</strong>, and a PM can <strong>read</strong> without needing to understand the rule engine internals.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     COMPARISON TABLE
+════════════════════════════════════════════════════════════════════════════ -->
+<section class="section" id="comparison" aria-labelledby="compare-title">
+  <div class="container">
+    <p class="section__eyebrow">What others miss</p>
+    <h2 class="section__title" id="compare-title">The full decision surface</h2>
+    <p class="section__body">
+      Other tools return a winner. TPO returns the entire decision — selected, suppressed, locked, and deferred — with a structured reason for each outcome.
+    </p>
+
+    <div class="compare-table-wrap" role="region" aria-label="Feature comparison table">
+      <table class="compare-table">
+        <caption class="sr-only">Comparison of TPO Runtime against LaunchDarkly, OpenFeature, and XState</caption>
+        <thead>
+          <tr>
+            <th scope="col" style="width:220px">Capability</th>
+            <th scope="col" class="col-tpo">@tpo/runtime</th>
+            <th scope="col">LaunchDarkly</th>
+            <th scope="col">OpenFeature</th>
+            <th scope="col">XState</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="row-label">Selected path output</td>
+            <td class="col-tpo"><span class="check">&#10003;</span> structured record</td>
+            <td><span class="check">&#10003;</span> flag value</td>
+            <td><span class="check">&#10003;</span> flag value</td>
+            <td><span class="check">&#10003;</span> active state</td>
+          </tr>
+          <tr>
+            <td class="row-label">Suppressed with reason</td>
+            <td class="col-tpo"><span class="check">&#10003;</span> whyNot per component</td>
+            <td><span class="cross">&#8212;</span></td>
+            <td><span class="cross">&#8212;</span></td>
+            <td><span class="cross">&#8212;</span></td>
+          </tr>
+          <tr>
+            <td class="row-label">Explicit locked slots</td>
+            <td class="col-tpo"><span class="check">&#10003;</span> named primitive</td>
+            <td><span class="partial">~</span> targeting override</td>
+            <td><span class="cross">&#8212;</span></td>
+            <td><span class="cross">&#8212;</span></td>
+          </tr>
+          <tr>
+            <td class="row-label">Abstention record</td>
+            <td class="col-tpo"><span class="check">&#10003;</span> confidence + gap</td>
+            <td><span class="cross">&#8212;</span></td>
+            <td><span class="cross">&#8212;</span></td>
+            <td><span class="cross">&#8212;</span></td>
+          </tr>
+          <tr>
+            <td class="row-label">Policy gate tracing</td>
+            <td class="col-tpo"><span class="check">&#10003;</span> policy ID in trace</td>
+            <td><span class="partial">~</span> targeting rules</td>
+            <td><span class="cross">&#8212;</span></td>
+            <td><span class="cross">&#8212;</span></td>
+          </tr>
+          <tr>
+            <td class="row-label">Governance vocabulary</td>
+            <td class="col-tpo"><span class="check">&#10003;</span> PM-readable mode</td>
+            <td><span class="cross">&#8212;</span></td>
+            <td><span class="cross">&#8212;</span></td>
+            <td><span class="cross">&#8212;</span></td>
+          </tr>
+          <tr>
+            <td class="row-label">Risk tier signal</td>
+            <td class="col-tpo"><span class="check">&#10003;</span> low / medium / high</td>
+            <td><span class="cross">&#8212;</span></td>
+            <td><span class="cross">&#8212;</span></td>
+            <td><span class="cross">&#8212;</span></td>
+          </tr>
+          <tr>
+            <td class="row-label">Deterministic + diffable</td>
+            <td class="col-tpo"><span class="check">&#10003;</span> byte-identical output</td>
+            <td><span class="partial">~</span></td>
+            <td><span class="partial">~</span></td>
+            <td><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <td class="row-label">TypeScript-native</td>
+            <td class="col-tpo"><span class="check">&#10003;</span> strict, no any</td>
+            <td><span class="partial">~</span> SDK types</td>
+            <td><span class="check">&#10003;</span></td>
+            <td><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <td class="row-label">Zero runtime dependencies</td>
+            <td class="col-tpo"><span class="check">&#10003;</span></td>
+            <td><span class="cross">&#8212;</span> cloud SDK</td>
+            <td><span class="check">&#10003;</span> core</td>
+            <td><span class="check">&#10003;</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     HOW IT WORKS
+════════════════════════════════════════════════════════════════════════════ -->
+<section class="section" id="how-it-works" aria-labelledby="how-title">
+  <div class="container">
+    <p class="section__eyebrow">How it works</p>
+    <h2 class="section__title" id="how-title">
+      <code style="font-family:var(--font-mono);font-size:inherit;letter-spacing:-0.02em">evaluate(context, options) &rarr; result</code>
+    </h2>
+    <p class="section__body">
+      A pure, deterministic function. Same inputs always produce the same output. No network calls, no side effects, no hidden state.
+    </p>
+
+    <div class="how-grid">
+      <!-- Input -->
+      <div class="how-io">
+        <p class="how-io__label">Input</p>
+
+        <div class="io-field">
+          <div>
+            <div class="io-field__key">context</div>
+            <div class="io-field__type">TPOContext</div>
+          </div>
+          <div class="io-field__desc">stage, role, time.phase, place, locale, device, meta</div>
+        </div>
+
+        <div class="io-field">
+          <div>
+            <div class="io-field__key">rules</div>
+            <div class="io-field__type">RulePack</div>
+          </div>
+          <div class="io-field__desc">Versioned set of rules: conditions, priority, confidenceHint per component</div>
+        </div>
+
+        <div class="io-field">
+          <div>
+            <div class="io-field__key">lockedSlots</div>
+            <div class="io-field__type">LockedSlots</div>
+          </div>
+          <div class="io-field__desc">Operator-pinned slots with named reason. Resolved before rule evaluation.</div>
+        </div>
+
+        <div class="io-field">
+          <div>
+            <div class="io-field__key">policy</div>
+            <div class="io-field__type">PolicyPack</div>
+          </div>
+          <div class="io-field__desc">Compliance / business rules that suppress components post-evaluation</div>
+        </div>
+
+        <div class="io-field">
+          <div>
+            <div class="io-field__key">confidenceThreshold</div>
+            <div class="io-field__type">number</div>
+          </div>
+          <div class="io-field__desc">Default 0.60. Below this, a matched rule abstains rather than selects.</div>
+        </div>
+
+        <div class="how-arrow" aria-hidden="true">
+          evaluate()&nbsp;&darr;
+        </div>
+
+        <p class="how-io__label" style="margin-top:0">Output — TPOResult</p>
+
+        <div class="io-field">
+          <div>
+            <div class="io-field__key" style="color:var(--section-algo)">selected</div>
+            <div class="io-field__type">SelectedComponent[]</div>
+          </div>
+          <div class="io-field__desc">Winning components with slot, specificity, priority, matched rule IDs</div>
+        </div>
+
+        <div class="io-field">
+          <div>
+            <div class="io-field__key" style="color:var(--section-excl)">suppressed</div>
+            <div class="io-field__type">SuppressedComponent[]</div>
+          </div>
+          <div class="io-field__desc">Excluded components with human-readable whyNot and optional policyId</div>
+        </div>
+
+        <div class="io-field">
+          <div>
+            <div class="io-field__key" style="color:var(--section-commit)">locked</div>
+            <div class="io-field__type">LockedSlot[]</div>
+          </div>
+          <div class="io-field__desc">Operator-pinned slots. Cannot be suppressed by policy.</div>
+        </div>
+
+        <div class="io-field">
+          <div>
+            <div class="io-field__key" style="color:var(--section-deferred)">abstentions</div>
+            <div class="io-field__type">AbstainedComponent[]</div>
+          </div>
+          <div class="io-field__desc">Confidence below threshold — named with gap, not silently dropped</div>
+        </div>
+
+        <div class="io-field">
+          <div>
+            <div class="io-field__key" style="color:var(--risk-med)">riskTier</div>
+            <div class="io-field__type">'low' | 'medium' | 'high'</div>
+          </div>
+          <div class="io-field__desc">Derived from policy hits, abstentions, and locked overrides in this pass</div>
+        </div>
+      </div>
+
+      <!-- Code -->
+      <div>
+        <div class="code-block">
+          <div class="code-block__header">
+            <span class="code-block__filename">quickstart.ts</span>
+            <span class="code-block__lang">TypeScript</span>
+          </div>
+          <pre><code><span class="tok-kw">import</span> { evaluate, formatTrace } <span class="tok-kw">from</span> <span class="tok-str">'@tpo/runtime'</span>;
+<span class="tok-kw">import type</span> {
+  <span class="tok-type">TPOContext</span>, <span class="tok-type">EvalOptions</span>
+} <span class="tok-kw">from</span> <span class="tok-str">'@tpo/runtime'</span>;
+
+<span class="tok-kw">const</span> context: <span class="tok-type">TPOContext</span> = {
+  stage: <span class="tok-str">'cart-abandonment'</span>,
+  role:  <span class="tok-str">'returning-buyer'</span>,
+  time:  { phase: <span class="tok-str">'flash-sale'</span> },
+  device: <span class="tok-str">'mobile'</span>,
+};
+
+<span class="tok-kw">const</span> options: <span class="tok-type">EvalOptions</span> = {
+  rules: {
+    version: <span class="tok-str">'1.0.0'</span>,
+    rules: [
+      {
+        id: <span class="tok-str">'r-coupon'</span>,
+        componentKey: <span class="tok-str">'CartDiscountCoupon'</span>,
+        slot: <span class="tok-str">'primary_cta'</span>,
+        conditions: [
+          { field: <span class="tok-str">'stage'</span>, op: <span class="tok-str">'eq'</span>,
+            value: <span class="tok-str">'cart-abandonment'</span> },
+          { field: <span class="tok-str">'time.phase'</span>, op: <span class="tok-str">'eq'</span>,
+            value: <span class="tok-str">'flash-sale'</span> },
+        ],
+        priority: <span class="tok-num">1</span>,
+        confidenceHint: <span class="tok-num">0.92</span>,
+      },
+      {
+        id: <span class="tok-str">'r-review'</span>,
+        componentKey: <span class="tok-str">'WriteReviewPrompt'</span>,
+        slot: <span class="tok-str">'nudge'</span>,
+        conditions: [
+          { field: <span class="tok-str">'stage'</span>, op: <span class="tok-str">'eq'</span>,
+            value: <span class="tok-str">'post-purchase'</span> }, <span class="tok-cmt">// won't match</span>
+        ],
+        priority: <span class="tok-num">2</span>,
+      },
+    ],
+  },
+  confidenceThreshold: <span class="tok-num">0.60</span>,
+};
+
+<span class="tok-kw">const</span> result = <span class="tok-fn">evaluate</span>(context, options);
+
+<span class="tok-cmt">// result.selected[0].componentKey  → 'CartDiscountCoupon'</span>
+<span class="tok-cmt">// result.suppressed[0].componentKey → 'WriteReviewPrompt'</span>
+<span class="tok-cmt">// result.suppressed[0].whyNot</span>
+<span class="tok-cmt">//   → 'stage eq "post-purchase" — got "cart-abandonment"'</span>
+
+console.log(<span class="tok-fn">formatTrace</span>(result, context, {
+  mode: <span class="tok-str">'governance'</span>,
+}));</code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     DOMAIN EXAMPLES
+════════════════════════════════════════════════════════════════════════════ -->
+<section class="section" id="domain-examples" aria-labelledby="domain-title">
+  <div class="container">
+    <p class="section__eyebrow">Domain examples</p>
+    <h2 class="section__title" id="domain-title">Three industries. One trace format.</h2>
+    <p class="section__body" style="margin-bottom: var(--space-8)">
+      The same evaluate() function handles regulatory compliance gates, e-commerce conversion flows, and fintech KYC policies — producing a consistent accountability record in every case.
+    </p>
+
+    <div class="domain-tabs" role="tablist" aria-label="Domain examples">
+      <button class="domain-tab active" role="tab" aria-selected="true" aria-controls="panel-banking" id="tab-banking" tabindex="0">Banking</button>
+      <button class="domain-tab" role="tab" aria-selected="false" aria-controls="panel-ecommerce" id="tab-ecommerce" tabindex="-1">E-commerce</button>
+      <button class="domain-tab" role="tab" aria-selected="false" aria-controls="panel-fintech" id="tab-fintech" tabindex="-1">Fintech</button>
+    </div>
+
+    <!-- Banking -->
+    <div class="domain-panel active" id="panel-banking" role="tabpanel" aria-labelledby="tab-banking">
+      <div class="domain-panel__info">
+        <p class="domain-panel__scenario">Banking app &mdash; <span lang="ko">은행앱</span></p>
+        <h3 class="domain-panel__title">FSC compliance + year-end tax benefit</h3>
+        <p class="domain-panel__desc">
+          Premier customer, 7 days before product maturity, year-end tax season. The compliance-locked slot (financial consumer protection notice) resolves first, then ISA conversion and pension tax credit are selected. For DSR &gt;40% customers, the personal loan CTA is suppressed by policy gate.
+        </p>
+        <ul class="domain-panel__bullets" aria-label="Key outcomes">
+          <li class="domain-panel__bullet">
+            <span class="domain-panel__bullet-marker">&rarr;</span>
+            risk-disclosure slot locked by compliance (<span lang="ko">금소법 고지</span>)
+          </li>
+          <li class="domain-panel__bullet">
+            <span class="domain-panel__bullet-marker">&rarr;</span>
+            ISA conversion + pension tax credit selected by algorithm
+          </li>
+          <li class="domain-panel__bullet">
+            <span class="domain-panel__bullet-marker">&mdash;</span>
+            PersonalLoanOffer: suppressed by <span style="font-family:var(--font-mono);font-size:12px;color:var(--code-policy)">P-DSR-040</span> when DSR &gt;40%
+          </li>
+        </ul>
+      </div>
+      <div class="domain-panel__trace">
+        <div class="domain-panel__trace-header">
+          <span class="domain-panel__trace-label">governance trace</span>
+          <span class="risk-badge risk-badge--low">low</span>
+        </div>
+        <div class="gov-trace">
+          <div class="gov-trace__section">
+            <span class="gov-trace__section-header gov-trace__sh--commit">
+              COMMITMENTS HONORED <span class="gov-trace__count gov-trace__cnt--commit">&thinsp;1&thinsp;</span>
+            </span>
+            <div class="gov-trace__row">
+              <span class="gov-trace__slot">risk-disclosure</span>
+              <span class="gov-trace__arrow">&#8594;</span>
+              <span class="gov-trace__component">InvestmentRiskGradeNotice</span>
+              <span class="gov-trace__tag">&nbsp;[compliance]</span>
+            </div>
+          </div>
+          <div class="gov-trace__section">
+            <span class="gov-trace__section-header gov-trace__sh--algo">
+              ALGORITHM SELECTED <span class="gov-trace__count gov-trace__cnt--algo">&thinsp;4&thinsp;</span>
+            </span>
+            <div class="gov-trace__row"><span class="gov-trace__slot">primary_cta</span><span class="gov-trace__arrow">&#8594;</span><span class="gov-trace__component">ISAAccountConversion</span></div>
+            <div class="gov-trace__row"><span class="gov-trace__slot">nudge</span><span class="gov-trace__arrow">&#8594;</span><span class="gov-trace__component">PensionTaxCredit</span></div>
+            <div class="gov-trace__row"><span class="gov-trace__slot">loan_cta</span><span class="gov-trace__arrow">&#8594;</span><span class="gov-trace__component">PersonalLoanOffer</span></div>
+            <div class="gov-trace__row"><span class="gov-trace__slot">contextual</span><span class="gov-trace__arrow">&#8594;</span><span class="gov-trace__component">WealthManagementInvite</span></div>
+          </div>
+          <div class="gov-trace__section">
+            <span class="gov-trace__section-header gov-trace__sh--excl">
+              EXCLUDED WITH REASON <span class="gov-trace__count gov-trace__cnt--excl">&thinsp;0&thinsp;</span>
+            </span>
+            <div class="gov-trace__row"><span style="color:var(--text-dim);font-size:11px;font-style:italic">none</span></div>
+          </div>
+          <div class="gov-trace__section">
+            <span class="gov-trace__section-header gov-trace__sh--deferred">
+              DEFERRED <span class="gov-trace__count gov-trace__cnt--deferred">&thinsp;0&thinsp;</span>
+            </span>
+          </div>
+          <div class="gov-trace__section">
+            <span class="gov-trace__section-header gov-trace__sh--summary">ACCOUNTABILITY SUMMARY</span>
+            <div class="gov-trace__summary-row"><span class="gov-trace__summary-key">commitments</span><span class="gov-trace__summary-colon">&thinsp;:&thinsp;</span><span class="gov-trace__summary-val">1</span></div>
+            <div class="gov-trace__summary-row"><span class="gov-trace__summary-key">algorithm</span><span class="gov-trace__summary-colon">&thinsp;:&thinsp;</span><span class="gov-trace__summary-val">4</span></div>
+            <div class="gov-trace__summary-row"><span class="gov-trace__summary-key">excluded</span><span class="gov-trace__summary-colon">&thinsp;:&thinsp;</span><span class="gov-trace__summary-val">0 <span style="color:var(--text-dim)">(0 condition, 0 policy)</span></span></div>
+            <div class="gov-trace__summary-row"><span class="gov-trace__summary-key">deferred</span><span class="gov-trace__summary-colon">&thinsp;:&thinsp;</span><span class="gov-trace__summary-val">0</span></div>
+            <div class="gov-trace__summary-row"><span class="gov-trace__summary-key">risk level</span><span class="gov-trace__summary-colon">&thinsp;:&thinsp;</span><span class="gov-trace__summary-val"><span class="risk-badge risk-badge--low">low</span></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- E-commerce -->
+    <div class="domain-panel" id="panel-ecommerce" role="tabpanel" aria-labelledby="tab-ecommerce" hidden>
+      <div class="domain-panel__info">
+        <p class="domain-panel__scenario">E-commerce &mdash; <span lang="ko">이커머스</span></p>
+        <h3 class="domain-panel__title">Cart abandonment + flash sale</h3>
+        <p class="domain-panel__desc">
+          A returning buyer who abandoned their cart during a flash sale. The discount coupon is selected as the primary CTA. A stock urgency badge and similar product carousel are added contextually. The post-purchase review prompt is suppressed because the stage condition doesn't match.
+        </p>
+        <ul class="domain-panel__bullets" aria-label="Key outcomes">
+          <li class="domain-panel__bullet">
+            <span class="domain-panel__bullet-marker">&rarr;</span>
+            CartDiscountCoupon selected as primary CTA
+          </li>
+          <li class="domain-panel__bullet">
+            <span class="domain-panel__bullet-marker">&rarr;</span>
+            StockUrgencyBadge + SimilarProductCarousel added
+          </li>
+          <li class="domain-panel__bullet">
+            <span class="domain-panel__bullet-marker">&mdash;</span>
+            WriteReviewPrompt: stage eq "post-purchase" &mdash; got "cart-abandonment"
+          </li>
+        </ul>
+      </div>
+      <div class="domain-panel__trace">
+        <div class="domain-panel__trace-header">
+          <span class="domain-panel__trace-label">governance trace</span>
+          <span class="risk-badge risk-badge--low">low</span>
+        </div>
+        <div class="gov-trace">
+          <div class="gov-trace__section">
+            <span class="gov-trace__section-header gov-trace__sh--commit">
+              COMMITMENTS HONORED <span class="gov-trace__count gov-trace__cnt--commit">&thinsp;1&thinsp;</span>
+            </span>
+            <div class="gov-trace__row"><span class="gov-trace__slot">promo-banner</span><span class="gov-trace__arrow">&#8594;</span><span class="gov-trace__component">FlashSaleBanner</span><span class="gov-trace__tag">&nbsp;[promotion]</span></div>
+          </div>
+          <div class="gov-trace__section">
+            <span class="gov-trace__section-header gov-trace__sh--algo">
+              ALGORITHM SELECTED <span class="gov-trace__count gov-trace__cnt--algo">&thinsp;3&thinsp;</span>
+            </span>
+            <div class="gov-trace__row"><span class="gov-trace__slot">primary_cta</span><span class="gov-trace__arrow">&#8594;</span><span class="gov-trace__component">CartDiscountCoupon</span></div>
+            <div class="gov-trace__row"><span class="gov-trace__slot">contextual</span><span class="gov-trace__arrow">&#8594;</span><span class="gov-trace__component">SimilarProductCarousel</span></div>
+            <div class="gov-trace__row"><span class="gov-trace__slot">urgency</span><span class="gov-trace__arrow">&#8594;</span><span class="gov-trace__component">StockUrgencyBadge</span></div>
+          </div>
+          <div class="gov-trace__section">
+            <span class="gov-trace__section-header gov-trace__sh--excl">
+              EXCLUDED WITH REASON <span class="gov-trace__count gov-trace__cnt--excl">&thinsp;1&thinsp;</span>
+            </span>
+            <div class="gov-trace__row" style="flex-wrap:wrap;gap:4px 6px;">
+              <span class="gov-trace__component">WriteReviewPrompt</span>
+              <span class="gov-trace__dash">&mdash;</span>
+              <span class="gov-trace__reason">stage eq "post-purchase" &mdash; got "cart-abandonment"</span>
+            </div>
+          </div>
+          <div class="gov-trace__section">
+            <span class="gov-trace__section-header gov-trace__sh--deferred">
+              DEFERRED <span class="gov-trace__count gov-trace__cnt--deferred">&thinsp;0&thinsp;</span>
+            </span>
+          </div>
+          <div class="gov-trace__section">
+            <span class="gov-trace__section-header gov-trace__sh--summary">ACCOUNTABILITY SUMMARY</span>
+            <div class="gov-trace__summary-row"><span class="gov-trace__summary-key">commitments</span><span class="gov-trace__summary-colon">&thinsp;:&thinsp;</span><span class="gov-trace__summary-val">1</span></div>
+            <div class="gov-trace__summary-row"><span class="gov-trace__summary-key">algorithm</span><span class="gov-trace__summary-colon">&thinsp;:&thinsp;</span><span class="gov-trace__summary-val">3</span></div>
+            <div class="gov-trace__summary-row"><span class="gov-trace__summary-key">excluded</span><span class="gov-trace__summary-colon">&thinsp;:&thinsp;</span><span class="gov-trace__summary-val">1 <span style="color:var(--text-dim)">(1 condition, 0 policy)</span></span></div>
+            <div class="gov-trace__summary-row"><span class="gov-trace__summary-key">deferred</span><span class="gov-trace__summary-colon">&thinsp;:&thinsp;</span><span class="gov-trace__summary-val">0</span></div>
+            <div class="gov-trace__summary-row"><span class="gov-trace__summary-key">risk level</span><span class="gov-trace__summary-colon">&thinsp;:&thinsp;</span><span class="gov-trace__summary-val"><span class="risk-badge risk-badge--low">low</span></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fintech -->
+    <div class="domain-panel" id="panel-fintech" role="tabpanel" aria-labelledby="tab-fintech" hidden>
+      <div class="domain-panel__info">
+        <p class="domain-panel__scenario">Fintech &mdash; <span lang="ko">핀테크</span></p>
+        <h3 class="domain-panel__title">New user onboarding + KYC policy gate</h3>
+        <p class="domain-panel__desc">
+          A new user who just completed onboarding. KYC is not yet verified, so the investment banner is blocked by policy gate. Two components fall below the confidence threshold and are explicitly deferred — not silently dropped.
+        </p>
+        <ul class="domain-panel__bullets" aria-label="Key outcomes">
+          <li class="domain-panel__bullet">
+            <span class="domain-panel__bullet-marker">&rarr;</span>
+            FirstTransferGuide + SendMoneyPromo selected
+          </li>
+          <li class="domain-panel__bullet">
+            <span class="domain-panel__bullet-marker">&mdash;</span>
+            InvestmentStartBanner: blocked by <span style="font-family:var(--font-mono);font-size:12px;color:var(--code-policy)">P-INVEST-KYC</span>
+          </li>
+          <li class="domain-panel__bullet">
+            <span class="domain-panel__bullet-marker">~</span>
+            2 components deferred — confidence below 0.60 threshold
+          </li>
+        </ul>
+      </div>
+      <div class="domain-panel__trace">
+        <div class="domain-panel__trace-header">
+          <span class="domain-panel__trace-label">governance trace</span>
+          <span class="risk-badge risk-badge--med">medium</span>
+        </div>
+        <div class="gov-trace">
+          <div class="gov-trace__section">
+            <span class="gov-trace__section-header gov-trace__sh--commit">
+              COMMITMENTS HONORED <span class="gov-trace__count gov-trace__cnt--commit">&thinsp;0&thinsp;</span>
+            </span>
+            <div class="gov-trace__row"><span style="color:var(--text-dim);font-size:11px;font-style:italic">none</span></div>
+          </div>
+          <div class="gov-trace__section">
+            <span class="gov-trace__section-header gov-trace__sh--algo">
+              ALGORITHM SELECTED <span class="gov-trace__count gov-trace__cnt--algo">&thinsp;2&thinsp;</span>
+            </span>
+            <div class="gov-trace__row"><span class="gov-trace__slot">primary_cta</span><span class="gov-trace__arrow">&#8594;</span><span class="gov-trace__component">FirstTransferGuide</span></div>
+            <div class="gov-trace__row"><span class="gov-trace__slot">contextual</span><span class="gov-trace__arrow">&#8594;</span><span class="gov-trace__component">SendMoneyPromo</span></div>
+          </div>
+          <div class="gov-trace__section">
+            <span class="gov-trace__section-header gov-trace__sh--excl">
+              EXCLUDED WITH REASON <span class="gov-trace__count gov-trace__cnt--excl">&thinsp;1&thinsp;</span>
+            </span>
+            <div class="gov-trace__row" style="flex-wrap:wrap;gap:4px 6px;align-items:center;">
+              <span class="gov-trace__component">InvestmentStartBanner</span>
+              <span class="gov-trace__dash">&mdash;</span>
+              <span class="gov-trace__reason">policy gate:</span>
+              <span class="gov-trace__policy-id">P-INVEST-KYC</span>
+            </div>
+          </div>
+          <div class="gov-trace__section">
+            <span class="gov-trace__section-header gov-trace__sh--deferred">
+              DEFERRED <span class="gov-trace__count gov-trace__cnt--deferred">&thinsp;2&thinsp;</span>
+            </span>
+            <div class="gov-trace__row" style="flex-wrap:wrap;gap:4px 6px;">
+              <span class="gov-trace__component">InvestmentStartBanner</span>
+              <span class="gov-trace__dash">&mdash;</span>
+              <span class="gov-trace__confidence">confidence 0.45 (threshold 0.60)</span>
+            </div>
+            <div class="gov-trace__row" style="flex-wrap:wrap;gap:4px 6px;">
+              <span class="gov-trace__component">EmergencyLoanInfo</span>
+              <span class="gov-trace__dash">&mdash;</span>
+              <span class="gov-trace__confidence">confidence 0.55 (threshold 0.60)</span>
+            </div>
+          </div>
+          <div class="gov-trace__section">
+            <span class="gov-trace__section-header gov-trace__sh--summary">ACCOUNTABILITY SUMMARY</span>
+            <div class="gov-trace__summary-row"><span class="gov-trace__summary-key">commitments</span><span class="gov-trace__summary-colon">&thinsp;:&thinsp;</span><span class="gov-trace__summary-val">0</span></div>
+            <div class="gov-trace__summary-row"><span class="gov-trace__summary-key">algorithm</span><span class="gov-trace__summary-colon">&thinsp;:&thinsp;</span><span class="gov-trace__summary-val">2</span></div>
+            <div class="gov-trace__summary-row"><span class="gov-trace__summary-key">excluded</span><span class="gov-trace__summary-colon">&thinsp;:&thinsp;</span><span class="gov-trace__summary-val">1 <span style="color:var(--text-dim)">(0 condition, 1 policy)</span></span></div>
+            <div class="gov-trace__summary-row"><span class="gov-trace__summary-key">deferred</span><span class="gov-trace__summary-colon">&thinsp;:&thinsp;</span><span class="gov-trace__summary-val">2</span></div>
+            <div class="gov-trace__summary-row"><span class="gov-trace__summary-key">risk level</span><span class="gov-trace__summary-colon">&thinsp;:&thinsp;</span><span class="gov-trace__summary-val"><span class="risk-badge risk-badge--med">medium</span></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     RISK TIER EXPLANATION
+════════════════════════════════════════════════════════════════════════════ -->
+<section class="section" id="risk-tiers" aria-labelledby="risk-title">
+  <div class="container">
+    <p class="section__eyebrow">Risk tiers</p>
+    <h2 class="section__title" id="risk-title">Decision confidence, quantified.</h2>
+    <p class="section__body">
+      <code class="inline-code">riskTier</code> is derived automatically from the count of policy hits and abstentions in a single evaluation pass. Use it for downstream gating, alerting, or audit logging.
+    </p>
+
+    <div class="risk-grid">
+      <!-- Low -->
+      <div class="risk-card risk-card--low" role="article" aria-label="Low risk tier">
+        <div class="risk-card__tier">
+          <span class="risk-badge risk-badge--low">low</span>
+        </div>
+        <p class="risk-card__desc">
+          No policy gates triggered, at most one abstention, and at least one component was selected or locked. The runtime resolved all slots cleanly against the rule set.
+        </p>
+        <div class="risk-card__conditions">
+          <div class="risk-card__condition">policyHits === 0</div>
+          <div class="risk-card__condition">abstentions &lt;= 1</div>
+          <div class="risk-card__condition">selected.length &gt; 0 or locked.length &gt; 0</div>
+        </div>
+      </div>
+
+      <!-- Medium -->
+      <div class="risk-card risk-card--med" role="article" aria-label="Medium risk tier">
+        <div class="risk-card__tier">
+          <span class="risk-badge risk-badge--med">medium</span>
+        </div>
+        <p class="risk-card__desc">
+          At least one policy gate triggered, or two or more components abstained due to insufficient confidence. Human review recommended before promotion.
+        </p>
+        <div class="risk-card__conditions">
+          <div class="risk-card__condition">policyHits &gt;= 1</div>
+          <div class="risk-card__condition">— or —</div>
+          <div class="risk-card__condition">abstentions &gt;= 2</div>
+        </div>
+      </div>
+
+      <!-- High -->
+      <div class="risk-card risk-card--high" role="article" aria-label="High risk tier">
+        <div class="risk-card__tier">
+          <span class="risk-badge risk-badge--high">high</span>
+        </div>
+        <p class="risk-card__desc">
+          Two or more policy gates triggered, three or more abstentions, or no output at all (no selected and no locked components). Treat as a signal to block downstream rendering or escalate for review.
+        </p>
+        <div class="risk-card__conditions">
+          <div class="risk-card__condition">policyHits &gt;= 2</div>
+          <div class="risk-card__condition">— or — abstentions &gt;= 3</div>
+          <div class="risk-card__condition">— or — selected.length === 0 &amp;&amp; locked.length === 0</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     GET STARTED
+════════════════════════════════════════════════════════════════════════════ -->
+<section class="section" id="get-started" aria-labelledby="getstarted-title">
+  <div class="container">
+    <p class="section__eyebrow">Get started</p>
+    <h2 class="section__title" id="getstarted-title">Up and running in 5 minutes.</h2>
+    <p class="section__body">
+      No account required. No configuration server. A pure TypeScript function you can run in any environment — Node, Bun, Deno, edge runtimes.
+    </p>
+
+    <div class="getstarted-grid">
+      <div>
+        <div class="getstarted__install">
+          <div class="getstarted__install-header">terminal</div>
+          <pre><code class="npm-cmd">npm install @tpo/runtime</code></pre>
+        </div>
+
+        <div class="code-block" style="margin-top:var(--space-4)">
+          <div class="code-block__header">
+            <span class="code-block__filename">first-trace.ts</span>
+            <span class="code-block__lang">TypeScript</span>
+          </div>
+          <pre><code><span class="tok-kw">import</span> {
+  evaluate, formatTrace
+} <span class="tok-kw">from</span> <span class="tok-str">'@tpo/runtime'</span>;
+
+<span class="tok-cmt">// Or use a domain starter pack:</span>
+<span class="tok-kw">import</span> {
+  bankingContext,
+  bankingOptions,
+} <span class="tok-kw">from</span> <span class="tok-str">'@tpo/runtime/starters/banking'</span>;
+
+<span class="tok-kw">const</span> result = <span class="tok-fn">evaluate</span>(
+  bankingContext,
+  bankingOptions,
+);
+
+console.log(
+  <span class="tok-fn">formatTrace</span>(result, bankingContext, {
+    mode: <span class="tok-str">'governance'</span>,
+  })
+);</code></pre>
+        </div>
+      </div>
+
+      <div class="getstarted__links" role="list" aria-label="Resources">
+        <a href="https://github.com/reliqbit/tpo-funnel-runtime#readme" class="getstarted__link-item" rel="noopener noreferrer" target="_blank" role="listitem">
+          <div class="getstarted__link-icon" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(255,255,255,0.3)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z"/></svg>
+          </div>
+          <div class="getstarted__link-content">
+            <div class="getstarted__link-title">README</div>
+            <div class="getstarted__link-desc">Full API reference, key type definitions, quick-start examples</div>
+          </div>
+        </a>
+
+        <a href="/playground" class="getstarted__link-item" role="listitem">
+          <div class="getstarted__link-icon" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(255,255,255,0.3)"><path d="M8 5v14l11-7z"/></svg>
+          </div>
+          <div class="getstarted__link-content">
+            <div class="getstarted__link-title">Interactive Playground</div>
+            <div class="getstarted__link-desc">Edit context and rules in the browser. See developer and governance traces side by side.</div>
+          </div>
+        </a>
+
+        <a href="https://github.com/reliqbit/tpo-funnel-runtime/blob/main/src/types.ts" class="getstarted__link-item" rel="noopener noreferrer" target="_blank" role="listitem">
+          <div class="getstarted__link-icon" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(255,255,255,0.3)"><path d="M10 3H4a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-9h-5a2 2 0 0 1-2-2V3zm1 0v5a1 1 0 0 0 1 1h5l-6-6z"/><path d="M8 14h8v2H8zm0-4h8v2H8z"/></svg>
+          </div>
+          <div class="getstarted__link-content">
+            <div class="getstarted__link-title">Type Definitions</div>
+            <div class="getstarted__link-desc">TPOContext, EvalOptions, TPOResult, RulePack — all public types annotated</div>
+          </div>
+        </a>
+
+        <a href="https://github.com/reliqbit/tpo-funnel-runtime/tree/main/src/starters" class="getstarted__link-item" rel="noopener noreferrer" target="_blank" role="listitem">
+          <div class="getstarted__link-icon" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(255,255,255,0.3)"><path d="M20 6h-2.18c.07-.23.18-.5.18-.8A2.19 2.19 0 0 0 15.8 3a2.73 2.73 0 0 0-2.21 1.17L12 6.4l-1.59-2.23A2.73 2.73 0 0 0 8.2 3 2.19 2.19 0 0 0 6 5.2c0 .3.11.57.18.8H4a2 2 0 0 0-2 2v3a1 1 0 0 0 1 1h1v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6h1a1 1 0 0 0 1-1V8a2 2 0 0 0-2-2z"/></svg>
+          </div>
+          <div class="getstarted__link-content">
+            <div class="getstarted__link-title">Domain Starter Packs</div>
+            <div class="getstarted__link-desc">Pre-built context and rules for banking, e-commerce, and fintech. Import and run.</div>
+          </div>
+        </a>
+
+        <a href="https://github.com/reliqbit/tpo-funnel-runtime/issues" class="getstarted__link-item" rel="noopener noreferrer" target="_blank" role="listitem">
+          <div class="getstarted__link-icon" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(255,255,255,0.3)"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12" stroke="rgba(255,255,255,0.3)" stroke-width="2"/><line x1="12" y1="16" x2="12.01" y2="16" stroke="rgba(255,255,255,0.3)" stroke-width="2"/></svg>
+          </div>
+          <div class="getstarted__link-content">
+            <div class="getstarted__link-title">GitHub Issues</div>
+            <div class="getstarted__link-desc">Bug reports, feature requests, questions. v0.1.0 — active development.</div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     FOOTER
+════════════════════════════════════════════════════════════════════════════ -->
+<footer class="footer" role="contentinfo">
+  <div class="container">
+    <div style="border-top:1px solid var(--border-subtle); padding-top:var(--space-10);">
+      <div class="footer__inner">
+        <div>
+          <div class="footer__brand">
+            <svg width="18" height="18" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+              <rect width="22" height="22" rx="4" fill="#1A1A1A" stroke="rgba(255,255,255,0.09)" stroke-width="1"/>
+              <text x="3" y="15" font-family="'JetBrains Mono', monospace" font-size="9" font-weight="700" fill="#EDEDED" letter-spacing="-0.5">TPO</text>
+            </svg>
+            <span>@tpo/runtime</span>
+            <span style="color:var(--text-dim)">v0.1.0</span>
+          </div>
+          <p class="footer__license">Apache-2.0 &nbsp;&middot;&nbsp; Decision Accountability Runtime</p>
+        </div>
+
+        <nav class="footer__links" aria-label="Footer navigation">
+          <a href="https://github.com/reliqbit/tpo-funnel-runtime" class="footer__link" rel="noopener noreferrer" target="_blank">GitHub</a>
+          <a href="/playground" class="footer__link">Playground</a>
+          <a href="/docs" class="footer__link">Docs</a>
+          <a href="https://github.com/reliqbit/tpo-funnel-runtime/blob/main/CHANGELOG.md" class="footer__link" rel="noopener noreferrer" target="_blank">Changelog</a>
+        </nav>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SCRIPT — domain tab switching only (minimal JS)
+════════════════════════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+  'use strict';
+
+  var tabs = document.querySelectorAll('.domain-tab');
+  var panels = document.querySelectorAll('.domain-panel');
+
+  function activateTab(targetId) {
+    tabs.forEach(function (t) {
+      var isActive = t.getAttribute('aria-controls') === targetId;
+      t.classList.toggle('active', isActive);
+      t.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      t.setAttribute('tabindex', isActive ? '0' : '-1');
+    });
+    panels.forEach(function (p) {
+      var isActive = p.id === targetId;
+      p.classList.toggle('active', isActive);
+      if (isActive) {
+        p.removeAttribute('hidden');
+      } else {
+        p.setAttribute('hidden', '');
+      }
+    });
+  }
+
+  tabs.forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      activateTab(tab.getAttribute('aria-controls'));
+      tab.focus();
+    });
+    tab.addEventListener('keydown', function (e) {
+      var idx = Array.prototype.indexOf.call(tabs, tab);
+      var nextTab = null;
+      if (e.key === 'ArrowRight') {
+        nextTab = tabs[(idx + 1) % tabs.length];
+      } else if (e.key === 'ArrowLeft') {
+        nextTab = tabs[(idx - 1 + tabs.length) % tabs.length];
+      } else if (e.key === 'Home') {
+        nextTab = tabs[0];
+      } else if (e.key === 'End') {
+        nextTab = tabs[tabs.length - 1];
+      }
+      if (nextTab) {
+        e.preventDefault();
+        nextTab.focus();
+        activateTab(nextTab.getAttribute('aria-controls'));
+      }
+    });
+  });
+}());
+</script>
+
+</body>
+</html>
